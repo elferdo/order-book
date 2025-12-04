@@ -5,7 +5,13 @@ pub struct User {
 }
 
 impl User {
-    pub fn new(id: Uuid) -> Self {
+    pub fn new() -> Self {
+        let id = Uuid::new_v4();
+
+        Self { id }
+    }
+
+    pub fn new_from(id: Uuid) -> Self {
         Self { id }
     }
 

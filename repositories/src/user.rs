@@ -17,7 +17,7 @@ impl Repository {
 
         let user = query.fetch_one(&self.pool).await?;
 
-        Ok(User::new(user.id))
+        Ok(User::new_from(user.id))
     }
 
     pub async fn persist_user(&self, user: &User) -> Result<(), RepositoryError> {
