@@ -1,0 +1,8 @@
+operations:
+  - alter_column:
+      table: bid
+      column: price
+      type: numeric
+      up: cast(price as numeric)
+      down: cast(price as decimal)
+
