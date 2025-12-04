@@ -1,0 +1,22 @@
+operations:
+  - create_table:
+      name: user
+      columns:
+        - name: id
+          type: uuid
+          pk: true
+  - create_table:
+      name: bid
+      columns:
+        - name: id
+          type: uuid
+          pk: true
+        - name: user
+          type: uuid
+          references:
+            name: fk_user_id
+            table: user
+            column: id
+        - name: price
+          type: numeric
+          nullable: false
