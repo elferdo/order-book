@@ -7,6 +7,7 @@ use axum::{
     extract::{Path, State},
 };
 use model::user::User;
+use repositories::{bid, user};
 use serde_json::{Value, json};
 use tracing::{debug, instrument};
 use uuid::Uuid;
@@ -21,9 +22,9 @@ pub async fn post_handler(State(state): State<AppState>) -> Result<Json<Value>, 
 
     let user = User::new();
 
-    let mut urepo = repositories::user::Repository::new(shared_t);
+    // let mut urepo = repositories::user::Repository::new(shared_t);
 
-    match urepo.persist_user(&user).await {
+    match repositories::user::persist_user(shared_t, &user).await {
         Ok(_) => Ok(Json::from(json!({"id": user.get_id()}))),
         Err(_) => {
             debug!("error");
@@ -42,11 +43,11 @@ pub async fn delete_handler(
 
     let shared_t = Arc::new(t);
 
-    let mut urepo = repositories::user::Repository::new(shared_t);
+    // let mut urepo = repositories::user::Repository::new(shared_t);
 
-    let user = urepo.get_user(&id).await?;
+    let user = repositories::user::get_user(shared_t.clone(), &id).await?;
 
-    match urepo.delete_user(&user).await {
+    match repositories::user::delete_user(shared_t.clone(), &user).await {
         Ok(_) => Ok(Json::from(json!("delete ok"))),
         Err(_) => {
             debug!("error");

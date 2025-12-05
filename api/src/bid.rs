@@ -25,15 +25,15 @@ pub async fn post_handler(
 
     let shared_t = Arc::new(t);
 
-    let mut urepo = repositories::user::Repository::new(shared_t.clone());
+    // let mut urepo = repositories::user::Repository::new(shared_t.clone());
 
-    let user = urepo.get_user(&body.user).await?;
+    let user = repositories::user::get_user(shared_t.clone(), &body.user).await?;
 
     let bid = Bid::new(Arc::new(user), body.price);
 
-    let mut brepo = repositories::bid::Repository::new(shared_t.clone());
+    // let mut brepo = repositories::bid::Repository::new(shared_t.clone());
 
-    let result = match brepo.persist_bid(&bid).await {
+    let result = match repositories::bid::persist_bid(shared_t.clone(), &bid).await {
         Ok(_) => Ok(Json::from(json!({"id": bid.get_id()}))),
         Err(e) => match e {
             repositories::bid::RepositoryError::DatabaseError(error) => Err(ApiError::Error),
