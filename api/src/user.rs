@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::Result;
 use appconfig::appstate::AppState;
 use axum::{
@@ -12,16 +14,20 @@ use uuid::Uuid;
 use crate::apierror::ApiError;
 
 #[instrument(skip(state))]
-pub async fn post_handler(State(state): State<AppState>) -> Result<Json<Value>, Json<Value>> {
+pub async fn post_handler(State(state): State<AppState>) -> Result<Json<Value>, ApiError> {
+    let t = state.pool.begin().await.map_err(|_| ApiError::Error)?;
+
+    let shared_t = Arc::new(t);
+
     let user = User::new();
 
-    let urepo = repositories::user::Repository::new(state.pool);
+    let mut urepo = repositories::user::Repository::new(shared_t);
 
     match urepo.persist_user(&user).await {
         Ok(_) => Ok(Json::from(json!({"id": user.get_id()}))),
         Err(_) => {
             debug!("error");
-            Err(Json::from(json!("error")))
+            Err(ApiError::Error)
         }
     }
 }
@@ -32,7 +38,11 @@ pub async fn delete_handler(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Value>, ApiError> {
-    let urepo = repositories::user::Repository::new(state.pool);
+    let t = state.pool.begin().await.map_err(|_| ApiError::Error)?;
+
+    let shared_t = Arc::new(t);
+
+    let mut urepo = repositories::user::Repository::new(shared_t);
 
     let user = urepo.get_user(&id).await?;
 

@@ -1,37 +1,39 @@
+use std::sync::Arc;
+
 use model::user::User;
-use sqlx::{Pool, Postgres, query};
+use sqlx::{Postgres, Transaction, query};
 use thiserror::Error;
 use uuid::Uuid;
 
-pub struct Repository {
-    pool: Pool<Postgres>,
+pub struct Repository<'a> {
+    transaction: Arc<Transaction<'a, Postgres>>,
 }
 
-impl Repository {
-    pub fn new(pool: Pool<Postgres>) -> Self {
-        Self { pool }
+impl<'a> Repository<'a> {
+    pub fn new(transaction: Arc<Transaction<'a, Postgres>>) -> Self {
+        Self { transaction }
     }
 
-    pub async fn get_user(&self, id: &Uuid) -> Result<User, RepositoryError> {
+    pub async fn get_user(&mut self, id: &Uuid) -> Result<User, RepositoryError> {
         let user = query!("select * from public.user where id = $1", id)
-            .fetch_one(&self.pool)
+            .fetch_one(&mut **Arc::get_mut(&mut self.transaction).unwrap())
             .await
             .map_err(|_| RepositoryError::UserNotFound)?;
 
         Ok(User::new_as(user.id))
     }
 
-    pub async fn persist_user(&self, user: &User) -> Result<(), RepositoryError> {
+    pub async fn persist_user(&mut self, user: &User) -> Result<(), RepositoryError> {
         query!("INSERT INTO public.user (id) VALUES ($1)", user.get_id())
-            .execute(&self.pool)
+            .execute(&mut **Arc::get_mut(&mut self.transaction).unwrap())
             .await?;
 
         Ok(())
     }
 
-    pub async fn delete_user(&self, user: &User) -> Result<(), RepositoryError> {
+    pub async fn delete_user(&mut self, user: &User) -> Result<(), RepositoryError> {
         let result = query!("DELETE FROM public.user where id = $1", user.get_id())
-            .execute(&self.pool)
+            .execute(&mut **Arc::get_mut(&mut self.transaction).unwrap())
             .await?;
 
         if result.rows_affected() < 1 {

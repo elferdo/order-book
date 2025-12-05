@@ -1,39 +1,38 @@
-use std::sync::Arc;
-
 use model::bid::Bid;
-use sqlx::{Pool, Postgres, query};
+use sqlx::{Postgres, Transaction, query};
+use std::sync::Arc;
 use thiserror::Error;
 use uuid::Uuid;
 
-pub struct Repository {
-    pool: Pool<Postgres>,
+pub struct Repository<'a> {
+    transaction: Arc<Transaction<'a, Postgres>>,
 }
 
-impl Repository {
-    pub fn new(pool: Pool<Postgres>) -> Self {
-        Self { pool }
+impl<'a> Repository<'a> {
+    pub fn new(transaction: Arc<Transaction<'a, Postgres>>) -> Self {
+        Self { transaction }
     }
 
-    pub async fn get_bid(&self, id: &Uuid) -> Result<Bid, RepositoryError> {
+    pub async fn get_bid(&mut self, id: &Uuid) -> Result<Bid, RepositoryError> {
         let bid = query!("select * from bid where id = $1", id)
-            .fetch_one(&self.pool)
+            .fetch_one(&mut **Arc::get_mut(&mut self.transaction).unwrap())
             .await?;
 
-        let user_repository = super::user::Repository::new(self.pool.clone());
+        let mut user_repository = super::user::Repository::new(self.transaction.clone());
 
         let user = user_repository.get_user(&bid.user).await?;
 
         Ok(Bid::new(Arc::new(user), bid.price))
     }
 
-    pub async fn persist_bid(&self, bid: &Bid) -> Result<(), RepositoryError> {
+    pub async fn persist_bid(&mut self, bid: &Bid) -> Result<(), RepositoryError> {
         query!(
             "INSERT INTO bid VALUES ($1, $2, $3)",
             bid.get_id(),
             bid.get_user().get_id(),
             bid.get_price()
         )
-        .execute(&self.pool)
+        .execute(&mut **Arc::get_mut(&mut self.transaction).unwrap())
         .await?;
 
         Ok(())

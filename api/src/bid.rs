@@ -21,15 +21,19 @@ pub async fn post_handler(
     State(state): State<AppState>,
     Json(body): Json<BidRequest>,
 ) -> Result<Json<Value>, ApiError> {
-    let urepo = repositories::user::Repository::new(state.pool.clone());
+    let t = state.pool.begin().await.map_err(|_| ApiError::Error)?;
+
+    let shared_t = Arc::new(t);
+
+    let mut urepo = repositories::user::Repository::new(shared_t.clone());
 
     let user = urepo.get_user(&body.user).await?;
 
     let bid = Bid::new(Arc::new(user), body.price);
 
-    let brepo = repositories::bid::Repository::new(state.pool.clone());
+    let mut brepo = repositories::bid::Repository::new(shared_t.clone());
 
-    match brepo.persist_bid(&bid).await {
+    let result = match brepo.persist_bid(&bid).await {
         Ok(_) => Ok(Json::from(json!({"id": bid.get_id()}))),
         Err(e) => match e {
             repositories::bid::RepositoryError::DatabaseError(error) => Err(ApiError::Error),
@@ -37,5 +41,7 @@ pub async fn post_handler(
                 Err(ApiError::UserNotFound)
             }
         },
-    }
+    };
+
+    result
 }
