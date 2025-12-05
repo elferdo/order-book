@@ -28,6 +28,14 @@ impl Repository {
 
         Ok(())
     }
+
+    pub async fn delete_user(&self, user: &User) -> Result<(), RepositoryError> {
+        query!("DELETE FROM public.user where id = $1", user.get_id())
+            .execute(&self.pool)
+            .await?;
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, Error)]
