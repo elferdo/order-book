@@ -31,9 +31,11 @@ pub async fn post_handler(
 
     match brepo.persist_bid(&bid).await {
         Ok(_) => Ok(Json::from(json!({"id": bid.get_id()}))),
-        Err(_) => {
-            debug!("error");
-            Err(ApiError::Error)
-        }
+        Err(e) => match e {
+            repositories::bid::RepositoryError::DatabaseError(error) => Err(ApiError::Error),
+            repositories::bid::RepositoryError::UserError(repository_error) => {
+                Err(ApiError::UserNotFound)
+            }
+        },
     }
 }
