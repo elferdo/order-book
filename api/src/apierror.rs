@@ -9,6 +9,9 @@ pub enum ApiError {
 
     #[error("")]
     Error,
+
+    #[error("")]
+    OperationFailed,
 }
 
 impl From<repositories::user::RepositoryError> for ApiError {
@@ -16,6 +19,7 @@ impl From<repositories::user::RepositoryError> for ApiError {
         match value {
             RepositoryError::DatabaseError(_) => ApiError::Error,
             RepositoryError::UserNotFound => ApiError::UserNotFound,
+            RepositoryError::OperationFailed => ApiError::OperationFailed,
         }
     }
 }
@@ -25,6 +29,7 @@ impl IntoResponse for ApiError {
         let body = match self {
             ApiError::Error => json!("some error in the user repository"),
             ApiError::UserNotFound => json!({"type": "UserNotFound"}),
+            ApiError::OperationFailed => json!({"type": "OperationFailed"}),
         };
 
         Response::new(body.to_string().into())

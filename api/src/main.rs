@@ -4,7 +4,10 @@ mod user;
 
 use anyhow::Result;
 use appconfig::appstate::AppState;
-use axum::{Router, routing::post};
+use axum::{
+    Router,
+    routing::{delete, post},
+};
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
@@ -18,6 +21,7 @@ async fn main() -> Result<()> {
 
     let app = Router::new()
         .route("/user", post(user::post_handler))
+        .route("/user/{id}", delete(user::delete_handler))
         .route("/bid", post(bid::post_handler))
         .with_state(state);
 

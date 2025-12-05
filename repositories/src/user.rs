@@ -30,11 +30,15 @@ impl Repository {
     }
 
     pub async fn delete_user(&self, user: &User) -> Result<(), RepositoryError> {
-        query!("DELETE FROM public.user where id = $1", user.get_id())
+        let result = query!("DELETE FROM public.user where id = $1", user.get_id())
             .execute(&self.pool)
             .await?;
 
-        Ok(())
+        if result.rows_affected() < 1 {
+            Err(RepositoryError::OperationFailed)
+        } else {
+            Ok(())
+        }
     }
 }
 
@@ -45,4 +49,7 @@ pub enum RepositoryError {
 
     #[error("user not found")]
     UserNotFound,
+
+    #[error("operation failed")]
+    OperationFailed,
 }
