@@ -15,9 +15,9 @@ impl Repository {
     }
 
     pub async fn get_bid(&self, id: &Uuid) -> Result<Bid, RepositoryError> {
-        let query = query!("select * from bid where id = $1", id);
-
-        let bid = query.fetch_one(&self.pool).await?;
+        let bid = query!("select * from bid where id = $1", id)
+            .fetch_one(&self.pool)
+            .await?;
 
         let user_repository = super::user::Repository::new(self.pool.clone());
 
@@ -27,16 +27,14 @@ impl Repository {
     }
 
     pub async fn persist_bid(&self, bid: &Bid) -> Result<(), RepositoryError> {
-        let query = query!(
+        query!(
             "INSERT INTO bid VALUES ($1, $2, $3)",
             bid.get_id(),
             bid.get_user().get_id(),
             bid.get_price()
-        );
-
-        // query_builder.push(" ON CONFLICT (d) DO UPDATE SET id = EXCLUDED.id");
-
-        query.execute(&self.pool).await?;
+        )
+        .execute(&self.pool)
+        .await?;
 
         Ok(())
     }
