@@ -6,7 +6,7 @@ use serde_json::{Value, json};
 use tracing::{debug, instrument};
 
 #[instrument(skip(state))]
-pub async fn users_post_handler(State(state): State<AppState>) -> Result<Json<Value>, Json<Value>> {
+pub async fn post_handler(State(state): State<AppState>) -> Result<Json<Value>, Json<Value>> {
     let user = User::new();
 
     let urepo = repositories::user::Repository::new(state.pool);

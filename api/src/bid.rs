@@ -17,7 +17,7 @@ pub struct BidRequest {
 }
 
 #[instrument(skip(state))]
-pub async fn bids_post_handler(
+pub async fn post_handler(
     State(state): State<AppState>,
     Json(body): Json<BidRequest>,
 ) -> Result<Json<Value>, ApiError> {

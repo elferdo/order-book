@@ -2,7 +2,6 @@ mod apierror;
 mod bid;
 mod user;
 
-use crate::{bid::bids_post_handler, user::users_post_handler};
 use anyhow::Result;
 use appconfig::appstate::AppState;
 use axum::{Router, routing::post};
@@ -18,8 +17,8 @@ async fn main() -> Result<()> {
     let state = AppState::new(&config).await?;
 
     let app = Router::new()
-        .route("/user", post(users_post_handler))
-        .route("/bid", post(bids_post_handler))
+        .route("/user", post(user::post_handler))
+        .route("/bid", post(bid::post_handler))
         .with_state(state);
 
     // run our app with hyper, listening globally on port 3000
