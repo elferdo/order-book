@@ -21,13 +21,9 @@ impl Repository {
     }
 
     pub async fn persist_user(&self, user: &User) -> Result<(), RepositoryError> {
-        let mut query_builder = QueryBuilder::new("INSERT INTO user (id) ");
-
-        query_builder.push_bind(user.get_id());
+        let query = query!("INSERT INTO public.user (id) VALUES ($1)", user.get_id());
 
         // query_builder.push(" ON CONFLICT (d) DO UPDATE SET id = EXCLUDED.id");
-
-        let query = query_builder.build();
 
         query.execute(&self.pool).await?;
 
