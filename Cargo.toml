@@ -1,3 +1,3 @@
 [workspace]
 resolver = "3"
-members = ["api","model", "repositories"]
+members = ["api", "appconfig","model", "repositories"]

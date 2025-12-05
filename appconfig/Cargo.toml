@@ -1,0 +1,12 @@
+[package]
+name = "appconfig"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+directories = "6.0.0"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_yaml = "0.9.34"
+sqlx = { version = "0.8.6", features = ["postgres"] }
+thiserror = "2.0.17"
+tracing = "0.1.43"
