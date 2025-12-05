@@ -43,7 +43,7 @@ impl Repository {
 #[derive(Debug, Error)]
 pub enum RepositoryError {
     #[error("repository error")]
-    DbError(#[from] sqlx::Error),
+    DatabaseError(#[from] sqlx::Error),
 
     #[error("user error")]
     UserError(#[from] super::user::RepositoryError),

@@ -18,7 +18,7 @@ impl Repository {
             .await
             .map_err(|_| RepositoryError::UserNotFound)?;
 
-        Ok(User::new_from(user.id))
+        Ok(User::new_as(user.id))
     }
 
     pub async fn persist_user(&self, user: &User) -> Result<(), RepositoryError> {
@@ -33,7 +33,7 @@ impl Repository {
 #[derive(Debug, Error)]
 pub enum RepositoryError {
     #[error("repository error")]
-    Error(#[from] sqlx::Error),
+    DatabaseError(#[from] sqlx::Error),
 
     #[error("user not found")]
     UserNotFound,

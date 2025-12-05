@@ -11,7 +11,7 @@ impl User {
         Self { id }
     }
 
-    pub fn new_from(id: Uuid) -> Self {
+    pub fn new_as(id: Uuid) -> Self {
         Self { id }
     }
 

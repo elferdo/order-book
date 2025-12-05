@@ -14,7 +14,7 @@ pub enum ApiError {
 impl From<repositories::user::RepositoryError> for ApiError {
     fn from(value: repositories::user::RepositoryError) -> Self {
         match value {
-            RepositoryError::Error(_) => ApiError::Error,
+            RepositoryError::DatabaseError(_) => ApiError::Error,
             RepositoryError::UserNotFound => ApiError::UserNotFound,
         }
     }
