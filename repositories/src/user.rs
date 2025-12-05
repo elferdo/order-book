@@ -1,6 +1,5 @@
 use model::user::User;
-use serde::Serialize;
-use sqlx::{Pool, Postgres, QueryBuilder, query};
+use sqlx::{Pool, Postgres, query};
 use thiserror::Error;
 use uuid::Uuid;
 

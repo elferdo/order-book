@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use model::bid::Bid;
-use sqlx::{Pool, Postgres, QueryBuilder, query};
+use sqlx::{Pool, Postgres, query};
 use thiserror::Error;
 use uuid::Uuid;
 
