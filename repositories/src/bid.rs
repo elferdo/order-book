@@ -1,6 +1,7 @@
+use std::sync::Arc;
+
 use model::bid::Bid;
 use sqlx::{Pool, Postgres, QueryBuilder, query};
-use std::rc::Rc;
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -9,6 +10,10 @@ pub struct Repository {
 }
 
 impl Repository {
+    pub fn new(pool: Pool<Postgres>) -> Self {
+        Self { pool }
+    }
+
     pub async fn get_bid(&self, id: &Uuid) -> Result<Bid, RepositoryError> {
         let query = query!("select * from bid where id = $1", id);
 
@@ -18,17 +23,18 @@ impl Repository {
 
         let user = user_repository.get_user(&bid.user).await?;
 
-        Ok(Bid::new(Rc::new(user), bid.price))
+        Ok(Bid::new(Arc::new(user), bid.price))
     }
 
-    pub async fn persist_user(&self, user: &Bid) -> Result<(), RepositoryError> {
-        let mut query_builder = QueryBuilder::new("INSERT INTO user (id) ");
-
-        query_builder.push_bind(user.get_id());
+    pub async fn persist_bid(&self, bid: &Bid) -> Result<(), RepositoryError> {
+        let query = query!(
+            "INSERT INTO bid VALUES ($1, $2, $3)",
+            bid.get_id(),
+            bid.get_user().get_id(),
+            bid.get_price()
+        );
 
         // query_builder.push(" ON CONFLICT (d) DO UPDATE SET id = EXCLUDED.id");
-
-        let query = query_builder.build();
 
         query.execute(&self.pool).await?;
 

@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use uuid::Uuid;
 
@@ -6,12 +6,12 @@ use crate::user::User;
 
 pub struct Bid {
     id: Uuid,
-    user: Rc<User>,
+    user: Arc<User>,
     price: f32,
 }
 
 impl Bid {
-    pub fn new(user: Rc<User>, price: f32) -> Self {
+    pub fn new(user: Arc<User>, price: f32) -> Self {
         let id = Uuid::new_v4();
 
         Self { id, user, price }

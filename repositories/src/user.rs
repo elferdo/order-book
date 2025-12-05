@@ -1,4 +1,5 @@
 use model::user::User;
+use serde::Serialize;
 use sqlx::{Pool, Postgres, QueryBuilder, query};
 use thiserror::Error;
 use uuid::Uuid;
@@ -15,7 +16,10 @@ impl Repository {
     pub async fn get_user(&self, id: &Uuid) -> Result<User, RepositoryError> {
         let query = query!("select * from public.user where id = $1", id);
 
-        let user = query.fetch_one(&self.pool).await?;
+        let user = query
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|_| RepositoryError::UserNotFound)?;
 
         Ok(User::new_from(user.id))
     }
@@ -35,4 +39,7 @@ impl Repository {
 pub enum RepositoryError {
     #[error("repository error")]
     Error(#[from] sqlx::Error),
+
+    #[error("user not found")]
+    UserNotFound,
 }
