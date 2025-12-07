@@ -7,7 +7,6 @@ use axum::{
     extract::{Path, State},
 };
 use model::user::User;
-use repositories::{bid, user};
 use serde_json::{Value, json};
 use tracing::{debug, instrument};
 use uuid::Uuid;

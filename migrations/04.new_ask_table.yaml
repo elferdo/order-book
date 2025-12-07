@@ -1,0 +1,16 @@
+operations:
+  - create_table:
+      name: ask
+      columns:
+        - name: id
+          type: uuid
+          pk: true
+        - name: user
+          type: uuid
+          references:
+            name: fk_user_id
+            table: user
+            column: id
+        - name: price
+          type: real
+          nullable: false
