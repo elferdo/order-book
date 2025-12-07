@@ -3,7 +3,10 @@ use std::sync::Arc;
 use crate::apierror::ApiError;
 use anyhow::Result;
 use appconfig::appstate::AppState;
-use axum::{Json, extract::State};
+use axum::{
+    Json,
+    extract::{Path, State},
+};
 use model::bid::Bid;
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -12,30 +15,26 @@ use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
 pub struct BidRequest {
-    pub user_id: Uuid,
     pub price: f32,
 }
 
 #[instrument(skip(state))]
 pub async fn post_handler(
     State(state): State<AppState>,
+    Path(user_id): Path<Uuid>,
     Json(body): Json<BidRequest>,
 ) -> Result<Json<Value>, ApiError> {
     let t = state.pool.begin().await.map_err(|_| ApiError::Error)?;
 
     let shared_t = Arc::new(t);
 
-    let bid = Bid::new(body.user_id, body.price);
+    let bid = Bid::new(user_id, body.price);
 
-    let result = match repositories::bid::persist_bid(shared_t.clone(), &bid).await {
+    match repositories::bid::persist_bid(shared_t.clone(), &bid).await {
         Ok(_) => Ok(Json::from(json!({"id": bid.get_id()}))),
         Err(e) => match e {
-            repositories::bid::RepositoryError::DatabaseError(error) => Err(ApiError::Error),
-            repositories::bid::RepositoryError::UserError(repository_error) => {
-                Err(ApiError::UserNotFound)
-            }
+            repositories::bid::RepositoryError::DatabaseError(_) => Err(ApiError::Error),
+            repositories::bid::RepositoryError::UserError(_) => Err(ApiError::UserNotFound),
         },
-    };
-
-    result
+    }
 }

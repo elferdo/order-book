@@ -22,7 +22,7 @@ async fn main() -> Result<()> {
     let app = Router::new()
         .route("/user", post(user::post_handler))
         .route("/user/{id}", delete(user::delete_handler))
-        .route("/bid", post(bid::post_handler))
+        .route("/user/{id}/bid", post(bid::post_handler))
         .with_state(state);
 
     // run our app with hyper, listening globally on port 3000
