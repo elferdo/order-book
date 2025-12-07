@@ -12,11 +12,7 @@ pub async fn get_bid<'a>(
         .fetch_one(&mut **Arc::get_mut(&mut transaction).unwrap())
         .await?;
 
-    // let mut user_repository = super::user::Repository::new(self.transaction.clone());
-
-    let user = super::user::get_user(transaction.clone(), &bid.user).await?;
-
-    Ok(Bid::new(Arc::new(user), bid.price))
+    Ok(Bid::new(bid.user, bid.price))
 }
 
 pub async fn persist_bid<'a>(
@@ -26,7 +22,7 @@ pub async fn persist_bid<'a>(
     query!(
         "INSERT INTO bid VALUES ($1, $2, $3)",
         bid.get_id(),
-        bid.get_user().get_id(),
+        bid.get_user_id(),
         bid.get_price()
     )
     .execute(&mut **Arc::get_mut(&mut transaction).unwrap())

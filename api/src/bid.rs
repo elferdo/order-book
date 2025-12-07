@@ -7,12 +7,12 @@ use axum::{Json, extract::State};
 use model::bid::Bid;
 use serde::Deserialize;
 use serde_json::{Value, json};
-use tracing::{debug, instrument};
+use tracing::instrument;
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
 pub struct BidRequest {
-    pub user: Uuid,
+    pub user_id: Uuid,
     pub price: f32,
 }
 
@@ -25,13 +25,7 @@ pub async fn post_handler(
 
     let shared_t = Arc::new(t);
 
-    // let mut urepo = repositories::user::Repository::new(shared_t.clone());
-
-    let user = repositories::user::get_user(shared_t.clone(), &body.user).await?;
-
-    let bid = Bid::new(Arc::new(user), body.price);
-
-    // let mut brepo = repositories::bid::Repository::new(shared_t.clone());
+    let bid = Bid::new(body.user_id, body.price);
 
     let result = match repositories::bid::persist_bid(shared_t.clone(), &bid).await {
         Ok(_) => Ok(Json::from(json!({"id": bid.get_id()}))),
