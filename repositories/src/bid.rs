@@ -1,22 +1,21 @@
 use model::bid::Bid;
 use sqlx::{Postgres, Transaction, query};
-use std::sync::Arc;
 use thiserror::Error;
 use uuid::Uuid;
 
 pub async fn get_bid<'a>(
-    mut transaction: Arc<Transaction<'a, Postgres>>,
+    transaction: &mut Transaction<'a, Postgres>,
     id: &Uuid,
 ) -> Result<Bid, RepositoryError> {
     let bid = query!("select * from bid where id = $1", id)
-        .fetch_one(&mut **Arc::get_mut(&mut transaction).unwrap())
+        .fetch_one(&mut **transaction)
         .await?;
 
     Ok(Bid::new(bid.user, bid.price))
 }
 
 pub async fn persist_bid<'a>(
-    mut transaction: Arc<Transaction<'a, Postgres>>,
+    transaction: &mut Transaction<'a, Postgres>,
     bid: &Bid,
 ) -> Result<(), RepositoryError> {
     query!(
@@ -25,7 +24,7 @@ pub async fn persist_bid<'a>(
         bid.get_user_id(),
         bid.get_price()
     )
-    .execute(&mut **Arc::get_mut(&mut transaction).unwrap())
+    .execute(&mut **transaction)
     .await?;
 
     Ok(())

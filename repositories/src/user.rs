@@ -1,16 +1,14 @@
-use std::sync::Arc;
-
 use model::user::User;
 use sqlx::{Postgres, Transaction, query};
 use thiserror::Error;
 use uuid::Uuid;
 
 pub async fn get_user<'a>(
-    mut transaction: Arc<Transaction<'a, Postgres>>,
+    transaction: &mut Transaction<'a, Postgres>,
     id: &Uuid,
 ) -> Result<User, RepositoryError> {
     let user = query!("select * from public.user where id = $1", id)
-        .fetch_one(&mut **Arc::get_mut(&mut transaction).unwrap())
+        .fetch_one(&mut **transaction)
         .await
         .map_err(|_| RepositoryError::UserNotFound)?;
 
@@ -18,22 +16,22 @@ pub async fn get_user<'a>(
 }
 
 pub async fn persist_user<'a>(
-    mut transaction: Arc<Transaction<'a, Postgres>>,
+    transaction: &mut Transaction<'a, Postgres>,
     user: &User,
 ) -> Result<(), RepositoryError> {
     query!("INSERT INTO public.user (id) VALUES ($1)", user.get_id())
-        .execute(&mut **Arc::get_mut(&mut transaction).unwrap())
+        .execute(&mut **transaction)
         .await?;
 
     Ok(())
 }
 
 pub async fn delete_user<'a>(
-    mut transaction: Arc<Transaction<'a, Postgres>>,
+    transaction: &mut Transaction<'a, Postgres>,
     user: &User,
 ) -> Result<(), RepositoryError> {
     let result = query!("DELETE FROM public.user where id = $1", user.get_id())
-        .execute(&mut **Arc::get_mut(&mut transaction).unwrap())
+        .execute(&mut **transaction)
         .await?;
 
     if result.rows_affected() < 1 {

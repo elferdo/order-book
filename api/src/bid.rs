@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use crate::apierror::ApiError;
 use anyhow::Result;
 use appconfig::appstate::AppState;
@@ -24,13 +22,11 @@ pub async fn post_handler(
     Path(user_id): Path<Uuid>,
     Json(body): Json<BidRequest>,
 ) -> Result<Json<Value>, ApiError> {
-    let t = state.pool.begin().await.map_err(|_| ApiError::Error)?;
-
-    let shared_t = Arc::new(t);
+    let mut t = state.pool.begin().await.map_err(|_| ApiError::Error)?;
 
     let bid = Bid::new(user_id, body.price);
 
-    match repositories::bid::persist_bid(shared_t.clone(), &bid).await {
+    match repositories::bid::persist_bid(&mut t, &bid).await {
         Ok(_) => Ok(Json::from(json!({"id": bid.get_id()}))),
         Err(e) => match e {
             repositories::bid::RepositoryError::DatabaseError(_) => Err(ApiError::Error),
