@@ -8,6 +8,7 @@ use axum::{
 use model::ask::Ask;
 use serde::Deserialize;
 use serde_json::{Value, json};
+use sqlx::Acquire;
 use tracing::instrument;
 use uuid::Uuid;
 
@@ -23,10 +24,11 @@ pub async fn post_handler(
     Json(body): Json<AskRequest>,
 ) -> Result<Json<Value>, ApiError> {
     let mut t = state.pool.begin().await.map_err(|_| ApiError::Error)?;
+    let a = t.acquire().await.unwrap();
 
     let ask = Ask::new(user_id, body.price);
 
-    match repositories::ask::persist_ask(&mut t, &ask).await {
+    match repositories::ask::persist_ask(&mut *a, &ask).await {
         Ok(_) => Ok(Json::from(json!({"id": ask.get_id()}))),
         Err(e) => match e {
             repositories::ask::RepositoryError::DatabaseError(_) => Err(ApiError::Error),

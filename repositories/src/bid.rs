@@ -1,5 +1,5 @@
 use model::bid::Bid;
-use sqlx::{Postgres, Transaction, query};
+use sqlx::{Database, Postgres, Transaction, query};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -14,8 +14,8 @@ pub async fn get_bid<'a>(
     Ok(Bid::new(bid.user, bid.price))
 }
 
-pub async fn persist_bid<'a>(
-    transaction: &mut Transaction<'a, Postgres>,
+pub async fn persist_bid(
+    conn: &mut <Postgres as Database>::Connection,
     bid: &Bid,
 ) -> Result<(), RepositoryError> {
     query!(
@@ -24,7 +24,7 @@ pub async fn persist_bid<'a>(
         bid.get_user_id(),
         bid.get_price()
     )
-    .execute(&mut **transaction)
+    .execute(&mut *conn)
     .await?;
 
     Ok(())
