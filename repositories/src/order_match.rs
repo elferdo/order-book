@@ -1,15 +1,15 @@
 use model::order_match::Match;
-use sqlx::{Database, Postgres, Transaction, query};
+use sqlx::{Database, Postgres, query};
 use thiserror::Error;
 use uuid::Uuid;
 
-pub async fn get_order_match<'a>(
-    transaction: &mut Transaction<'a, Postgres>,
+pub async fn get_order_match(
+    conn: &mut <Postgres as Database>::Connection,
     ask: &Uuid,
     bid: &Uuid,
 ) -> Result<Match, RepositoryError> {
     let order_match = query!("select * from match where ask = $1 and bid = $2", ask, bid)
-        .fetch_one(&mut **transaction)
+        .fetch_one(&mut *conn)
         .await?;
 
     Ok(Match::new(order_match.ask, order_match.bid))

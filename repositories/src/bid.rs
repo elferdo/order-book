@@ -1,14 +1,14 @@
 use model::bid::Bid;
-use sqlx::{Database, Postgres, Transaction, query};
+use sqlx::{Database, Postgres, query};
 use thiserror::Error;
 use uuid::Uuid;
 
-pub async fn get_bid<'a>(
-    transaction: &mut Transaction<'a, Postgres>,
+pub async fn get_bid(
+    conn: &mut <Postgres as Database>::Connection,
     id: &Uuid,
 ) -> Result<Bid, RepositoryError> {
     let bid = query!("select * from bid where id = $1", id)
-        .fetch_one(&mut **transaction)
+        .fetch_one(&mut *conn)
         .await?;
 
     Ok(Bid::new(bid.user, bid.price))
