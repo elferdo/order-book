@@ -1,27 +1,22 @@
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::{
-    ask::Ask, bid::Bid, lock_mode::LockMode, order::Order, order_match::Match, user::User,
-};
+use crate::{lock_mode::LockMode, order::Order, order_match::Match, user::User};
 
-pub trait AskRepository {
+pub trait OrderRepository {
     fn find_asks_below(
         &mut self,
         lock_mode: LockMode,
         price: f32,
     ) -> impl Future<Output = Result<Vec<Order>, OrderRepositoryError>>;
 
-    fn find_ask(&mut self, id: &Uuid) -> impl Future<Output = Result<Order, OrderRepositoryError>>;
-}
-
-pub trait BidRepository {
     fn find_bids_above(
         &mut self,
         lock_mode: LockMode,
         price: f32,
     ) -> impl Future<Output = Result<Vec<Order>, OrderRepositoryError>>;
 
+    fn find_ask(&mut self, id: &Uuid) -> impl Future<Output = Result<Order, OrderRepositoryError>>;
     fn find_bid(&mut self, id: &Uuid) -> impl Future<Output = Result<Order, OrderRepositoryError>>;
 }
 

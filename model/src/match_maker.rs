@@ -4,13 +4,13 @@ use crate::{
     lock_mode::LockMode,
     order::Order,
     order_match::Match,
-    repository::{AskRepository, BidRepository, OrderMatchRepository, OrderRepositoryError},
+    repository::{OrderMatchRepository, OrderRepository, OrderRepositoryError},
 };
 
 #[instrument(skip(repository))]
 pub async fn find_matches_for_order<R>(repository: &mut R, order: &Order)
 where
-    R: AskRepository + BidRepository + OrderMatchRepository,
+    R: OrderRepository + OrderMatchRepository,
 {
     if let Ok(orders) = find_orders(repository, order).await {
         let matches: Vec<_> = orders
@@ -31,7 +31,7 @@ async fn find_orders<R>(
     order: &Order,
 ) -> Result<Vec<Order>, OrderRepositoryError>
 where
-    R: AskRepository + BidRepository + OrderMatchRepository,
+    R: OrderRepository + OrderMatchRepository,
 {
     match order {
         Order::Ask { .. } => {
