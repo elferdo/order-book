@@ -5,8 +5,9 @@ use axum::{
     Json,
     extract::{Path, State},
 };
-use model::repository::AskRepository;
-use model::{ask::Ask, repository::AskRepositoryError};
+use model::repository::AskRepositoryError;
+use model::repository::UserRepository;
+use model::{lock_mode::LockMode, repository::AskRepository};
 use repositories::Repository;
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -24,14 +25,20 @@ pub async fn post_handler(
     Path(user_id): Path<Uuid>,
     Json(body): Json<AskRequest>,
 ) -> Result<Json<Value>, ApiError> {
-    let mut a = state.pool.acquire().await.unwrap();
+    let mut t = state.pool.begin().await.unwrap();
 
-    let mut repo = Repository::new(&mut *a).await;
+    let mut repo = Repository::new(&mut t).await;
 
-    let ask = Ask::new(user_id, body.price);
+    let user = repo.find_user(LockMode::KeyShared, &user_id).await.unwrap();
+
+    let ask = user.ask(body.price);
 
     match repo.persist_ask(&ask).await {
-        Ok(_) => Ok(Json::from(json!({"id": ask.get_id()}))),
+        Ok(_) => {
+            t.commit().await.unwrap();
+
+            Ok(Json::from(json!({"id": ask.get_id()})))
+        }
         Err(e) => match e {
             AskRepositoryError::DatabaseError => Err(ApiError::Error),
             AskRepositoryError::UserError => Err(ApiError::UserNotFound),

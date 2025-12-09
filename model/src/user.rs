@@ -1,6 +1,6 @@
 use uuid::Uuid;
 
-use crate::bid::Bid;
+use crate::{ask::Ask, bid::Bid};
 
 pub struct User {
     id: Uuid,
@@ -19,6 +19,10 @@ impl User {
 
     pub fn get_id(&self) -> &Uuid {
         &self.id
+    }
+
+    pub fn ask(&self, price: f32) -> Ask {
+        Ask::new(self.id, price)
     }
 
     pub fn bid(&self, price: f32) -> Bid {
