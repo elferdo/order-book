@@ -3,31 +3,35 @@ use sqlx::{Database, Postgres, query};
 use thiserror::Error;
 use uuid::Uuid;
 
-pub async fn get_order_match(
-    conn: &mut <Postgres as Database>::Connection,
-    ask: &Uuid,
-    bid: &Uuid,
-) -> Result<Match, RepositoryError> {
-    let order_match = query!("select * from match where ask = $1 and bid = $2", ask, bid)
-        .fetch_one(&mut *conn)
+pub struct OrderMatchRepository {}
+
+impl OrderMatchRepository {
+    pub async fn get_order_match(
+        conn: &mut <Postgres as Database>::Connection,
+        ask: &Uuid,
+        bid: &Uuid,
+    ) -> Result<Match, RepositoryError> {
+        let order_match = query!("select * from match where ask = $1 and bid = $2", ask, bid)
+            .fetch_one(&mut *conn)
+            .await?;
+
+        Ok(Match::new(order_match.ask, order_match.bid))
+    }
+
+    pub async fn persist_order_match(
+        conn: &mut <Postgres as Database>::Connection,
+        order_match: &Match,
+    ) -> Result<(), RepositoryError> {
+        query!(
+            "INSERT INTO match VALUES ($1, $2)",
+            order_match.get_ask(),
+            order_match.get_bid(),
+        )
+        .execute(&mut *conn)
         .await?;
 
-    Ok(Match::new(order_match.ask, order_match.bid))
-}
-
-pub async fn persist_order_match(
-    conn: &mut <Postgres as Database>::Connection,
-    order_match: &Match,
-) -> Result<(), RepositoryError> {
-    query!(
-        "INSERT INTO match VALUES ($1, $2)",
-        order_match.get_ask(),
-        order_match.get_bid(),
-    )
-    .execute(&mut *conn)
-    .await?;
-
-    Ok(())
+        Ok(())
+    }
 }
 
 #[derive(Debug, Error)]

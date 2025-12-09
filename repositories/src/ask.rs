@@ -3,31 +3,35 @@ use sqlx::{Database, Postgres, query};
 use thiserror::Error;
 use uuid::Uuid;
 
-pub async fn get_ask(
-    conn: &mut <Postgres as Database>::Connection,
-    id: &Uuid,
-) -> Result<Ask, RepositoryError> {
-    let ask = query!("select * from ask where id = $1", id)
-        .fetch_one(&mut *conn)
+pub struct AskRepository {}
+
+impl AskRepository {
+    pub async fn get_ask(
+        conn: &mut <Postgres as Database>::Connection,
+        id: &Uuid,
+    ) -> Result<Ask, RepositoryError> {
+        let ask = query!("select * from ask where id = $1", id)
+            .fetch_one(&mut *conn)
+            .await?;
+
+        Ok(Ask::new(ask.user, ask.price))
+    }
+
+    pub async fn persist_ask(
+        conn: &mut <Postgres as Database>::Connection,
+        ask: &Ask,
+    ) -> Result<(), RepositoryError> {
+        query!(
+            "INSERT INTO ask VALUES ($1, $2, $3)",
+            ask.get_id(),
+            ask.get_user_id(),
+            ask.get_price()
+        )
+        .execute(&mut *conn)
         .await?;
 
-    Ok(Ask::new(ask.user, ask.price))
-}
-
-pub async fn persist_ask(
-    conn: &mut <Postgres as Database>::Connection,
-    ask: &Ask,
-) -> Result<(), RepositoryError> {
-    query!(
-        "INSERT INTO ask VALUES ($1, $2, $3)",
-        ask.get_id(),
-        ask.get_user_id(),
-        ask.get_price()
-    )
-    .execute(&mut *conn)
-    .await?;
-
-    Ok(())
+        Ok(())
+    }
 }
 
 #[derive(Debug, Error)]

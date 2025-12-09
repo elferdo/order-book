@@ -5,6 +5,7 @@ use axum::{
     extract::{Path, State},
 };
 use model::user::User;
+use repositories::UserRepository;
 use serde_json::{Value, json};
 use tracing::{debug, instrument};
 use uuid::Uuid;
@@ -17,7 +18,7 @@ pub async fn post_handler(State(state): State<AppState>) -> Result<Json<Value>, 
 
     let user = User::new();
 
-    match repositories::user::persist_user(&mut a, &user).await {
+    match UserRepository::persist_user(&mut a, &user).await {
         Ok(_) => Ok(Json::from(json!({"id": user.get_id()}))),
         Err(_) => {
             debug!("error");
@@ -34,9 +35,9 @@ pub async fn delete_handler(
 ) -> Result<Json<Value>, ApiError> {
     let mut a = state.pool.acquire().await.unwrap();
 
-    let user = repositories::user::get_user(&mut a, &id).await?;
+    let user = UserRepository::get_user(&mut a, &id).await?;
 
-    match repositories::user::delete_user(&mut a, &user).await {
+    match UserRepository::delete_user(&mut a, &user).await {
         Ok(_) => Ok(Json::from(json!("delete ok"))),
         Err(_) => {
             debug!("error");
