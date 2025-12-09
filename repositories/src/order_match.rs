@@ -2,12 +2,34 @@ use model::{
     order_match::Match,
     repository::{OrderMatchRepository, OrderMatchRepositoryError},
 };
-use sqlx::query;
+use sqlx::{QueryBuilder, query};
 use uuid::Uuid;
 
 use crate::Repository;
 
 impl<'c> OrderMatchRepository for Repository<'c> {
+    async fn persist_order_matches<I>(
+        &mut self,
+        iterator: I,
+    ) -> Result<(), OrderMatchRepositoryError>
+    where
+        I: IntoIterator<Item = Match>,
+    {
+        let mut qb = QueryBuilder::new("INSERT INTO match ");
+
+        qb.push_values(iterator, |mut b, m| {
+            b.push_bind(*m.get_ask()).push_bind(*m.get_bid());
+        });
+
+        let _ = qb
+            .build()
+            .execute(&mut *self.conn)
+            .await
+            .map_err(|_| OrderMatchRepositoryError::DatabaseError);
+
+        Ok(())
+    }
+
     async fn get_order_match(
         &mut self,
         ask: &Uuid,

@@ -52,6 +52,13 @@ pub trait OrderMatchRepository {
         &mut self,
         order_match: &Match,
     ) -> impl Future<Output = Result<(), OrderMatchRepositoryError>>;
+
+    fn persist_order_matches<I>(
+        &mut self,
+        iterator: I,
+    ) -> impl Future<Output = Result<(), OrderMatchRepositoryError>>
+    where
+        I: IntoIterator<Item = Match>;
 }
 
 #[derive(Debug, Error)]

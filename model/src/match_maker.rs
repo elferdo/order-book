@@ -4,15 +4,26 @@ use crate::{
     ask::Ask,
     bid::Bid,
     lock_mode::LockMode,
-    repository::{AskRepository, BidRepository},
+    order_match::Match,
+    repository::{AskRepository, BidRepository, OrderMatchRepository},
 };
 
-#[instrument(skip(ask_repository))]
-pub async fn find_matches_for_bid(ask_repository: &mut impl AskRepository, bid: &Bid) {
-    if let Ok(_asks) = ask_repository
+#[instrument(skip(repository))]
+pub async fn find_matches_for_bid<R>(repository: &mut R, bid: &Bid)
+where
+    R: AskRepository + OrderMatchRepository,
+{
+    if let Ok(_asks) = repository
         .find_asks_below(LockMode::KeyShare, bid.get_price())
         .await
     {
+        let matches: Vec<_> = _asks
+            .into_iter()
+            .map(|a| Match::new(*a.get_id(), *bid.get_id()))
+            .collect();
+
+        repository.persist_order_matches(matches).await.unwrap();
+
         info!("processing matching asks for bid");
     } else {
         debug!("no matching asks for bid");
