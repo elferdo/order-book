@@ -38,6 +38,8 @@ pub async fn post_handler(
             repositories::bid::RepositoryError::UserError(_) => Err(ApiError::UserNotFound),
         }
     } else {
+        t.commit().await.unwrap();
+
         Ok(Json::from(json!({"id": bid.get_id()})))
     }
 }

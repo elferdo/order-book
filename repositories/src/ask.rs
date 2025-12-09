@@ -40,12 +40,17 @@ impl<'c> AskRepository<'c> {
 
 impl<'c> match_maker::AskRepository for AskRepository<'c> {
     async fn find_asks_below(&mut self, price: f32) -> Result<Vec<Ask>, AskRepositoryError> {
-        let _asks = query!("select * from ask where price <= $1", price)
+        let ask_rows = query!("select * from ask where price <= $1", price)
             .fetch_all(&mut *self.conn)
             .await
             .map_err(|_| AskRepositoryError::DatabaseError)?;
 
-        todo!()
+        let asks: Vec<_> = ask_rows
+            .into_iter()
+            .map(|r| Ask::with(r.id, r.user, r.price))
+            .collect();
+
+        Ok(asks)
     }
 }
 

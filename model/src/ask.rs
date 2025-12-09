@@ -13,6 +13,10 @@ impl Ask {
         Self { id, user_id, price }
     }
 
+    pub fn with(id: Uuid, user_id: Uuid, price: f32) -> Self {
+        Self { id, user_id, price }
+    }
+
     pub fn get_id(&self) -> &Uuid {
         &self.id
     }
