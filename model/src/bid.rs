@@ -1,5 +1,6 @@
 use uuid::Uuid;
 
+#[derive(Debug)]
 pub struct Bid {
     id: Uuid,
     user_id: Uuid,
