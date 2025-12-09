@@ -1,17 +1,18 @@
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::{ask::Ask, bid::Bid, lock_mode::LockMode, order_match::Match, user::User};
+use crate::{
+    ask::Ask, bid::Bid, lock_mode::LockMode, order::Order, order_match::Match, user::User,
+};
 
 pub trait AskRepository {
     fn find_asks_below(
         &mut self,
         lock_mode: LockMode,
         price: f32,
-    ) -> impl Future<Output = Result<Vec<Ask>, AskRepositoryError>>;
+    ) -> impl Future<Output = Result<Vec<Order>, OrderRepositoryError>>;
 
-    fn find_ask(&mut self, id: &Uuid) -> impl Future<Output = Result<Ask, AskRepositoryError>>;
-    fn persist_ask(&mut self, ask: &Ask) -> impl Future<Output = Result<(), AskRepositoryError>>;
+    fn find_ask(&mut self, id: &Uuid) -> impl Future<Output = Result<Order, OrderRepositoryError>>;
 }
 
 pub trait BidRepository {
@@ -19,10 +20,9 @@ pub trait BidRepository {
         &mut self,
         lock_mode: LockMode,
         price: f32,
-    ) -> impl Future<Output = Result<Vec<Bid>, BidRepositoryError>>;
+    ) -> impl Future<Output = Result<Vec<Order>, OrderRepositoryError>>;
 
-    fn find_bid(&mut self, id: &Uuid) -> impl Future<Output = Result<Bid, BidRepositoryError>>;
-    fn persist_bid(&mut self, bid: &Bid) -> impl Future<Output = Result<(), BidRepositoryError>>;
+    fn find_bid(&mut self, id: &Uuid) -> impl Future<Output = Result<Order, OrderRepositoryError>>;
 }
 
 pub trait UserRepository {
@@ -62,16 +62,7 @@ pub trait OrderMatchRepository {
 }
 
 #[derive(Debug, Error)]
-pub enum AskRepositoryError {
-    #[error("repository error")]
-    DatabaseError,
-
-    #[error("user error")]
-    UserError,
-}
-
-#[derive(Debug, Error)]
-pub enum BidRepositoryError {
+pub enum OrderRepositoryError {
     #[error("repository error")]
     DatabaseError,
 

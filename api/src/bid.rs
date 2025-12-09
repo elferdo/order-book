@@ -5,11 +5,9 @@ use axum::{
     Json, debug_handler,
     extract::{Path, State},
 };
-use model::lock_mode::LockMode;
-use model::match_maker::find_matches_for_bid;
-use model::repository::BidRepository;
-use model::repository::BidRepositoryError;
+use model::match_maker::find_matches_for_order;
 use model::repository::UserRepository;
+use model::{lock_mode::LockMode, repository::OrderRepositoryError};
 use repositories::Repository;
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -36,17 +34,17 @@ pub async fn post_handler(
 
     let bid = user.bid(body.price);
 
-    find_matches_for_bid(&mut repo, &bid).await;
+    find_matches_for_order(&mut repo, &bid).await;
 
-    match repo.persist_bid(&bid).await {
+    match repo.persist_order(&bid).await {
         Ok(_) => {
             t.commit().await.unwrap();
 
             Ok(Json::from(json!({"id": bid.get_id()})))
         }
         Err(e) => match e {
-            BidRepositoryError::DatabaseError => Err(ApiError::Error),
-            BidRepositoryError::UserError => Err(ApiError::UserNotFound),
+            OrderRepositoryError::DatabaseError => Err(ApiError::Error),
+            OrderRepositoryError::UserError => Err(ApiError::UserNotFound),
         },
     }
 }

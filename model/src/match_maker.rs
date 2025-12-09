@@ -1,25 +1,21 @@
 use tracing::{debug, info, instrument};
 
 use crate::{
-    ask::Ask,
-    bid::Bid,
     lock_mode::LockMode,
+    order::Order,
     order_match::Match,
-    repository::{AskRepository, BidRepository, OrderMatchRepository},
+    repository::{AskRepository, BidRepository, OrderMatchRepository, OrderRepositoryError},
 };
 
 #[instrument(skip(repository))]
-pub async fn find_matches_for_bid<R>(repository: &mut R, bid: &Bid)
+pub async fn find_matches_for_order<R>(repository: &mut R, order: &Order)
 where
-    R: AskRepository + OrderMatchRepository,
+    R: AskRepository + BidRepository + OrderMatchRepository,
 {
-    if let Ok(asks) = repository
-        .find_asks_below(LockMode::KeyShare, bid.get_price())
-        .await
-    {
-        let matches: Vec<_> = asks
+    if let Ok(orders) = find_orders(repository, order).await {
+        let matches: Vec<_> = orders
             .into_iter()
-            .map(|a| Match::new(*a.get_id(), *bid.get_id()))
+            .map(|a| Match::new(*a.get_id(), *order.get_id()))
             .collect();
 
         repository.persist_order_matches(matches).await.unwrap();
@@ -30,24 +26,23 @@ where
     }
 }
 
-#[instrument(skip(repository))]
-pub async fn find_matches_for_ask<R>(repository: &mut R, ask: &Ask)
+async fn find_orders<R>(
+    repository: &mut R,
+    order: &Order,
+) -> Result<Vec<Order>, OrderRepositoryError>
 where
-    R: BidRepository + OrderMatchRepository,
+    R: AskRepository + BidRepository + OrderMatchRepository,
 {
-    if let Ok(bids) = repository
-        .find_bids_above(LockMode::KeyShare, ask.get_price())
-        .await
-    {
-        let matches: Vec<_> = bids
-            .into_iter()
-            .map(|a| Match::new(*a.get_id(), *ask.get_id()))
-            .collect();
-
-        repository.persist_order_matches(matches).await.unwrap();
-
-        info!("processing matching bids for ask");
-    } else {
-        debug!("no matching bids for ask");
+    match order {
+        Order::Ask { .. } => {
+            repository
+                .find_asks_below(LockMode::KeyShare, order.get_price())
+                .await
+        }
+        Order::Bid { .. } => {
+            repository
+                .find_bids_above(LockMode::KeyShare, order.get_price())
+                .await
+        }
     }
 }
