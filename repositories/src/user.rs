@@ -14,18 +14,17 @@ impl<'c> UserRepository for Repository<'c> {
         lock_mode: LockMode,
         id: &Uuid,
     ) -> Result<User, UserRepositoryError> {
-        let mut qb = QueryBuilder::new("SELECT");
+        let mut qb = QueryBuilder::new("SELECT * FROM public.user WHERE id = ");
+        qb.push_bind(id);
 
         match lock_mode {
             LockMode::None => {}
             LockMode::KeyShared => {
-                qb.push("FOR KEY SHARED");
+                qb.push(" FOR KEY SHARE;");
             }
         };
 
         let user = qb
-            .push("FROM public.user WHERE id = ")
-            .push_bind(id)
             .build()
             .fetch_one(&mut *self.conn)
             .await
