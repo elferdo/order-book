@@ -5,7 +5,7 @@ use axum::{
     Json,
     extract::{Path, State},
 };
-use model::repository::{OrderRepositoryError, UserRepository};
+use model::repository::UserRepository;
 use model::{lock_mode::LockMode, match_maker::find_matches_for_order};
 use repositories::Repository;
 use serde::Deserialize;
@@ -32,17 +32,11 @@ pub async fn post_handler(
 
     let ask = user.ask(body.price);
 
+    repo.persist_order(&ask).await.unwrap();
+
     find_matches_for_order(&mut repo, &ask).await;
 
-    match repo.persist_order(&ask).await {
-        Ok(_) => {
-            t.commit().await.unwrap();
+    t.commit().await.unwrap();
 
-            Ok(Json::from(json!({"id": ask.get_id()})))
-        }
-        Err(e) => match e {
-            OrderRepositoryError::DatabaseError => Err(ApiError::Error),
-            OrderRepositoryError::UserError => Err(ApiError::UserNotFound),
-        },
-    }
+    Ok(Json::from(json!({"id": ask.get_id()})))
 }

@@ -14,7 +14,7 @@ impl<'c> OrderRepository for Repository<'c> {
         lock_mode: LockMode,
         price: f32,
     ) -> Result<Vec<Order>, OrderRepositoryError> {
-        let mut qb = QueryBuilder::new("SELECT * FROM ask WHERE price <= $1");
+        let mut qb = QueryBuilder::new("SELECT * FROM ask WHERE price <= ");
         qb.push_bind(price);
 
         match lock_mode {
@@ -52,7 +52,7 @@ impl<'c> OrderRepository for Repository<'c> {
         lock_mode: LockMode,
         price: f32,
     ) -> Result<Vec<Order>, OrderRepositoryError> {
-        let mut qb = QueryBuilder::new("SELECT * FROM bid WHERE price <= $1");
+        let mut qb = QueryBuilder::new("SELECT * FROM bid WHERE price <= ");
         qb.push_bind(price);
 
         match lock_mode {

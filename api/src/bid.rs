@@ -2,12 +2,12 @@ use crate::apierror::ApiError;
 use anyhow::Result;
 use appconfig::appstate::AppState;
 use axum::{
-    Json, debug_handler,
+    Json,
     extract::{Path, State},
 };
+use model::lock_mode::LockMode;
 use model::match_maker::find_matches_for_order;
 use model::repository::UserRepository;
-use model::{lock_mode::LockMode, repository::OrderRepositoryError};
 use repositories::Repository;
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -20,7 +20,6 @@ pub struct BidRequest {
 }
 
 #[instrument(skip(state))]
-#[debug_handler]
 pub async fn post_handler(
     State(state): State<AppState>,
     Path(user_id): Path<Uuid>,
@@ -34,17 +33,11 @@ pub async fn post_handler(
 
     let bid = user.bid(body.price);
 
+    repo.persist_order(&bid).await.unwrap();
+
     find_matches_for_order(&mut repo, &bid).await;
 
-    match repo.persist_order(&bid).await {
-        Ok(_) => {
-            t.commit().await.unwrap();
+    t.commit().await.unwrap();
 
-            Ok(Json::from(json!({"id": bid.get_id()})))
-        }
-        Err(e) => match e {
-            OrderRepositoryError::DatabaseError => Err(ApiError::Error),
-            OrderRepositoryError::UserError => Err(ApiError::UserNotFound),
-        },
-    }
+    Ok(Json::from(json!({"id": bid.get_id()})))
 }
