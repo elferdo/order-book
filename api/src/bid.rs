@@ -8,8 +8,8 @@ use axum::{
 use model::lock_mode::LockMode;
 use model::match_maker::find_matches_for_bid;
 use model::repository::BidRepository;
+use model::repository::BidRepositoryError;
 use model::repository::UserRepository;
-use model::{bid::Bid, repository::BidRepositoryError};
 use repositories::Repository;
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -33,9 +33,9 @@ pub async fn post_handler(
 
     let mut repo = Repository::new(&mut *a).await;
 
-    let _user = repo.find_user(LockMode::KeyShared, &user_id).await.unwrap();
+    let user = repo.find_user(LockMode::KeyShared, &user_id).await.unwrap();
 
-    let bid = Bid::new(user_id, body.price);
+    let bid = user.bid(body.price);
 
     find_matches_for_bid(&mut repo, &bid).await;
 
