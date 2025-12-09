@@ -1,14 +1,6 @@
-use thiserror::Error;
 use tracing::{debug, info, instrument};
 
-use crate::{ask::Ask, bid::Bid};
-
-pub trait AskRepository {
-    fn find_asks_below(
-        &mut self,
-        price: f32,
-    ) -> impl Future<Output = Result<Vec<Ask>, AskRepositoryError>>;
-}
+use crate::{bid::Bid, repository::AskRepository};
 
 #[instrument(skip(ask_repository))]
 pub async fn find_matches_for_bid(ask_repository: &mut impl AskRepository, bid: &Bid) {
@@ -17,13 +9,4 @@ pub async fn find_matches_for_bid(ask_repository: &mut impl AskRepository, bid: 
     } else {
         debug!("no matching asks for bid");
     }
-}
-
-#[derive(Debug, Error)]
-pub enum AskRepositoryError {
-    #[error("repository error")]
-    DatabaseError,
-
-    #[error("user error")]
-    UserError,
 }

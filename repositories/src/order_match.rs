@@ -1,44 +1,39 @@
-use model::order_match::Match;
-use sqlx::{Database, Postgres, query};
-use thiserror::Error;
+use model::{
+    order_match::Match,
+    repository::{OrderMatchRepository, OrderMatchRepositoryError},
+};
+use sqlx::query;
 use uuid::Uuid;
 
-pub struct OrderMatchRepository {}
+use crate::Repository;
 
-impl OrderMatchRepository {
-    pub async fn get_order_match(
-        conn: &mut <Postgres as Database>::Connection,
+impl<'c> OrderMatchRepository for Repository<'c> {
+    async fn get_order_match(
+        &mut self,
         ask: &Uuid,
         bid: &Uuid,
-    ) -> Result<Match, RepositoryError> {
+    ) -> Result<Match, OrderMatchRepositoryError> {
         let order_match = query!("select * from match where ask = $1 and bid = $2", ask, bid)
-            .fetch_one(&mut *conn)
-            .await?;
+            .fetch_one(&mut *self.conn)
+            .await
+            .map_err(|_| OrderMatchRepositoryError::DatabaseError)?;
 
         Ok(Match::new(order_match.ask, order_match.bid))
     }
 
-    pub async fn persist_order_match(
-        conn: &mut <Postgres as Database>::Connection,
+    async fn persist_order_match(
+        &mut self,
         order_match: &Match,
-    ) -> Result<(), RepositoryError> {
+    ) -> Result<(), OrderMatchRepositoryError> {
         query!(
             "INSERT INTO match VALUES ($1, $2)",
             order_match.get_ask(),
             order_match.get_bid(),
         )
-        .execute(&mut *conn)
-        .await?;
+        .execute(&mut *self.conn)
+        .await
+        .map_err(|_| OrderMatchRepositoryError::DatabaseError)?;
 
         Ok(())
     }
-}
-
-#[derive(Debug, Error)]
-pub enum RepositoryError {
-    #[error("repository error")]
-    DatabaseError(#[from] sqlx::Error),
-
-    #[error("user error")]
-    UserError(#[from] super::user::RepositoryError),
 }

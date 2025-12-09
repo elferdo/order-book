@@ -1,9 +1,7 @@
-pub mod ask;
-pub mod bid;
-pub mod order_match;
-pub mod user;
+mod ask;
+mod bid;
+mod order_match;
+pub mod repository;
+mod user;
 
-pub use ask::AskRepository;
-pub use bid::BidRepository;
-pub use order_match::OrderMatchRepository;
-pub use user::UserRepository;
+pub use repository::Repository;

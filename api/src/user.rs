@@ -5,7 +5,8 @@ use axum::{
     extract::{Path, State},
 };
 use model::user::User;
-use repositories::UserRepository;
+use model::{lock_mode::LockMode, repository::UserRepository};
+use repositories::Repository;
 use serde_json::{Value, json};
 use tracing::{debug, instrument};
 use uuid::Uuid;
@@ -16,9 +17,11 @@ use crate::apierror::ApiError;
 pub async fn post_handler(State(state): State<AppState>) -> Result<Json<Value>, ApiError> {
     let mut a = state.pool.acquire().await.unwrap();
 
+    let mut repo = Repository::new(&mut a).await;
+
     let user = User::new();
 
-    if (UserRepository::persist_user(&mut a, &user).await).is_ok() {
+    if (repo.persist_user(&user).await).is_ok() {
         Ok(Json::from(json!({"id": user.get_id()})))
     } else {
         debug!("error");
@@ -34,9 +37,11 @@ pub async fn delete_handler(
 ) -> Result<Json<Value>, ApiError> {
     let mut a = state.pool.acquire().await.unwrap();
 
-    let user = UserRepository::get_user(&mut a, &id).await?;
+    let mut repo = Repository::new(&mut a).await;
 
-    if UserRepository::delete_user(&mut a, &user).await.is_ok() {
+    let user = repo.find_user(LockMode::None, &id).await.unwrap();
+
+    if repo.delete_user(&user).await.is_ok() {
         Ok(Json::from(json!("delete ok")))
     } else {
         debug!("error");

@@ -1,58 +1,58 @@
-use model::user::User;
-use sqlx::{Database, Postgres, query};
-use thiserror::Error;
+use model::{
+    lock_mode::LockMode,
+    repository::{UserRepository, UserRepositoryError},
+    user::User,
+};
+use sqlx::{QueryBuilder, Row, query};
 use uuid::Uuid;
 
-pub struct UserRepository {}
+use crate::Repository;
 
-impl UserRepository {
-    pub async fn get_user(
-        conn: &mut <Postgres as Database>::Connection,
+impl<'c> UserRepository for Repository<'c> {
+    async fn find_user(
+        &mut self,
+        lock_mode: LockMode,
         id: &Uuid,
-    ) -> Result<User, RepositoryError> {
-        let user = query!("select * from public.user where id = $1", id)
-            .fetch_one(&mut *conn)
-            .await
-            .map_err(|_| RepositoryError::UserNotFound)?;
+    ) -> Result<User, UserRepositoryError> {
+        let mut qb = QueryBuilder::new("SELECT");
 
-        Ok(User::new_as(user.id))
+        match lock_mode {
+            LockMode::None => {}
+            LockMode::KeyShared => {
+                qb.push("FOR KEY SHARED");
+            }
+        };
+
+        let user = qb
+            .push("FROM public.user WHERE id = ")
+            .push_bind(id)
+            .build()
+            .fetch_one(&mut *self.conn)
+            .await
+            .map_err(|_| UserRepositoryError::UserError)?;
+
+        Ok(User::new_as(user.get("id")))
     }
 
-    pub async fn persist_user(
-        conn: &mut <Postgres as Database>::Connection,
-        user: &User,
-    ) -> Result<(), RepositoryError> {
+    async fn persist_user(&mut self, user: &User) -> Result<(), UserRepositoryError> {
         query!("INSERT INTO public.user (id) VALUES ($1)", user.get_id())
-            .execute(&mut *conn)
-            .await?;
+            .execute(&mut *self.conn)
+            .await
+            .map_err(|_| UserRepositoryError::DatabaseError)?;
 
         Ok(())
     }
 
-    pub async fn delete_user(
-        conn: &mut <Postgres as Database>::Connection,
-        user: &User,
-    ) -> Result<(), RepositoryError> {
+    async fn delete_user(&mut self, user: &User) -> Result<(), UserRepositoryError> {
         let result = query!("DELETE FROM public.user where id = $1", user.get_id())
-            .execute(&mut *conn)
-            .await?;
+            .execute(&mut *self.conn)
+            .await
+            .map_err(|_| UserRepositoryError::DatabaseError)?;
 
         if result.rows_affected() < 1 {
-            Err(RepositoryError::OperationFailed)
+            Err(UserRepositoryError::DatabaseError)
         } else {
             Ok(())
         }
     }
-}
-
-#[derive(Debug, Error)]
-pub enum RepositoryError {
-    #[error("repository error")]
-    DatabaseError(#[from] sqlx::Error),
-
-    #[error("user not found")]
-    UserNotFound,
-
-    #[error("operation failed")]
-    OperationFailed,
 }

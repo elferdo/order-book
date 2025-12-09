@@ -5,11 +5,15 @@ use axum::{
     Json,
     extract::{Path, State},
 };
-use model::bid::Bid;
+use model::lock_mode::LockMode;
 use model::match_maker::find_matches_for_bid;
-use repositories::BidRepository;
+use model::repository::BidRepository;
+use model::repository::UserRepository;
+use model::{bid::Bid, repository::BidRepositoryError};
+use repositories::Repository;
 use serde::Deserialize;
 use serde_json::{Value, json};
+use sqlx::Acquire;
 use tracing::instrument;
 use uuid::Uuid;
 
@@ -25,17 +29,20 @@ pub async fn post_handler(
     Json(body): Json<BidRequest>,
 ) -> Result<Json<Value>, ApiError> {
     let mut t = state.pool.begin().await.unwrap();
+    let a = t.acquire().await.unwrap();
+
+    let mut repo = Repository::new(&mut *a).await;
+
+    let _user = repo.find_user(LockMode::KeyShared, &user_id).await.unwrap();
 
     let bid = Bid::new(user_id, body.price);
 
-    let mut ar = repositories::AskRepository::new(&mut t);
+    find_matches_for_bid(&mut repo, &bid).await;
 
-    find_matches_for_bid(&mut ar, &bid).await;
-
-    if let Err(e) = BidRepository::persist_bid(&mut t, &bid).await {
+    if let Err(e) = repo.persist_bid(&bid).await {
         match e {
-            repositories::bid::RepositoryError::DatabaseError(_) => Err(ApiError::Error),
-            repositories::bid::RepositoryError::UserError(_) => Err(ApiError::UserNotFound),
+            BidRepositoryError::DatabaseError => Err(ApiError::Error),
+            BidRepositoryError::UserError => Err(ApiError::UserNotFound),
         }
     } else {
         t.commit().await.unwrap();

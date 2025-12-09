@@ -1,5 +1,5 @@
 use axum::response::{IntoResponse, Response};
-use repositories::user::RepositoryError;
+use model::repository::UserRepositoryError;
 use serde_json::json;
 
 #[derive(Debug, thiserror::Error)]
@@ -14,12 +14,11 @@ pub enum ApiError {
     OperationFailed,
 }
 
-impl From<repositories::user::RepositoryError> for ApiError {
-    fn from(value: repositories::user::RepositoryError) -> Self {
+impl From<UserRepositoryError> for ApiError {
+    fn from(value: UserRepositoryError) -> Self {
         match value {
-            RepositoryError::DatabaseError(_) => ApiError::Error,
-            RepositoryError::UserNotFound => ApiError::UserNotFound,
-            RepositoryError::OperationFailed => ApiError::OperationFailed,
+            UserRepositoryError::DatabaseError => ApiError::Error,
+            UserRepositoryError::UserError => ApiError::UserNotFound,
         }
     }
 }

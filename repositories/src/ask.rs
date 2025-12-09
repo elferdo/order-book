@@ -1,44 +1,13 @@
 use model::{
     ask::Ask,
-    match_maker::{self, AskRepositoryError},
+    repository::{AskRepository, AskRepositoryError},
 };
-use sqlx::{Database, Postgres, query};
-use thiserror::Error;
+use sqlx::query;
 use uuid::Uuid;
 
-pub struct AskRepository<'c> {
-    // conn: &'c mut <Postgres as Database>::Connection,
-    conn: &'c mut <Postgres as Database>::Connection,
-}
+use crate::Repository;
 
-impl<'c> AskRepository<'c> {
-    pub fn new(conn: &'c mut <Postgres as Database>::Connection) -> Self {
-        Self { conn }
-    }
-
-    pub async fn get_ask(&mut self, id: &Uuid) -> Result<Ask, RepositoryError> {
-        let ask = query!("select * from ask where id = $1", id)
-            .fetch_one(&mut *self.conn)
-            .await?;
-
-        Ok(Ask::new(ask.user, ask.price))
-    }
-
-    pub async fn persist_ask(&mut self, ask: &Ask) -> Result<(), RepositoryError> {
-        query!(
-            "INSERT INTO ask VALUES ($1, $2, $3)",
-            ask.get_id(),
-            ask.get_user_id(),
-            ask.get_price()
-        )
-        .execute(&mut *self.conn)
-        .await?;
-
-        Ok(())
-    }
-}
-
-impl<'c> match_maker::AskRepository for AskRepository<'c> {
+impl<'c> AskRepository for Repository<'c> {
     async fn find_asks_below(&mut self, price: f32) -> Result<Vec<Ask>, AskRepositoryError> {
         let ask_rows = query!("select * from ask where price <= $1", price)
             .fetch_all(&mut *self.conn)
@@ -52,13 +21,27 @@ impl<'c> match_maker::AskRepository for AskRepository<'c> {
 
         Ok(asks)
     }
-}
 
-#[derive(Debug, Error)]
-pub enum RepositoryError {
-    #[error("repository error")]
-    DatabaseError(#[from] sqlx::Error),
+    async fn find_ask(&mut self, id: &Uuid) -> Result<Ask, AskRepositoryError> {
+        let ask = query!("select * from ask where id = $1", id)
+            .fetch_one(&mut *self.conn)
+            .await
+            .map_err(|_| AskRepositoryError::DatabaseError)?;
 
-    #[error("user error")]
-    UserError(#[from] super::user::RepositoryError),
+        Ok(Ask::new(ask.user, ask.price))
+    }
+
+    async fn persist_ask(&mut self, ask: &Ask) -> Result<(), AskRepositoryError> {
+        query!(
+            "INSERT INTO ask VALUES ($1, $2, $3)",
+            ask.get_id(),
+            ask.get_user_id(),
+            ask.get_price()
+        )
+        .execute(&mut *self.conn)
+        .await
+        .map_err(|_| AskRepositoryError::DatabaseError)?;
+
+        Ok(())
+    }
 }

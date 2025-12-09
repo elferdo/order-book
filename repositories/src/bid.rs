@@ -1,44 +1,37 @@
-use model::bid::Bid;
-use sqlx::{Database, Postgres, query};
-use thiserror::Error;
+use model::{
+    bid::Bid,
+    repository::{BidRepository, BidRepositoryError},
+};
+use sqlx::query;
 use uuid::Uuid;
 
-pub struct BidRepository {}
+use crate::Repository;
 
-impl BidRepository {
-    pub async fn get_bid(
-        conn: &mut <Postgres as Database>::Connection,
-        id: &Uuid,
-    ) -> Result<Bid, RepositoryError> {
+impl<'c> BidRepository for Repository<'c> {
+    async fn find_bids_below(&mut self, price: f32) -> Result<Vec<Bid>, BidRepositoryError> {
+        todo!()
+    }
+
+    async fn find_bid(&mut self, id: &Uuid) -> Result<Bid, BidRepositoryError> {
         let bid = query!("select * from bid where id = $1", id)
-            .fetch_one(&mut *conn)
-            .await?;
+            .fetch_one(&mut *self.conn)
+            .await
+            .map_err(|_| BidRepositoryError::DatabaseError)?;
 
         Ok(Bid::new(bid.user, bid.price))
     }
 
-    pub async fn persist_bid(
-        conn: &mut <Postgres as Database>::Connection,
-        bid: &Bid,
-    ) -> Result<(), RepositoryError> {
+    async fn persist_bid(&mut self, bid: &Bid) -> Result<(), BidRepositoryError> {
         query!(
             "INSERT INTO bid VALUES ($1, $2, $3)",
             bid.get_id(),
             bid.get_user_id(),
             bid.get_price()
         )
-        .execute(&mut *conn)
-        .await?;
+        .execute(&mut *self.conn)
+        .await
+        .map_err(|_| BidRepositoryError::DatabaseError)?;
 
         Ok(())
     }
-}
-
-#[derive(Debug, Error)]
-pub enum RepositoryError {
-    #[error("repository error")]
-    DatabaseError(#[from] sqlx::Error),
-
-    #[error("user error")]
-    UserError(#[from] super::user::RepositoryError),
 }
