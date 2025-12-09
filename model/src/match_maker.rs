@@ -13,11 +13,11 @@ pub async fn find_matches_for_bid<R>(repository: &mut R, bid: &Bid)
 where
     R: AskRepository + OrderMatchRepository,
 {
-    if let Ok(_asks) = repository
+    if let Ok(asks) = repository
         .find_asks_below(LockMode::KeyShare, bid.get_price())
         .await
     {
-        let matches: Vec<_> = _asks
+        let matches: Vec<_> = asks
             .into_iter()
             .map(|a| Match::new(*a.get_id(), *bid.get_id()))
             .collect();
@@ -35,11 +35,11 @@ pub async fn find_matches_for_ask<R>(repository: &mut R, ask: &Ask)
 where
     R: BidRepository + OrderMatchRepository,
 {
-    if let Ok(_bids) = repository
+    if let Ok(bids) = repository
         .find_bids_above(LockMode::KeyShare, ask.get_price())
         .await
     {
-        let matches: Vec<_> = _bids
+        let matches: Vec<_> = bids
             .into_iter()
             .map(|a| Match::new(*a.get_id(), *ask.get_id()))
             .collect();
