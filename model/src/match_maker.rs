@@ -30,14 +30,24 @@ where
     }
 }
 
-#[instrument(skip(bid_repository))]
-pub async fn find_matches_for_ask(bid_repository: &mut impl BidRepository, ask: &Ask) {
-    if let Ok(_asks) = bid_repository
+#[instrument(skip(repository))]
+pub async fn find_matches_for_ask<R>(repository: &mut R, ask: &Ask)
+where
+    R: BidRepository + OrderMatchRepository,
+{
+    if let Ok(_bids) = repository
         .find_bids_above(LockMode::KeyShare, ask.get_price())
         .await
     {
-        info!("processing matching asks for ask");
+        let matches: Vec<_> = _bids
+            .into_iter()
+            .map(|a| Match::new(*a.get_id(), *ask.get_id()))
+            .collect();
+
+        repository.persist_order_matches(matches).await.unwrap();
+
+        info!("processing matching bids for ask");
     } else {
-        debug!("no matching asks for ask");
+        debug!("no matching bids for ask");
     }
 }
