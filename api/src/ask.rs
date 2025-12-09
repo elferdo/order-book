@@ -29,7 +29,7 @@ pub async fn post_handler(
 
     let mut repo = Repository::new(&mut t).await;
 
-    let user = repo.find_user(LockMode::KeyShared, &user_id).await.unwrap();
+    let user = repo.find_user(LockMode::KeyShare, &user_id).await.unwrap();
 
     let ask = user.ask(body.price);
 

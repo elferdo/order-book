@@ -19,7 +19,7 @@ impl<'c> BidRepository for Repository<'c> {
 
         match lock_mode {
             LockMode::None => {}
-            LockMode::KeyShared => {
+            LockMode::KeyShare => {
                 qb.push(" FOR KEY SHARE;");
             }
         };
