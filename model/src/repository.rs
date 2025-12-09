@@ -14,7 +14,7 @@ pub trait AskRepository {
 }
 
 pub trait BidRepository {
-    fn find_bids_below(
+    fn find_bids_above(
         &mut self,
         price: f32,
     ) -> impl Future<Output = Result<Vec<Bid>, BidRepositoryError>>;

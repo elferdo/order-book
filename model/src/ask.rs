@@ -1,5 +1,6 @@
 use uuid::Uuid;
 
+#[derive(Debug)]
 pub struct Ask {
     id: Uuid,
     user_id: Uuid,

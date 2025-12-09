@@ -5,9 +5,9 @@ use axum::{
     Json,
     extract::{Path, State},
 };
-use model::repository::AskRepositoryError;
 use model::repository::UserRepository;
 use model::{lock_mode::LockMode, repository::AskRepository};
+use model::{match_maker::find_matches_for_ask, repository::AskRepositoryError};
 use repositories::Repository;
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -32,6 +32,8 @@ pub async fn post_handler(
     let user = repo.find_user(LockMode::KeyShared, &user_id).await.unwrap();
 
     let ask = user.ask(body.price);
+
+    find_matches_for_ask(&mut repo, &ask).await;
 
     match repo.persist_ask(&ask).await {
         Ok(_) => {

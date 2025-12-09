@@ -8,8 +8,18 @@ use uuid::Uuid;
 use crate::Repository;
 
 impl<'c> BidRepository for Repository<'c> {
-    async fn find_bids_below(&mut self, price: f32) -> Result<Vec<Bid>, BidRepositoryError> {
-        todo!()
+    async fn find_bids_above(&mut self, price: f32) -> Result<Vec<Bid>, BidRepositoryError> {
+        let bid_rows = query!("select * from bid where price >= $1", price)
+            .fetch_all(&mut *self.conn)
+            .await
+            .map_err(|_| BidRepositoryError::DatabaseError)?;
+
+        let bids: Vec<_> = bid_rows
+            .into_iter()
+            .map(|r| Bid::with(r.id, r.user, r.price))
+            .collect();
+
+        Ok(bids)
     }
 
     async fn find_bid(&mut self, id: &Uuid) -> Result<Bid, BidRepositoryError> {
