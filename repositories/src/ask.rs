@@ -1,22 +1,38 @@
 use model::{
     ask::Ask,
+    lock_mode::LockMode,
     repository::{AskRepository, AskRepositoryError},
 };
-use sqlx::query;
+use sqlx::{QueryBuilder, Row, query};
 use uuid::Uuid;
 
 use crate::Repository;
 
 impl<'c> AskRepository for Repository<'c> {
-    async fn find_asks_below(&mut self, price: f32) -> Result<Vec<Ask>, AskRepositoryError> {
-        let ask_rows = query!("select * from ask where price <= $1", price)
+    async fn find_asks_below(
+        &mut self,
+        lock_mode: LockMode,
+        price: f32,
+    ) -> Result<Vec<Ask>, AskRepositoryError> {
+        let mut qb = QueryBuilder::new("SELECT * FROM ask WHERE price <= $1");
+        qb.push_bind(price);
+
+        match lock_mode {
+            LockMode::None => {}
+            LockMode::KeyShared => {
+                qb.push(" FOR KEY SHARE;");
+            }
+        };
+
+        let ask_rows = qb
+            .build()
             .fetch_all(&mut *self.conn)
             .await
             .map_err(|_| AskRepositoryError::DatabaseError)?;
 
         let asks: Vec<_> = ask_rows
             .into_iter()
-            .map(|r| Ask::with(r.id, r.user, r.price))
+            .map(|r| Ask::with(r.get("id"), r.get("user"), r.get("price")))
             .collect();
 
         Ok(asks)

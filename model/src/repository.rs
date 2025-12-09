@@ -6,6 +6,7 @@ use crate::{ask::Ask, bid::Bid, lock_mode::LockMode, order_match::Match, user::U
 pub trait AskRepository {
     fn find_asks_below(
         &mut self,
+        lock_mode: LockMode,
         price: f32,
     ) -> impl Future<Output = Result<Vec<Ask>, AskRepositoryError>>;
 
@@ -16,6 +17,7 @@ pub trait AskRepository {
 pub trait BidRepository {
     fn find_bids_above(
         &mut self,
+        lock_mode: LockMode,
         price: f32,
     ) -> impl Future<Output = Result<Vec<Bid>, BidRepositoryError>>;
 

@@ -1,22 +1,38 @@
 use model::{
     bid::Bid,
+    lock_mode::LockMode,
     repository::{BidRepository, BidRepositoryError},
 };
-use sqlx::query;
+use sqlx::{QueryBuilder, Row, query};
 use uuid::Uuid;
 
 use crate::Repository;
 
 impl<'c> BidRepository for Repository<'c> {
-    async fn find_bids_above(&mut self, price: f32) -> Result<Vec<Bid>, BidRepositoryError> {
-        let bid_rows = query!("select * from bid where price >= $1", price)
+    async fn find_bids_above(
+        &mut self,
+        lock_mode: LockMode,
+        price: f32,
+    ) -> Result<Vec<Bid>, BidRepositoryError> {
+        let mut qb = QueryBuilder::new("SELECT * FROM bid WHERE price <= $1");
+        qb.push_bind(price);
+
+        match lock_mode {
+            LockMode::None => {}
+            LockMode::KeyShared => {
+                qb.push(" FOR KEY SHARE;");
+            }
+        };
+
+        let bid_rows = qb
+            .build()
             .fetch_all(&mut *self.conn)
             .await
             .map_err(|_| BidRepositoryError::DatabaseError)?;
 
         let bids: Vec<_> = bid_rows
             .into_iter()
-            .map(|r| Bid::with(r.id, r.user, r.price))
+            .map(|r| Bid::with(r.get("id"), r.get("user"), r.get("price")))
             .collect();
 
         Ok(bids)
