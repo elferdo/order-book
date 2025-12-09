@@ -18,12 +18,11 @@ pub async fn post_handler(State(state): State<AppState>) -> Result<Json<Value>, 
 
     let user = User::new();
 
-    match UserRepository::persist_user(&mut a, &user).await {
-        Ok(_) => Ok(Json::from(json!({"id": user.get_id()}))),
-        Err(_) => {
-            debug!("error");
-            Err(ApiError::Error)
-        }
+    if (UserRepository::persist_user(&mut a, &user).await).is_ok() {
+        Ok(Json::from(json!({"id": user.get_id()})))
+    } else {
+        debug!("error");
+        Err(ApiError::Error)
     }
 }
 
@@ -37,11 +36,10 @@ pub async fn delete_handler(
 
     let user = UserRepository::get_user(&mut a, &id).await?;
 
-    match UserRepository::delete_user(&mut a, &user).await {
-        Ok(_) => Ok(Json::from(json!("delete ok"))),
-        Err(_) => {
-            debug!("error");
-            Err(ApiError::OperationFailed)
-        }
+    if UserRepository::delete_user(&mut a, &user).await.is_ok() {
+        Ok(Json::from(json!("delete ok")))
+    } else {
+        debug!("error");
+        Err(ApiError::OperationFailed)
     }
 }

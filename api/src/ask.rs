@@ -6,7 +6,7 @@ use axum::{
     extract::{Path, State},
 };
 use model::ask::Ask;
-use repositories::AskRepository;
+use repositories::ask::AskRepository;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use tracing::instrument;
@@ -26,8 +26,9 @@ pub async fn post_handler(
     let mut a = state.pool.acquire().await.unwrap();
 
     let ask = Ask::new(user_id, body.price);
+    let mut ar = AskRepository::new(&mut *a);
 
-    match AskRepository::persist_ask(&mut a, &ask).await {
+    match ar.persist_ask(&ask).await {
         Ok(_) => Ok(Json::from(json!({"id": ask.get_id()}))),
         Err(e) => match e {
             repositories::ask::RepositoryError::DatabaseError(_) => Err(ApiError::Error),

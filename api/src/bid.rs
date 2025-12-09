@@ -5,8 +5,9 @@ use axum::{
     Json,
     extract::{Path, State},
 };
-use model::{bid::Bid, match_maker};
-use repositories::{BidRepository, OrderMatchRepository};
+use model::bid::Bid;
+use model::match_maker::find_matches_for_bid;
+use repositories::BidRepository;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use tracing::instrument;
@@ -25,17 +26,18 @@ pub async fn post_handler(
 ) -> Result<Json<Value>, ApiError> {
     let mut t = state.pool.begin().await.unwrap();
 
-    // let mut a = state.pool.acquire().await.unwrap();
-
     let bid = Bid::new(user_id, body.price);
 
-    // OrderMatchRepository::find_matches_for_bid(&bid).await;
+    let mut ar = repositories::AskRepository::new(&mut t);
 
-    match BidRepository::persist_bid(&mut t, &bid).await {
-        Ok(_) => Ok(Json::from(json!({"id": bid.get_id()}))),
-        Err(e) => match e {
+    find_matches_for_bid(&mut ar, &bid).await;
+
+    if let Err(e) = BidRepository::persist_bid(&mut t, &bid).await {
+        match e {
             repositories::bid::RepositoryError::DatabaseError(_) => Err(ApiError::Error),
             repositories::bid::RepositoryError::UserError(_) => Err(ApiError::UserNotFound),
-        },
+        }
+    } else {
+        Ok(Json::from(json!({"id": bid.get_id()})))
     }
 }
