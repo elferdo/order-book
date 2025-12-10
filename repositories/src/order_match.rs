@@ -15,9 +15,15 @@ impl<'c> OrderMatchRepository for Repository<'c> {
     where
         I: IntoIterator<Item = Match>,
     {
+        let mut peekable = iterator.into_iter().peekable();
+
+        if peekable.next().is_none() {
+            return Ok(());
+        };
+
         let mut qb = QueryBuilder::new("INSERT INTO match ");
 
-        qb.push_values(iterator, |mut b, m| {
+        qb.push_values(peekable, |mut b, m| {
             b.push_bind(*m.get_ask()).push_bind(*m.get_bid());
         });
 
