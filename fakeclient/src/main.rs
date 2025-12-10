@@ -1,12 +1,48 @@
+use std::{sync::Arc, time::Duration};
+
 use anyhow::Result;
+use rand::{distr::Uniform, prelude::*, rng};
 use reqwest::Url;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
 struct User {
     id: Uuid,
+}
+
+struct BidDistribution {
+    pub price: Uniform<f32>,
+}
+
+#[derive(Serialize)]
+struct Bid {
+    pub price: f32,
+}
+
+impl Distribution<Bid> for BidDistribution {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Bid {
+        let price = self.price.sample(rng);
+
+        Bid { price }
+    }
+}
+
+async fn post_bid(user_id: &Uuid) -> Result<()> {
+    let price = Uniform::new(10.0, 100.0)?.sample(&mut rng());
+
+    let u = Url::parse(&format!("http://127.0.0.1:5000/user/{user_id}/bid").to_string())?;
+
+    let bidj = json!({"user": user_id, "price": price});
+
+    let c = reqwest::ClientBuilder::new()
+        .connect_timeout(Duration::from_secs(30))
+        .timeout(Duration::from_secs(30))
+        .build()?;
+    let result = c.post(u).json(&bidj).send().await?;
+
+    Ok(())
 }
 
 #[tokio::main]
@@ -21,16 +57,21 @@ async fn main() -> Result<()> {
 
     let user: User = serde_json::from_str(&t)?;
 
-    let bidj = json!({"user": user.id, "price": 2.34});
+    let user_id = Arc::new(user.id);
 
-    println!("{bidj}");
+    let mut handles = Vec::new();
 
-    let user_id = user.id;
-    let u = Url::parse(&format!("http://localhost:5000/user/{user_id}/ask").to_string())?;
+    for _ in 1..10000 {
+        let u = user_id.clone();
+        let handle = tokio::spawn(async move {
+            let result = post_bid(&u).await;
+        });
 
-    let result = c.post(u).json(&bidj).send().await?;
+        handles.push(handle);
+    }
 
-    println!("{}", result.text().await?);
-
+    for handle in handles {
+        tokio::join!(handle);
+    }
     Ok(())
 }
