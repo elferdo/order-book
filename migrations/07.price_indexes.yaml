@@ -1,0 +1,11 @@
+operations:
+  - create_index:
+      name: idx_ask_price
+      table: ask
+      columns:
+        price: {}
+  - create_index:
+      name: idx_bid_price
+      table: bid
+      columns:
+        price: {}

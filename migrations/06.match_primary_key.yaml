@@ -1,0 +1,12 @@
+operations:
+  - create_constraint:
+      name: match_pkey
+      table: match
+      columns: [ask, bid]
+      type: primary_key
+      up:
+        ask: ask
+        bid: bid
+      down:
+        ask: ask
+        bid: bid
