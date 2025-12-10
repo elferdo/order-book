@@ -1,35 +1,21 @@
 use axum::response::{IntoResponse, Response};
-use model::repository::UserRepositoryError;
 use serde_json::json;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ApiError {
-    #[error("")]
+    #[error("user not found in the database")]
     UserNotFound,
 
-    #[error("")]
+    #[error("general error, no further details")]
     Error,
 
-    #[error("")]
-    OperationFailed,
-}
-
-impl From<UserRepositoryError> for ApiError {
-    fn from(value: UserRepositoryError) -> Self {
-        match value {
-            UserRepositoryError::DatabaseError => ApiError::Error,
-            UserRepositoryError::UserError => ApiError::UserNotFound,
-        }
-    }
+    #[error("database error")]
+    DatabaseError,
 }
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
-        let body = match self {
-            ApiError::Error => json!("some error in the user repository"),
-            ApiError::UserNotFound => json!({"type": "UserNotFound"}),
-            ApiError::OperationFailed => json!({"type": "OperationFailed"}),
-        };
+        let body = json!({"type": format!("{self}")});
 
         Response::new(body.to_string().into())
     }

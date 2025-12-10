@@ -1,4 +1,4 @@
-use tracing::{debug, info, instrument};
+use tracing::{debug, error, info, instrument};
 
 use crate::{
     lock_mode::LockMode,
@@ -18,7 +18,14 @@ where
             .map(|a| Match::new(*a.get_id(), *order.get_id()))
             .collect();
 
-        repository.persist_order_matches(matches).await.unwrap();
+        if let Err(e) = repository.persist_order_matches(matches).await {
+            match e {
+                crate::repository::OrderMatchRepositoryError::DatabaseError => {
+                    error!("{e}");
+                }
+                crate::repository::OrderMatchRepositoryError::UserError => todo!(),
+            }
+        };
 
         info!("processing matching orders for {order:?}");
     } else {

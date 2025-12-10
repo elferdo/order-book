@@ -24,19 +24,28 @@ pub async fn post_handler(
     Path(user_id): Path<Uuid>,
     Json(body): Json<AskRequest>,
 ) -> Result<Json<Value>, ApiError> {
-    let mut t = state.pool.begin().await.unwrap();
+    let mut t = state
+        .pool
+        .begin()
+        .await
+        .map_err(|_| ApiError::DatabaseError)?;
 
     let mut repo = Repository::new(&mut t).await;
 
-    let user = repo.find_user(LockMode::KeyShare, &user_id).await.unwrap();
+    let user = repo
+        .find_user(LockMode::KeyShare, &user_id)
+        .await
+        .map_err(|_| ApiError::UserNotFound)?;
 
     let ask = user.ask(body.price);
 
-    repo.persist_order(&ask).await.unwrap();
+    repo.persist_order(&ask)
+        .await
+        .map_err(|_| ApiError::DatabaseError)?;
 
     find_matches_for_order(&mut repo, &ask).await;
 
-    t.commit().await.unwrap();
+    t.commit().await.map_err(|_| ApiError::DatabaseError)?;
 
     Ok(Json::from(json!({"id": ask.get_id()})))
 }

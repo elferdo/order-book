@@ -15,17 +15,28 @@ use crate::apierror::ApiError;
 
 #[instrument(skip(state))]
 pub async fn post_handler(State(state): State<AppState>) -> Result<Json<Value>, ApiError> {
-    let mut a = state.pool.acquire().await.unwrap();
+    let mut a = state
+        .pool
+        .acquire()
+        .await
+        .map_err(|_| ApiError::DatabaseError)?;
 
     let mut repo = Repository::new(&mut a).await;
 
     let user = User::new();
 
-    if (repo.persist_user(&user).await).is_ok() {
-        Ok(Json::from(json!({"id": user.get_id()})))
-    } else {
-        debug!("error");
-        Err(ApiError::Error)
+    match repo.persist_user(&user).await {
+        Ok(_) => Ok(Json::from(json!({"id":user.get_id()}))),
+        Err(e) => {
+            debug!("error");
+
+            let result = match e {
+                model::repository::UserRepositoryError::DatabaseError => ApiError::DatabaseError,
+                model::repository::UserRepositoryError::UserError => ApiError::UserNotFound,
+            };
+
+            Err(result)
+        }
     }
 }
 
@@ -35,16 +46,33 @@ pub async fn delete_handler(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Value>, ApiError> {
-    let mut a = state.pool.acquire().await.unwrap();
+    let mut a = state
+        .pool
+        .acquire()
+        .await
+        .map_err(|_| ApiError::DatabaseError)?;
 
     let mut repo = Repository::new(&mut a).await;
 
-    let user = repo.find_user(LockMode::None, &id).await.unwrap();
+    let user = repo
+        .find_user(LockMode::None, &id)
+        .await
+        .map_err(|e| match e {
+            model::repository::UserRepositoryError::DatabaseError => ApiError::DatabaseError,
+            model::repository::UserRepositoryError::UserError => ApiError::UserNotFound,
+        })?;
 
-    if repo.delete_user(&user).await.is_ok() {
-        Ok(Json::from(json!("delete ok")))
-    } else {
-        debug!("error");
-        Err(ApiError::OperationFailed)
+    match repo.delete_user(&user).await {
+        Ok(_) => Ok(Json::from(json!({"id":user.get_id()}))),
+        Err(e) => {
+            debug!("error");
+
+            let result = match e {
+                model::repository::UserRepositoryError::DatabaseError => ApiError::DatabaseError,
+                model::repository::UserRepositoryError::UserError => ApiError::UserNotFound,
+            };
+
+            Err(result)
+        }
     }
 }
