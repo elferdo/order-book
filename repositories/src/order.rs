@@ -3,7 +3,9 @@ use model::{
     order::Order,
     repository::{OrderRepository, OrderRepositoryError},
 };
-use sqlx::{QueryBuilder, Row, query};
+use sqlx::QueryBuilder;
+use sqlx::{Row, query};
+use tracing::instrument;
 use uuid::Uuid;
 
 use crate::Repository;
@@ -83,5 +85,35 @@ impl<'c> OrderRepository for Repository<'c> {
             .map_err(|_| OrderRepositoryError::DatabaseError)?;
 
         Ok(Order::bid_with(bid.id, bid.user, bid.price))
+    }
+
+    #[instrument(skip(self))]
+    async fn persist_order(&mut self, order: &Order) -> Result<(), OrderRepositoryError> {
+        let mut qb = QueryBuilder::new("INSERT INTO ");
+
+        let table_name = match order {
+            Order::Ask { .. } => "ask",
+            Order::Bid { .. } => "bid",
+        };
+
+        qb.push(table_name);
+        qb.push(" ");
+
+        qb.push_values([order], |mut b, o| {
+            b.push_bind(*o.get_id())
+                .push_bind(*o.get_user_id())
+                .push_bind(o.get_price());
+        });
+
+        let query = qb.build();
+
+        let result = query
+            .execute(&mut *self.conn)
+            .await
+            .map_err(|_| OrderRepositoryError::DatabaseError)?;
+
+        dbg!(result);
+
+        Ok(())
     }
 }

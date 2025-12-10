@@ -18,6 +18,11 @@ pub trait OrderRepository {
 
     fn find_ask(&mut self, id: &Uuid) -> impl Future<Output = Result<Order, OrderRepositoryError>>;
     fn find_bid(&mut self, id: &Uuid) -> impl Future<Output = Result<Order, OrderRepositoryError>>;
+
+    fn persist_order(
+        &mut self,
+        order: &Order,
+    ) -> impl Future<Output = Result<(), OrderRepositoryError>>;
 }
 
 pub trait UserRepository {

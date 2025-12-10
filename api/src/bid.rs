@@ -7,6 +7,7 @@ use axum::{
 };
 use model::lock_mode::LockMode;
 use model::match_maker::find_matches_for_order;
+use model::repository::OrderRepository;
 use model::repository::UserRepository;
 use repositories::Repository;
 use serde::Deserialize;

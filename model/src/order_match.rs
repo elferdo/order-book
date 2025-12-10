@@ -1,5 +1,6 @@
 use uuid::Uuid;
 
+#[derive(Debug)]
 pub struct Match {
     ask: Uuid,
     bid: Uuid,

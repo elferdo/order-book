@@ -24,6 +24,8 @@ impl<'c> OrderMatchRepository for Repository<'c> {
         let mut qb = QueryBuilder::new("INSERT INTO match ");
 
         qb.push_values(peekable, |mut b, m| {
+            dbg!(&m);
+
             b.push_bind(*m.get_ask()).push_bind(*m.get_bid());
         });
 

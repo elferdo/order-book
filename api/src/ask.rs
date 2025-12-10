@@ -5,6 +5,7 @@ use axum::{
     Json,
     extract::{Path, State},
 };
+use model::repository::OrderRepository;
 use model::repository::UserRepository;
 use model::{lock_mode::LockMode, match_maker::find_matches_for_order};
 use repositories::Repository;
