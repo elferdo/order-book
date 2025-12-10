@@ -11,7 +11,7 @@ use repositories::Repository;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use tracing::instrument;
-use uuid::Uuid;
+use uuid::{ContextV7, Timestamp, Uuid};
 
 #[derive(Debug, Deserialize)]
 pub struct AskRequest {
@@ -37,7 +37,10 @@ pub async fn post_handler(
         .await
         .map_err(|_| ApiError::UserNotFound)?;
 
-    let ask = user.ask(body.price);
+    let context = ContextV7::new();
+    let timestamp = Timestamp::now(&context);
+
+    let ask = user.ask(timestamp, body.price);
 
     repo.persist_order(&ask)
         .await

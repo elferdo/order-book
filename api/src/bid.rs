@@ -12,7 +12,7 @@ use repositories::Repository;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use tracing::instrument;
-use uuid::Uuid;
+use uuid::{ContextV7, Timestamp, Uuid};
 
 #[derive(Debug, Deserialize)]
 pub struct BidRequest {
@@ -38,7 +38,10 @@ pub async fn post_handler(
         .await
         .map_err(|_| ApiError::UserNotFound)?;
 
-    let bid = user.bid(body.price);
+    let context = ContextV7::new();
+    let timestamp = Timestamp::now(&context);
+
+    let bid = user.bid(timestamp, body.price);
 
     repo.persist_order(&bid)
         .await

@@ -44,7 +44,7 @@ impl<'c> OrderRepository for Repository<'c> {
             .await
             .map_err(|_| OrderRepositoryError::DatabaseError)?;
 
-        Ok(Order::new_ask(ask.user, ask.price))
+        Ok(Order::ask_with(ask.id, ask.user, ask.price))
     }
 
     async fn find_bids_above(
@@ -82,6 +82,6 @@ impl<'c> OrderRepository for Repository<'c> {
             .await
             .map_err(|_| OrderRepositoryError::DatabaseError)?;
 
-        Ok(Order::new_bid(bid.user, bid.price))
+        Ok(Order::bid_with(bid.id, bid.user, bid.price))
     }
 }

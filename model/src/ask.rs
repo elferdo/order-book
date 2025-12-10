@@ -1,4 +1,4 @@
-use uuid::Uuid;
+use uuid::{Timestamp, Uuid};
 
 #[derive(Debug)]
 pub struct Ask {
@@ -8,8 +8,8 @@ pub struct Ask {
 }
 
 impl Ask {
-    pub fn new(user_id: Uuid, price: f32) -> Self {
-        let id = Uuid::new_v4();
+    pub fn new(t: Timestamp, user_id: Uuid, price: f32) -> Self {
+        let id = Uuid::new_v7(t);
 
         Self { id, user_id, price }
     }

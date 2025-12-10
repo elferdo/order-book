@@ -9,4 +9,4 @@ serde = { version = "1.0.228", features = ["derive"] }
 sqlx = { version = "0.8.6", features = ["bigdecimal", "macros", "postgres", "runtime-tokio", "uuid"] }
 thiserror = "2.0.17"
 tracing = "0.1.43"
-uuid = { version = "1.19.0", features = ["v4"] }
+uuid = { version = "1.19.0", features = ["v7"] }

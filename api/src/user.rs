@@ -9,7 +9,7 @@ use model::{lock_mode::LockMode, repository::UserRepository};
 use repositories::Repository;
 use serde_json::{Value, json};
 use tracing::{debug, instrument};
-use uuid::Uuid;
+use uuid::{ContextV7, Timestamp, Uuid};
 
 use crate::apierror::ApiError;
 
@@ -23,7 +23,10 @@ pub async fn post_handler(State(state): State<AppState>) -> Result<Json<Value>, 
 
     let mut repo = Repository::new(&mut a).await;
 
-    let user = User::new();
+    let context = ContextV7::new();
+    let timestamp = Timestamp::now(&context);
+
+    let user = User::new(timestamp);
 
     match repo.persist_user(&user).await {
         Ok(_) => Ok(Json::from(json!({"id":user.get_id()}))),

@@ -1,4 +1,4 @@
-use uuid::Uuid;
+use uuid::{Timestamp, Uuid};
 
 #[derive(Debug)]
 pub enum Order {
@@ -7,14 +7,14 @@ pub enum Order {
 }
 
 impl Order {
-    pub fn new_ask(user_id: Uuid, price: f32) -> Self {
-        let id = Uuid::new_v4();
+    pub fn new_ask(t: Timestamp, user_id: Uuid, price: f32) -> Self {
+        let id = Uuid::new_v7(t);
 
         Self::Ask { id, user_id, price }
     }
 
-    pub fn new_bid(user_id: Uuid, price: f32) -> Self {
-        let id = Uuid::new_v4();
+    pub fn new_bid(t: Timestamp, user_id: Uuid, price: f32) -> Self {
+        let id = Uuid::new_v7(t);
 
         Self::Bid { id, user_id, price }
     }
