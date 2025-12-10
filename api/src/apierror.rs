@@ -1,3 +1,7 @@
+/// This module is where responses from the API are generated
+///
+/// Here we can control what gets returned to the caller so that
+/// no unnecessary details are leaked.
 use axum::response::{IntoResponse, Response};
 use serde_json::json;
 
