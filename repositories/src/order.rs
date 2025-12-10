@@ -112,8 +112,6 @@ impl<'c> OrderRepository for Repository<'c> {
             .await
             .map_err(|_| OrderRepositoryError::DatabaseError)?;
 
-        dbg!(result);
-
         Ok(())
     }
 }

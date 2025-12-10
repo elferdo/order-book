@@ -3,11 +3,13 @@ use model::{
     repository::{OrderMatchRepository, OrderMatchRepositoryError},
 };
 use sqlx::{QueryBuilder, query};
+use tracing::{debug, instrument};
 use uuid::Uuid;
 
 use crate::Repository;
 
 impl<'c> OrderMatchRepository for Repository<'c> {
+    #[instrument(skip(self, iterator))]
     async fn persist_order_matches<I>(
         &mut self,
         iterator: I,
@@ -17,15 +19,13 @@ impl<'c> OrderMatchRepository for Repository<'c> {
     {
         let mut peekable = iterator.into_iter().peekable();
 
-        if peekable.next().is_none() {
+        if peekable.peek().is_none() {
             return Ok(());
         };
 
         let mut qb = QueryBuilder::new("INSERT INTO match ");
 
         qb.push_values(peekable, |mut b, m| {
-            dbg!(&m);
-
             b.push_bind(*m.get_ask()).push_bind(*m.get_bid());
         });
 
