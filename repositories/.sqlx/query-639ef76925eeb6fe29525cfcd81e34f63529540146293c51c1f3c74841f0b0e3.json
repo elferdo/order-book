@@ -5,11 +5,16 @@
     "columns": [
       {
         "ordinal": 0,
-        "name": "ask",
+        "name": "id",
         "type_info": "Uuid"
       },
       {
         "ordinal": 1,
+        "name": "ask",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
         "name": "bid",
         "type_info": "Uuid"
       }
@@ -21,6 +26,7 @@
       ]
     },
     "nullable": [
+      false,
       false,
       false
     ]

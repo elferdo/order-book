@@ -26,7 +26,9 @@ impl<'c> OrderMatchRepository for Repository<'c> {
         let mut qb = QueryBuilder::new("INSERT INTO match ");
 
         qb.push_values(peekable, |mut b, m| {
-            b.push_bind(*m.get_ask()).push_bind(*m.get_bid());
+            b.push_bind(*m.get_id())
+                .push_bind(*m.get_ask())
+                .push_bind(*m.get_bid());
         });
 
         let _ = qb
@@ -48,7 +50,11 @@ impl<'c> OrderMatchRepository for Repository<'c> {
             .await
             .map_err(|_| OrderMatchRepositoryError::DatabaseError)?;
 
-        Ok(Match::new(order_match.ask, order_match.bid))
+        Ok(Match::with(
+            order_match.id,
+            order_match.ask,
+            order_match.bid,
+        ))
     }
 
     async fn persist_order_match(

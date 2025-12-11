@@ -1,4 +1,5 @@
 use tracing::{debug, error, info, instrument};
+use uuid::{ContextV7, Timestamp};
 
 use crate::{
     lock_mode::LockMode,
@@ -13,9 +14,15 @@ where
     R: OrderRepository + OrderMatchRepository,
 {
     if let Ok(orders) = find_matching_orders(repository, order).await {
+        let context = ContextV7::new();
+        let t = Timestamp::now(context);
+
         let matches: Vec<_> = orders
             .into_iter()
-            .map(|a| Match::new(*a.get_id(), *order.get_id()))
+            .map(|o| match order {
+                Order::Bid { id, .. } => Match::new(t, *o.get_id(), *id),
+                Order::Ask { id, .. } => Match::new(t, *id, *o.get_id()),
+            })
             .collect();
 
         if let Err(e) = repository.persist_order_matches(matches).await {

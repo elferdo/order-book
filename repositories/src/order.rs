@@ -112,6 +112,10 @@ impl<'c> OrderRepository for Repository<'c> {
             .await
             .map_err(|_| OrderRepositoryError::DatabaseError)?;
 
-        Ok(())
+        if result.rows_affected() < 1 {
+            Err(OrderRepositoryError::DatabaseError)
+        } else {
+            Ok(())
+        }
     }
 }
