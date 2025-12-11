@@ -16,13 +16,14 @@ impl<'c> OrderRepository for Repository<'c> {
         lock_mode: LockMode,
         price: f32,
     ) -> Result<Vec<Order>, OrderRepositoryError> {
-        let mut qb = QueryBuilder::new("SELECT * FROM ask WHERE price <= ");
+        let mut qb = QueryBuilder::new("SELECT ask.id, ask.user, ask.price FROM ask LEFT JOIN match ON match.ask = ask.id WHERE match.bid IS NULL AND
+ price <= ");
         qb.push_bind(price);
 
         match lock_mode {
             LockMode::None => {}
             LockMode::KeyShare => {
-                qb.push(" FOR KEY SHARE;");
+                qb.push(" FOR KEY SHARE OF ask;");
             }
         };
 
@@ -54,13 +55,14 @@ impl<'c> OrderRepository for Repository<'c> {
         lock_mode: LockMode,
         price: f32,
     ) -> Result<Vec<Order>, OrderRepositoryError> {
-        let mut qb = QueryBuilder::new("SELECT * FROM bid WHERE price <= ");
+        let mut qb = QueryBuilder::new("SELECT bid.id, bid.user, bid.price FROM bid LEFT JOIN match ON match.bid = bid.id WHERE match.bid IS NULL AND
+ price >= ");
         qb.push_bind(price);
 
         match lock_mode {
             LockMode::None => {}
             LockMode::KeyShare => {
-                qb.push(" FOR KEY SHARE;");
+                qb.push(" FOR KEY SHARE OF bid;");
             }
         };
 
