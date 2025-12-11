@@ -1,0 +1,21 @@
+operations:
+  - drop_table:
+      name: match
+  - create_table:
+      name: match
+      columns:
+        - name: id
+          type: uuid
+          pk: true
+        - name: ask
+          type: uuid
+          references: 
+            name: fk_ask_id
+            table: ask
+            column: id
+        - name: bid
+          type: uuid
+          references:
+            name: fk_bid_id
+            table: bid
+            column: id
