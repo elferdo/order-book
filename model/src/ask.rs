@@ -5,19 +5,27 @@ use uuid::{Timestamp, Uuid};
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Ask {
     id: Uuid,
-    user_id: Uuid,
-    price: f32,
+    seller: Uuid,
+    not_below: f32,
 }
 
 impl Ask {
     pub fn new(t: Timestamp, user_id: Uuid, price: f32) -> Self {
         let id = Uuid::new_v7(t);
 
-        Self { id, user_id, price }
+        Self {
+            id,
+            seller: user_id,
+            not_below: price,
+        }
     }
 
     pub fn with(id: Uuid, user_id: Uuid, price: f32) -> Self {
-        Self { id, user_id, price }
+        Self {
+            id,
+            seller: user_id,
+            not_below: price,
+        }
     }
 
     pub fn get_id(&self) -> &Uuid {
@@ -25,11 +33,11 @@ impl Ask {
     }
 
     pub fn get_user_id(&self) -> Uuid {
-        self.user_id
+        self.seller
     }
 
     pub fn get_price(&self) -> f32 {
-        self.price
+        self.not_below
     }
 }
 
