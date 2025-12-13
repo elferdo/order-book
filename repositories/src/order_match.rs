@@ -25,6 +25,8 @@ impl<'c> OrderMatchRepository for Repository<'c> {
     where
         I: IntoIterator<Item = Match>,
     {
+        debug!("inserting match");
+
         let mut peekable = iterator.into_iter().peekable();
 
         if peekable.peek().is_none() {
@@ -60,20 +62,30 @@ impl<'c> OrderMatchRepository for Repository<'c> {
         let mut asks = HashMap::new();
         asks = order_match_rows
             .iter()
-            .map(|r| (r.ask, Ask::with(r.ask, *user.get_id(), r.ask_price)))
+            .map(|r| {
+                (
+                    r.ask,
+                    Arc::new(Ask::with(r.ask, *user.get_id(), r.ask_price)),
+                )
+            })
             .collect();
 
         let mut bids = HashMap::new();
         bids = order_match_rows
             .iter()
-            .map(|r| (r.bid, Bid::with(r.bid, *user.get_id(), r.bid_price)))
+            .map(|r| {
+                (
+                    r.bid,
+                    Arc::new(Bid::with(r.bid, *user.get_id(), r.bid_price)),
+                )
+            })
             .collect();
 
         let order_matches = order_match_rows
             .iter()
             .map(|r| {
-                let ask = Arc::new(asks.remove(&r.ask).unwrap());
-                let bid = Arc::new(bids.remove(&r.bid).unwrap());
+                let ask = asks.get(&r.ask).unwrap().clone();
+                let bid = bids.get(&r.bid).unwrap().clone();
                 Match::with(r.id, ask, bid)
             })
             .collect();

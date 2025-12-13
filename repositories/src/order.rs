@@ -7,7 +7,7 @@ use model::{
 };
 use sqlx::{Connection, Database, PgConnection, Postgres, QueryBuilder};
 use sqlx::{Row, query};
-use tracing::instrument;
+use tracing::{debug, instrument};
 use uuid::Uuid;
 
 use crate::Repository;
@@ -97,7 +97,10 @@ impl<'c> OrderRepository for Repository<'c> {
         persist_order(&mut *self.conn, order)
     }
 
+    #[instrument(skip(self))]
     fn persist_bid(&mut self, bid: &Bid) -> impl Future<Output = Result<(), OrderRepositoryError>> {
+        debug!("entering persist_bid()");
+
         let order = Order::from(bid);
 
         persist_order(&mut *self.conn, order)

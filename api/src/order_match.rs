@@ -62,10 +62,9 @@ async fn order_match_to_json<'c>(
 }
 
 #[instrument(skip(state))]
-pub async fn post_handler(
+pub async fn get_handler(
     State(state): State<AppState>,
     Path(user_id): Path<Uuid>,
-    Json(body): Json<AskRequest>,
 ) -> Result<Json<Value>, ApiError> {
     let mut conn = state
         .pool

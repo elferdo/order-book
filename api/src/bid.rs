@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::apierror::ApiError;
 use anyhow::Result;
 use appconfig::appstate::AppState;
@@ -5,9 +7,9 @@ use axum::{
     Json,
     extract::{Path, State},
 };
-use model::repository::OrderRepository;
+use model::lock_mode::LockMode;
 use model::repository::UserRepository;
-use model::{lock_mode::LockMode, match_maker::find_asks_for_bid};
+use model::{match_maker::find_matches_for_bid, repository::OrderRepository};
 use repositories::Repository;
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -41,15 +43,13 @@ pub async fn post_handler(
     let context = ContextV7::new();
     let timestamp = Timestamp::now(&context);
 
-    let bid = user.bid(timestamp, body.price);
+    let bid = Arc::new(user.bid(timestamp, body.price));
 
     repo.persist_bid(&bid)
         .await
         .map_err(|_| ApiError::DatabaseError)?;
 
-    find_asks_for_bid(&mut repo, &bid)
-        .await
-        .map_err(|_| ApiError::DatabaseError)?;
+    find_matches_for_bid(&mut repo, bid.clone()).await;
 
     t.commit().await.map_err(|_| ApiError::DatabaseError)?;
 

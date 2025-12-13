@@ -35,6 +35,6 @@ impl Match {
     }
 
     pub fn get_price(&self) -> f32 {
-        todo!()
+        (self.ask.get_price() + self.bid.get_price()) / 2.0
     }
 }

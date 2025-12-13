@@ -72,6 +72,7 @@ where
     }
 }
 
+#[instrument(skip(repository))]
 pub async fn find_asks_for_bid<R>(
     repository: &mut R,
     order: &Bid,
@@ -79,6 +80,8 @@ pub async fn find_asks_for_bid<R>(
 where
     R: OrderRepository + OrderMatchRepository,
 {
+    debug!("entering find_asks_for_bid");
+
     let result = repository
         .find_asks_below(LockMode::KeyShare, order.get_price())
         .await?
