@@ -6,8 +6,8 @@ use axum::{
     extract::{Path, State},
 };
 use model::lock_mode::LockMode;
+use model::repository::OrderRepository;
 use model::repository::UserRepository;
-use model::{match_maker::find_matches_for_ask, repository::OrderRepository};
 use repositories::Repository;
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -47,7 +47,7 @@ pub async fn post_handler(
         .await
         .map_err(|_| ApiError::DatabaseError)?;
 
-    find_matches_for_ask(&mut repo, ask)
+    ask.generate_matches(&mut repo)
         .await
         .map_err(|_| ApiError::DatabaseError)?;
 

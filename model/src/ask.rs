@@ -1,6 +1,13 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, collections::BTreeSet};
 
-use uuid::{Timestamp, Uuid};
+use tracing::{error, info, instrument};
+use uuid::{ContextV7, Timestamp, Uuid};
+
+use crate::{
+    lock_mode::LockMode,
+    order_match::Match,
+    repository::{OrderMatchRepository, OrderRepository, OrderRepositoryError},
+};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Ask {
@@ -38,6 +45,42 @@ impl Ask {
 
     pub fn get_price(&self) -> f32 {
         self.not_below
+    }
+
+    #[instrument(skip(repository))]
+    pub async fn generate_matches<R>(&self, repository: &mut R) -> Result<(), OrderRepositoryError>
+    where
+        R: OrderRepository + OrderMatchRepository,
+    {
+        let mut matching_orders: BTreeSet<_> = repository
+            .find_bids_above(LockMode::KeyShare, self.get_price())
+            .await?
+            .into_iter()
+            .collect();
+
+        if matching_orders.is_empty() {
+            return Ok(());
+        };
+
+        let first = matching_orders.pop_first().expect("this should never fail");
+
+        let context = ContextV7::new();
+        let t = Timestamp::now(context);
+
+        let order_match = Match::new(t, *self, first);
+
+        if let Err(e) = repository.persist_order_matches([order_match]).await {
+            match e {
+                crate::repository::OrderMatchRepositoryError::DatabaseError => {
+                    error!("{e}");
+                }
+                crate::repository::OrderMatchRepositoryError::UserError => todo!(),
+            }
+        };
+
+        info!("processing matching orders for ask");
+
+        Ok(())
     }
 }
 
