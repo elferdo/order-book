@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use crate::apierror::ApiError;
 use anyhow::Result;
 use appconfig::appstate::AppState;
@@ -43,13 +41,13 @@ pub async fn post_handler(
     let context = ContextV7::new();
     let timestamp = Timestamp::now(&context);
 
-    let bid = Arc::new(user.bid(timestamp, body.price));
+    let bid = user.bid(timestamp, body.price);
 
     repo.persist_bid(&bid)
         .await
         .map_err(|_| ApiError::DatabaseError)?;
 
-    find_matches_for_bid(&mut repo, bid.clone()).await;
+    find_matches_for_bid(&mut repo, bid).await;
 
     t.commit().await.map_err(|_| ApiError::DatabaseError)?;
 

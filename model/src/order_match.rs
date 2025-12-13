@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use uuid::{Timestamp, Uuid};
 
 use crate::{ask::Ask, bid::Bid};
@@ -7,18 +5,18 @@ use crate::{ask::Ask, bid::Bid};
 #[derive(Debug)]
 pub struct Match {
     id: Uuid,
-    ask: Arc<Ask>,
-    bid: Arc<Bid>,
+    ask: Ask,
+    bid: Bid,
 }
 
 impl Match {
-    pub fn new(t: Timestamp, ask: Arc<Ask>, bid: Arc<Bid>) -> Self {
+    pub fn new(t: Timestamp, ask: Ask, bid: Bid) -> Self {
         let id = Uuid::new_v7(t);
 
         Self { id, ask, bid }
     }
 
-    pub fn with(id: Uuid, ask: Arc<Ask>, bid: Arc<Bid>) -> Self {
+    pub fn with(id: Uuid, ask: Ask, bid: Bid) -> Self {
         Self { id, ask, bid }
     }
 

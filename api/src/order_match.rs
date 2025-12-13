@@ -7,18 +7,12 @@ use axum::{
 };
 use model::lock_mode::LockMode;
 use model::repository::UserRepository;
-use model::repository::{OrderRepository, OrderRepositoryError};
 use model::{order_match::Match, repository::OrderMatchRepository};
 use repositories::Repository;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use serde_json::{Value, json};
 use tracing::instrument;
-use uuid::{ContextV7, Timestamp, Uuid};
-
-#[derive(Debug, Deserialize)]
-pub struct AskRequest {
-    pub price: f32,
-}
+use uuid::Uuid;
 
 #[derive(Serialize)]
 struct OrderMatchSummary {
@@ -42,23 +36,6 @@ impl From<Match> for OrderMatchSummary {
             price,
         }
     }
-}
-
-async fn order_match_to_json<'c>(
-    order_match: &Match,
-    repo: &mut Repository<'c>,
-) -> Result<OrderMatchSummary, OrderRepositoryError> {
-    let ask = repo.find_ask(order_match.get_ask().get_id()).await?;
-    let bid = repo.find_bid(order_match.get_bid().get_id()).await?;
-
-    let j = OrderMatchSummary {
-        id: *order_match.get_id(),
-        ask: *ask.get_id(),
-        bid: *bid.get_id(),
-        price: order_match.get_price(),
-    };
-
-    todo!()
 }
 
 #[instrument(skip(state))]
@@ -87,6 +64,5 @@ pub async fn get_handler(
         .map(|m| m.into())
         .collect();
 
-    //let result = order_matches.iter().map(|om|
     Ok(Json::from(json!(order_matches)))
 }

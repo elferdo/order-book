@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 
 use uuid::{Timestamp, Uuid};
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Ask {
     id: Uuid,
     user_id: Uuid,

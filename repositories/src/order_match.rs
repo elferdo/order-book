@@ -1,7 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-};
+use std::collections::HashMap;
 
 use model::{
     ask::Ask,
@@ -12,7 +9,6 @@ use model::{
 };
 use sqlx::{QueryBuilder, query};
 use tracing::{debug, instrument};
-use uuid::Uuid;
 
 use crate::Repository;
 
@@ -59,34 +55,22 @@ impl<'c> OrderMatchRepository for Repository<'c> {
             .await
             .map_err(|_| OrderMatchRepositoryError::DatabaseError)?;
 
-        let mut asks = HashMap::new();
-        asks = order_match_rows
+        let asks: HashMap<_, _> = order_match_rows
             .iter()
-            .map(|r| {
-                (
-                    r.ask,
-                    Arc::new(Ask::with(r.ask, *user.get_id(), r.ask_price)),
-                )
-            })
+            .map(|r| (r.ask, Ask::with(r.ask, *user.get_id(), r.ask_price)))
             .collect();
 
-        let mut bids = HashMap::new();
-        bids = order_match_rows
+        let bids: HashMap<_, _> = order_match_rows
             .iter()
-            .map(|r| {
-                (
-                    r.bid,
-                    Arc::new(Bid::with(r.bid, *user.get_id(), r.bid_price)),
-                )
-            })
+            .map(|r| (r.bid, Bid::with(r.bid, *user.get_id(), r.bid_price)))
             .collect();
 
         let order_matches = order_match_rows
             .iter()
             .map(|r| {
-                let ask = asks.get(&r.ask).unwrap().clone();
-                let bid = bids.get(&r.bid).unwrap().clone();
-                Match::with(r.id, ask, bid)
+                let ask = asks.get(&r.ask).unwrap();
+                let bid = bids.get(&r.bid).unwrap();
+                Match::with(r.id, *ask, *bid)
             })
             .collect();
 

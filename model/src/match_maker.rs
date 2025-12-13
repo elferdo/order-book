@@ -1,4 +1,4 @@
-use std::{collections::BTreeSet, sync::Arc};
+use std::collections::BTreeSet;
 use tracing::{debug, error, info, instrument};
 use uuid::{ContextV7, Timestamp};
 
@@ -11,13 +11,13 @@ use crate::{
 };
 
 #[instrument(skip(repository))]
-pub async fn find_matches_for_ask<R>(repository: &mut R, ask: Arc<Ask>)
+pub async fn find_matches_for_ask<R>(repository: &mut R, ask: Ask)
 where
     R: OrderRepository + OrderMatchRepository,
 {
     if let Ok(mut matching_orders) = find_bids_for_ask(repository, &ask).await {
         let first = match matching_orders.pop_first() {
-            Some(m) => Arc::new(m),
+            Some(m) => m,
             None => return,
         };
 
@@ -42,13 +42,13 @@ where
 }
 
 #[instrument(skip(repository))]
-pub async fn find_matches_for_bid<R>(repository: &mut R, bid: Arc<Bid>)
+pub async fn find_matches_for_bid<R>(repository: &mut R, bid: Bid)
 where
     R: OrderRepository + OrderMatchRepository,
 {
     if let Ok(mut matching_orders) = find_asks_for_bid(repository, &bid).await {
         let first = match matching_orders.pop_first() {
-            Some(m) => Arc::new(m),
+            Some(m) => m,
             None => return,
         };
 

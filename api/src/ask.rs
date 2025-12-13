@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use crate::apierror::ApiError;
 use anyhow::Result;
 use appconfig::appstate::AppState;
@@ -13,7 +11,7 @@ use model::{match_maker::find_matches_for_ask, repository::OrderRepository};
 use repositories::Repository;
 use serde::Deserialize;
 use serde_json::{Value, json};
-use tracing::{debug, instrument};
+use tracing::instrument;
 use uuid::{ContextV7, Timestamp, Uuid};
 
 #[derive(Debug, Deserialize)]
@@ -43,13 +41,13 @@ pub async fn post_handler(
     let context = ContextV7::new();
     let timestamp = Timestamp::now(&context);
 
-    let ask = Arc::new(user.ask(timestamp, body.price));
+    let ask = user.ask(timestamp, body.price);
 
     repo.persist_ask(&ask)
         .await
         .map_err(|_| ApiError::DatabaseError)?;
 
-    find_matches_for_ask(&mut repo, ask.clone()).await;
+    find_matches_for_ask(&mut repo, ask).await;
 
     t.commit().await.map_err(|_| ApiError::DatabaseError)?;
 
