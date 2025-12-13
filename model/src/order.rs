@@ -1,4 +1,3 @@
-use std::cmp::{Ordering, PartialOrd};
 use uuid::{Timestamp, Uuid};
 
 use crate::{ask::Ask, bid::Bid};

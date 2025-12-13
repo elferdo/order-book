@@ -5,7 +5,7 @@ use model::{
     order::Order,
     repository::{OrderRepository, OrderRepositoryError},
 };
-use sqlx::{Connection, Database, PgConnection, Postgres, QueryBuilder};
+use sqlx::{Database, Postgres, QueryBuilder};
 use sqlx::{Row, query};
 use tracing::{debug, instrument};
 use uuid::Uuid;
