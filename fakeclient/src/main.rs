@@ -29,18 +29,26 @@ impl Distribution<Bid> for BidDistribution {
     }
 }
 
-async fn post_bid(user_id: &Uuid) -> Result<()> {
-    let price = Uniform::new(10.0, 100.0)?.sample(&mut rng());
+async fn post_orders(user_id: &Uuid) -> Result<()> {
+    let c = reqwest::ClientBuilder::new()
+        .connect_timeout(Duration::from_secs(30))
+        .timeout(Duration::from_secs(30))
+        .build()?;
+    let price = Uniform::new(40.0, 70.0)?.sample(&mut rng());
 
     let u = Url::parse(&format!("http://127.0.0.1:5000/user/{user_id}/bid").to_string())?;
 
     let bidj = json!({"user": user_id, "price": price});
 
-    let c = reqwest::ClientBuilder::new()
-        .connect_timeout(Duration::from_secs(30))
-        .timeout(Duration::from_secs(30))
-        .build()?;
-    let result = c.post(u).json(&bidj).send().await?;
+    let result = c.post(u).json(&bidj).send().await;
+
+    let price = Uniform::new(60.0, 100.0)?.sample(&mut rng());
+
+    let u = Url::parse(&format!("http://127.0.0.1:5000/user/{user_id}/ask").to_string())?;
+
+    let askj = json!({"user": user_id, "price": price});
+
+    let result = c.post(u).json(&askj).send().await;
 
     Ok(())
 }
@@ -64,7 +72,7 @@ async fn main() -> Result<()> {
     for _ in 1..10000 {
         let u = user_id.clone();
         let handle = tokio::spawn(async move {
-            let result = post_bid(&u).await;
+            let result = post_orders(&u).await;
         });
 
         handles.push(handle);

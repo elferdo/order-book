@@ -1,6 +1,8 @@
+use std::cmp::Ordering;
+
 use uuid::{Timestamp, Uuid};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Ask {
     id: Uuid,
     user_id: Uuid,
@@ -28,5 +30,32 @@ impl Ask {
 
     pub fn get_price(&self) -> f32 {
         self.price
+    }
+}
+
+impl PartialOrd for Ask {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        if self.get_price() < other.get_price() {
+            Some(Ordering::Less)
+        } else if self.get_price() == other.get_price() {
+            Some(Ordering::Equal)
+        } else if self.get_price() > other.get_price() {
+            Some(Ordering::Greater)
+        } else {
+            None
+        }
+    }
+}
+
+impl Eq for Ask {}
+
+impl Ord for Ask {
+    fn cmp(&self, other: &Self) -> Ordering {
+        if let Some(c) = self.partial_cmp(other) {
+            c
+        } else {
+            // If we can't establish a priority, let's just give both orders equal priority
+            Ordering::Equal
+        }
     }
 }

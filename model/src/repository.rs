@@ -1,28 +1,28 @@
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::{lock_mode::LockMode, order::Order, order_match::Match, user::User};
+use crate::{
+    ask::Ask, bid::Bid, lock_mode::LockMode, order::Order, order_match::Match, user::User,
+};
 
 pub trait OrderRepository {
     fn find_asks_below(
         &mut self,
         lock_mode: LockMode,
         price: f32,
-    ) -> impl Future<Output = Result<Vec<Order>, OrderRepositoryError>>;
+    ) -> impl Future<Output = Result<Vec<Ask>, OrderRepositoryError>>;
 
     fn find_bids_above(
         &mut self,
         lock_mode: LockMode,
         price: f32,
-    ) -> impl Future<Output = Result<Vec<Order>, OrderRepositoryError>>;
+    ) -> impl Future<Output = Result<Vec<Bid>, OrderRepositoryError>>;
 
     fn find_ask(&mut self, id: &Uuid) -> impl Future<Output = Result<Order, OrderRepositoryError>>;
     fn find_bid(&mut self, id: &Uuid) -> impl Future<Output = Result<Order, OrderRepositoryError>>;
 
-    fn persist_order(
-        &mut self,
-        order: &Order,
-    ) -> impl Future<Output = Result<(), OrderRepositoryError>>;
+    fn persist_ask(&mut self, ask: &Ask) -> impl Future<Output = Result<(), OrderRepositoryError>>;
+    fn persist_bid(&mut self, bid: &Bid) -> impl Future<Output = Result<(), OrderRepositoryError>>;
 }
 
 pub trait UserRepository {
@@ -42,11 +42,10 @@ pub trait UserRepository {
 }
 
 pub trait OrderMatchRepository {
-    fn get_order_match(
+    fn find_order_matches_by_user(
         &mut self,
-        ask: &Uuid,
-        bid: &Uuid,
-    ) -> impl Future<Output = Result<Match, OrderMatchRepositoryError>>;
+        user: &User,
+    ) -> impl Future<Output = Result<Vec<Match>, OrderMatchRepositoryError>>;
 
     fn persist_order_match(
         &mut self,

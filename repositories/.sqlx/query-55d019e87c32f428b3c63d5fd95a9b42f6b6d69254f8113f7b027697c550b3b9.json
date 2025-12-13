@@ -1,15 +1,16 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO match VALUES ($1, $2)",
+  "query": "INSERT INTO match VALUES ($1, $2, $3)",
   "describe": {
     "columns": [],
     "parameters": {
       "Left": [
+        "Uuid",
         "Uuid",
         "Uuid"
       ]
     },
     "nullable": []
   },
-  "hash": "21c20dfd8298da3398a656ccace9c81c6cb75898814261d738df2109da1d4e21"
+  "hash": "55d019e87c32f428b3c63d5fd95a9b42f6b6d69254f8113f7b027697c550b3b9"
 }

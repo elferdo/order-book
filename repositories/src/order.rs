@@ -1,9 +1,11 @@
 use model::{
+    ask::Ask,
+    bid::Bid,
     lock_mode::LockMode,
     order::Order,
     repository::{OrderRepository, OrderRepositoryError},
 };
-use sqlx::QueryBuilder;
+use sqlx::{Connection, Database, PgConnection, Postgres, QueryBuilder};
 use sqlx::{Row, query};
 use tracing::instrument;
 use uuid::Uuid;
@@ -15,7 +17,7 @@ impl<'c> OrderRepository for Repository<'c> {
         &mut self,
         lock_mode: LockMode,
         price: f32,
-    ) -> Result<Vec<Order>, OrderRepositoryError> {
+    ) -> Result<Vec<Ask>, OrderRepositoryError> {
         let mut qb = QueryBuilder::new("SELECT ask.id, ask.user, ask.price FROM ask LEFT JOIN match ON match.ask = ask.id WHERE match.bid IS NULL AND
  price <= ");
         qb.push_bind(price);
@@ -35,7 +37,7 @@ impl<'c> OrderRepository for Repository<'c> {
 
         let asks: Vec<_> = ask_rows
             .into_iter()
-            .map(|r| Order::ask_with(r.get("id"), r.get("user"), r.get("price")))
+            .map(|r| Ask::with(r.get("id"), r.get("user"), r.get("price")))
             .collect();
 
         Ok(asks)
@@ -54,7 +56,7 @@ impl<'c> OrderRepository for Repository<'c> {
         &mut self,
         lock_mode: LockMode,
         price: f32,
-    ) -> Result<Vec<Order>, OrderRepositoryError> {
+    ) -> Result<Vec<Bid>, OrderRepositoryError> {
         let mut qb = QueryBuilder::new("SELECT bid.id, bid.user, bid.price FROM bid LEFT JOIN match ON match.bid = bid.id WHERE match.bid IS NULL AND
  price >= ");
         qb.push_bind(price);
@@ -74,7 +76,7 @@ impl<'c> OrderRepository for Repository<'c> {
 
         let bids: Vec<_> = bid_rows
             .into_iter()
-            .map(|r| Order::bid_with(r.get("id"), r.get("user"), r.get("price")))
+            .map(|r| Bid::with(r.get("id"), r.get("user"), r.get("price")))
             .collect();
 
         Ok(bids)
@@ -89,35 +91,50 @@ impl<'c> OrderRepository for Repository<'c> {
         Ok(Order::bid_with(bid.id, bid.user, bid.price))
     }
 
-    #[instrument(skip(self))]
-    async fn persist_order(&mut self, order: &Order) -> Result<(), OrderRepositoryError> {
-        let mut qb = QueryBuilder::new("INSERT INTO ");
+    fn persist_ask(&mut self, ask: &Ask) -> impl Future<Output = Result<(), OrderRepositoryError>> {
+        let order = Order::from(ask);
 
-        let table_name = match order {
-            Order::Ask { .. } => "ask",
-            Order::Bid { .. } => "bid",
-        };
+        persist_order(&mut *self.conn, order)
+    }
 
-        qb.push(table_name);
-        qb.push(" ");
+    fn persist_bid(&mut self, bid: &Bid) -> impl Future<Output = Result<(), OrderRepositoryError>> {
+        let order = Order::from(bid);
 
-        qb.push_values([order], |mut b, o| {
-            b.push_bind(*o.get_id())
-                .push_bind(*o.get_user_id())
-                .push_bind(o.get_price());
-        });
+        persist_order(&mut *self.conn, order)
+    }
+}
 
-        let query = qb.build();
+#[instrument]
+async fn persist_order(
+    conn: &mut <Postgres as Database>::Connection,
+    order: Order,
+) -> Result<(), OrderRepositoryError> {
+    let mut qb = QueryBuilder::new("INSERT INTO ");
 
-        let result = query
-            .execute(&mut *self.conn)
-            .await
-            .map_err(|_| OrderRepositoryError::DatabaseError)?;
+    let table_name = match order {
+        Order::Ask { .. } => "ask",
+        Order::Bid { .. } => "bid",
+    };
 
-        if result.rows_affected() < 1 {
-            Err(OrderRepositoryError::DatabaseError)
-        } else {
-            Ok(())
-        }
+    qb.push(table_name);
+    qb.push(" ");
+
+    qb.push_values([order], |mut b, o| {
+        b.push_bind(*o.get_id())
+            .push_bind(*o.get_user_id())
+            .push_bind(o.get_price());
+    });
+
+    let query = qb.build();
+
+    let result = query
+        .execute(&mut *conn)
+        .await
+        .map_err(|_| OrderRepositoryError::DatabaseError)?;
+
+    if result.rows_affected() < 1 {
+        Err(OrderRepositoryError::DatabaseError)
+    } else {
+        Ok(())
     }
 }

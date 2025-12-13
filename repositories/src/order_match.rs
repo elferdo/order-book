@@ -1,6 +1,14 @@
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
+
 use model::{
+    ask::Ask,
+    bid::Bid,
     order_match::Match,
     repository::{OrderMatchRepository, OrderMatchRepositoryError},
+    user::User,
 };
 use sqlx::{QueryBuilder, query};
 use tracing::{debug, instrument};
@@ -27,8 +35,8 @@ impl<'c> OrderMatchRepository for Repository<'c> {
 
         qb.push_values(peekable, |mut b, m| {
             b.push_bind(*m.get_id())
-                .push_bind(*m.get_ask())
-                .push_bind(*m.get_bid());
+                .push_bind(*m.get_ask().get_id())
+                .push_bind(*m.get_bid().get_id());
         });
 
         let _ = qb
@@ -40,21 +48,37 @@ impl<'c> OrderMatchRepository for Repository<'c> {
         Ok(())
     }
 
-    async fn get_order_match(
+    async fn find_order_matches_by_user(
         &mut self,
-        ask: &Uuid,
-        bid: &Uuid,
-    ) -> Result<Match, OrderMatchRepositoryError> {
-        let order_match = query!("select * from match where ask = $1 and bid = $2", ask, bid)
-            .fetch_one(&mut *self.conn)
+        user: &User,
+    ) -> Result<Vec<Match>, OrderMatchRepositoryError> {
+        let order_match_rows = query!("SELECT match.id, match.ask, match.bid, ask.price as ask_price, bid.price as bid_price FROM match JOIN ask ON match.ask = ask.id JOIN bid ON match.bid = bid.id WHERE ask.user = $1 OR bid.user = $1", user.get_id())
+            .fetch_all(&mut *self.conn)
             .await
             .map_err(|_| OrderMatchRepositoryError::DatabaseError)?;
 
-        Ok(Match::with(
-            order_match.id,
-            order_match.ask,
-            order_match.bid,
-        ))
+        let mut asks = HashMap::new();
+        asks = order_match_rows
+            .iter()
+            .map(|r| (r.ask, Ask::with(r.ask, *user.get_id(), r.ask_price)))
+            .collect();
+
+        let mut bids = HashMap::new();
+        bids = order_match_rows
+            .iter()
+            .map(|r| (r.bid, Bid::with(r.bid, *user.get_id(), r.bid_price)))
+            .collect();
+
+        let order_matches = order_match_rows
+            .iter()
+            .map(|r| {
+                let ask = Arc::new(asks.remove(&r.ask).unwrap());
+                let bid = Arc::new(bids.remove(&r.bid).unwrap());
+                Match::with(r.id, ask, bid)
+            })
+            .collect();
+
+        Ok(order_matches)
     }
 
     async fn persist_order_match(
@@ -62,9 +86,10 @@ impl<'c> OrderMatchRepository for Repository<'c> {
         order_match: &Match,
     ) -> Result<(), OrderMatchRepositoryError> {
         query!(
-            "INSERT INTO match VALUES ($1, $2)",
-            order_match.get_ask(),
-            order_match.get_bid(),
+            "INSERT INTO match VALUES ($1, $2, $3)",
+            order_match.get_id(),
+            order_match.get_ask().get_id(),
+            order_match.get_bid().get_id(),
         )
         .execute(&mut *self.conn)
         .await
