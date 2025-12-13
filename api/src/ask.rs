@@ -47,7 +47,9 @@ pub async fn post_handler(
         .await
         .map_err(|_| ApiError::DatabaseError)?;
 
-    find_matches_for_ask(&mut repo, ask).await;
+    find_matches_for_ask(&mut repo, ask)
+        .await
+        .map_err(|_| ApiError::DatabaseError)?;
 
     t.commit().await.map_err(|_| ApiError::DatabaseError)?;
 

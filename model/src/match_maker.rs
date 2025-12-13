@@ -11,96 +11,79 @@ use crate::{
 };
 
 #[instrument(skip(repository))]
-pub async fn find_matches_for_ask<R>(repository: &mut R, ask: Ask)
-where
-    R: OrderRepository + OrderMatchRepository,
-{
-    if let Ok(mut matching_orders) = find_bids_for_ask(repository, &ask).await {
-        let first = match matching_orders.pop_first() {
-            Some(m) => m,
-            None => return,
-        };
-
-        let context = ContextV7::new();
-        let t = Timestamp::now(context);
-
-        let order_match = Match::new(t, ask, first);
-
-        if let Err(e) = repository.persist_order_matches([order_match]).await {
-            match e {
-                crate::repository::OrderMatchRepositoryError::DatabaseError => {
-                    error!("{e}");
-                }
-                crate::repository::OrderMatchRepositoryError::UserError => todo!(),
-            }
-        };
-
-        info!("processing matching orders for ask");
-    } else {
-        debug!("no matching orders for ask");
-    }
-}
-
-#[instrument(skip(repository))]
-pub async fn find_matches_for_bid<R>(repository: &mut R, bid: Bid)
-where
-    R: OrderRepository + OrderMatchRepository,
-{
-    if let Ok(mut matching_orders) = find_asks_for_bid(repository, &bid).await {
-        let first = match matching_orders.pop_first() {
-            Some(m) => m,
-            None => return,
-        };
-
-        let context = ContextV7::new();
-        let t = Timestamp::now(context);
-
-        let order_match = Match::new(t, first, bid);
-
-        if let Err(e) = repository.persist_order_matches([order_match]).await {
-            match e {
-                crate::repository::OrderMatchRepositoryError::DatabaseError => {
-                    error!("{e}");
-                }
-                crate::repository::OrderMatchRepositoryError::UserError => todo!(),
-            }
-        };
-
-        info!("processing matching orders for bid");
-    } else {
-        debug!("no matching orders for bid");
-    }
-}
-
-#[instrument(skip(repository))]
-pub async fn find_asks_for_bid<R>(
+pub async fn find_matches_for_ask<R>(
     repository: &mut R,
-    bid: &Bid,
-) -> Result<BTreeSet<Ask>, OrderRepositoryError>
+    ask: Ask,
+) -> Result<(), OrderRepositoryError>
 where
     R: OrderRepository + OrderMatchRepository,
 {
-    debug!("entering find_asks_for_bid");
-
-    let result = repository
-        .find_asks_below(LockMode::KeyShare, bid.get_price())
-        .await?
-        .into_iter();
-
-    Ok(BTreeSet::from_iter(result))
-}
-
-pub async fn find_bids_for_ask<R>(
-    repository: &mut R,
-    ask: &Ask,
-) -> Result<BTreeSet<Bid>, OrderRepositoryError>
-where
-    R: OrderRepository + OrderMatchRepository,
-{
-    let result = repository
+    let mut matching_orders: BTreeSet<_> = repository
         .find_bids_above(LockMode::KeyShare, ask.get_price())
         .await?
-        .into_iter();
+        .into_iter()
+        .collect();
 
-    Ok(BTreeSet::from_iter(result))
+    if matching_orders.is_empty() {
+        return Ok(());
+    };
+
+    let first = matching_orders.pop_first().expect("this should never fail");
+
+    let context = ContextV7::new();
+    let t = Timestamp::now(context);
+
+    let order_match = Match::new(t, ask, first);
+
+    if let Err(e) = repository.persist_order_matches([order_match]).await {
+        match e {
+            crate::repository::OrderMatchRepositoryError::DatabaseError => {
+                error!("{e}");
+            }
+            crate::repository::OrderMatchRepositoryError::UserError => todo!(),
+        }
+    };
+
+    info!("processing matching orders for ask");
+
+    Ok(())
+}
+
+#[instrument(skip(repository))]
+pub async fn find_matches_for_bid<R>(
+    repository: &mut R,
+    bid: Bid,
+) -> Result<(), OrderRepositoryError>
+where
+    R: OrderRepository + OrderMatchRepository,
+{
+    let mut matching_orders: BTreeSet<_> = repository
+        .find_asks_below(LockMode::KeyShare, bid.get_price())
+        .await?
+        .into_iter()
+        .collect();
+
+    if matching_orders.is_empty() {
+        return Ok(());
+    }
+
+    let first = matching_orders.pop_first().expect("this should never fail");
+
+    let context = ContextV7::new();
+    let t = Timestamp::now(context);
+
+    let order_match = Match::new(t, first, bid);
+
+    if let Err(e) = repository.persist_order_matches([order_match]).await {
+        match e {
+            crate::repository::OrderMatchRepositoryError::DatabaseError => {
+                error!("{e}");
+            }
+            crate::repository::OrderMatchRepositoryError::UserError => todo!(),
+        }
+    };
+
+    info!("processing matching orders for bid");
+
+    Ok(())
 }
