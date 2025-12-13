@@ -75,7 +75,7 @@ where
 #[instrument(skip(repository))]
 pub async fn find_asks_for_bid<R>(
     repository: &mut R,
-    order: &Bid,
+    bid: &Bid,
 ) -> Result<BTreeSet<Ask>, OrderRepositoryError>
 where
     R: OrderRepository + OrderMatchRepository,
@@ -83,7 +83,7 @@ where
     debug!("entering find_asks_for_bid");
 
     let result = repository
-        .find_asks_below(LockMode::KeyShare, order.get_price())
+        .find_asks_below(LockMode::KeyShare, bid.get_price())
         .await?
         .into_iter();
 
@@ -92,13 +92,13 @@ where
 
 pub async fn find_bids_for_ask<R>(
     repository: &mut R,
-    order: &Ask,
+    ask: &Ask,
 ) -> Result<BTreeSet<Bid>, OrderRepositoryError>
 where
     R: OrderRepository + OrderMatchRepository,
 {
     let result = repository
-        .find_bids_above(LockMode::KeyShare, order.get_price())
+        .find_bids_above(LockMode::KeyShare, ask.get_price())
         .await?
         .into_iter();
 
