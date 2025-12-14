@@ -3,30 +3,13 @@ use std::{sync::Arc, time::Duration};
 use anyhow::Result;
 use rand::{distr::Uniform, prelude::*, rng};
 use reqwest::Url;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
 struct User {
     id: Uuid,
-}
-
-struct BidDistribution {
-    pub price: Uniform<f32>,
-}
-
-#[derive(Serialize)]
-struct Bid {
-    pub price: f32,
-}
-
-impl Distribution<Bid> for BidDistribution {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Bid {
-        let price = self.price.sample(rng);
-
-        Bid { price }
-    }
 }
 
 async fn post_orders(user_id: &Uuid) -> Result<()> {
@@ -40,7 +23,7 @@ async fn post_orders(user_id: &Uuid) -> Result<()> {
 
     let bidj = json!({"user": user_id, "price": price});
 
-    let result = c.post(u).json(&bidj).send().await;
+    c.post(u).json(&bidj).send().await?;
 
     let price = Uniform::new(60.0, 100.0)?.sample(&mut rng());
 
@@ -48,7 +31,7 @@ async fn post_orders(user_id: &Uuid) -> Result<()> {
 
     let askj = json!({"user": user_id, "price": price});
 
-    let result = c.post(u).json(&askj).send().await;
+    c.post(u).json(&askj).send().await?;
 
     Ok(())
 }
@@ -72,14 +55,19 @@ async fn main() -> Result<()> {
     for _ in 1..10000 {
         let u = user_id.clone();
         let handle = tokio::spawn(async move {
-            let result = post_orders(&u).await;
+            match post_orders(&u).await {
+                Ok(_) => {}
+                Err(_) => panic!(),
+            };
         });
 
         handles.push(handle);
     }
 
     for handle in handles {
-        tokio::join!(handle);
+        let result = tokio::join!(handle);
+
+        result.0?;
     }
     Ok(())
 }
