@@ -3,14 +3,11 @@ use std::{cmp::Ordering, collections::BTreeSet};
 use tracing::{error, info, instrument};
 use uuid::{ContextV7, Timestamp, Uuid};
 
-use crate::{
-    lock_mode::LockMode,
-    order::{
-        order_match::Match,
-        repository::{OrderRepository, OrderRepositoryError},
-    },
-    repository::OrderMatchRepository,
-};
+use super::order_match_repository::OrderMatchRepository;
+use super::order_match_repository::OrderMatchRepositoryError;
+use crate::order::repository::OrderRepository;
+use crate::order::repository::OrderRepositoryError;
+use crate::{lock_mode::LockMode, order::order_match::Match};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Ask {
@@ -74,10 +71,10 @@ impl Ask {
 
         if let Err(e) = repository.persist_order_matches([order_match]).await {
             match e {
-                crate::repository::OrderMatchRepositoryError::DatabaseError => {
+                OrderMatchRepositoryError::DatabaseError => {
                     error!("{e}");
                 }
-                crate::repository::OrderMatchRepositoryError::UserError => todo!(),
+                OrderMatchRepositoryError::UserError => todo!(),
             }
         };
 

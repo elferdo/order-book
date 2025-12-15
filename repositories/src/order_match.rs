@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use model::{
     order::order_match::Match,
+    order::order_match_repository::{OrderMatchRepository, OrderMatchRepositoryError},
     order::{ask::Ask, bid::Bid},
-    repository::{OrderMatchRepository, OrderMatchRepositoryError},
     user::user::User,
 };
 use sqlx::{QueryBuilder, query};

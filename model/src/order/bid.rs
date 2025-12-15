@@ -3,10 +3,10 @@ use std::{cmp::Ordering, collections::BTreeSet};
 use tracing::{error, info, instrument};
 use uuid::{ContextV7, Timestamp, Uuid};
 
-use crate::{lock_mode::LockMode, order::order_match::Match, repository::OrderMatchRepository};
-
-use super::repository::OrderRepository;
-use super::repository::OrderRepositoryError;
+use crate::order::order_match_repository::OrderMatchRepository;
+use crate::order::order_match_repository::OrderMatchRepositoryError;
+use crate::order::repository::{OrderRepository, OrderRepositoryError};
+use crate::{lock_mode::LockMode, order::order_match::Match};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Bid {
@@ -70,10 +70,10 @@ impl Bid {
 
         if let Err(e) = repository.persist_order_matches([order_match]).await {
             match e {
-                crate::repository::OrderMatchRepositoryError::DatabaseError => {
+                OrderMatchRepositoryError::DatabaseError => {
                     error!("{e}");
                 }
-                crate::repository::OrderMatchRepositoryError::UserError => todo!(),
+                OrderMatchRepositoryError::UserError => todo!(),
             }
         };
 
