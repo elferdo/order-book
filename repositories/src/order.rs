@@ -19,6 +19,8 @@ impl<'c> OrderRepository for Repository<'c> {
         let mut qb = QueryBuilder::new("SELECT ask.id, ask.user, ask.price FROM ask LEFT JOIN match ON match.ask = ask.id WHERE match.bid IS NULL AND
  price <= ");
         qb.push_bind(bid.get_price());
+        qb.push(" AND ask.user <> ");
+        qb.push_bind(bid.get_user_id());
 
         match lock_mode {
             LockMode::None => {}
@@ -58,6 +60,8 @@ impl<'c> OrderRepository for Repository<'c> {
         let mut qb = QueryBuilder::new("SELECT bid.id, bid.user, bid.price FROM bid LEFT JOIN match ON match.bid = bid.id WHERE match.bid IS NULL AND
  price >= ");
         qb.push_bind(ask.get_price());
+        qb.push(" AND bid.user <> ");
+        qb.push_bind(ask.get_user_id());
 
         match lock_mode {
             LockMode::None => {}

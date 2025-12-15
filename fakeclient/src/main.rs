@@ -57,7 +57,7 @@ async fn main() -> Result<()> {
         let handle = tokio::spawn(async move {
             match post_orders(&u).await {
                 Ok(_) => {}
-                Err(_) => panic!(),
+                Err(_) => eprintln!("error"),
             };
         });
 
