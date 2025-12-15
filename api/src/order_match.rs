@@ -7,7 +7,7 @@ use axum::{
 };
 use model::lock_mode::LockMode;
 use model::user::repository::UserRepository;
-use model::{order_match::Match, repository::OrderMatchRepository};
+use model::{order::order_match::Match, repository::OrderMatchRepository};
 use repositories::Repository;
 use serde::Serialize;
 use serde_json::{Value, json};

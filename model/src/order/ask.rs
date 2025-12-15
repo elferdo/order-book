@@ -3,10 +3,14 @@ use std::{cmp::Ordering, collections::BTreeSet};
 use tracing::{error, info, instrument};
 use uuid::{ContextV7, Timestamp, Uuid};
 
-use crate::{lock_mode::LockMode, order_match::Match, repository::OrderMatchRepository};
-
-use crate::order::repository::OrderRepository;
-use crate::order::repository::OrderRepositoryError;
+use crate::{
+    lock_mode::LockMode,
+    order::{
+        order_match::Match,
+        repository::{OrderRepository, OrderRepositoryError},
+    },
+    repository::OrderMatchRepository,
+};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Ask {

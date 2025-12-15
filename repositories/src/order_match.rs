@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use model::{
+    order::order_match::Match,
     order::{ask::Ask, bid::Bid},
-    order_match::Match,
     repository::{OrderMatchRepository, OrderMatchRepositoryError},
     user::user::User,
 };

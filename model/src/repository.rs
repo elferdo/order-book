@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::{order_match::Match, user::user::User};
+use crate::{order::order_match::Match, user::user::User};
 
 pub trait OrderMatchRepository {
     fn find_order_matches_by_user(

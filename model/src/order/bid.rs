@@ -3,7 +3,7 @@ use std::{cmp::Ordering, collections::BTreeSet};
 use tracing::{error, info, instrument};
 use uuid::{ContextV7, Timestamp, Uuid};
 
-use crate::{lock_mode::LockMode, order_match::Match, repository::OrderMatchRepository};
+use crate::{lock_mode::LockMode, order::order_match::Match, repository::OrderMatchRepository};
 
 use super::repository::OrderRepository;
 use super::repository::OrderRepositoryError;
