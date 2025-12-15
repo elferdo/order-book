@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT MIN(price) AS price FROM bid;",
+  "query": "SELECT MIN(price) AS price FROM ask LEFT JOIN match ON match.ask = ask.id WHERE match.bid IS NULL;",
   "describe": {
     "columns": [
       {
@@ -16,5 +16,5 @@
       null
     ]
   },
-  "hash": "e1ff84d8efda5d450976b5eee3a445f484b0e53c1ad22d76e655082bb8904e21"
+  "hash": "b86405ebc3228fd8a78456a989c8ebc8331e206d38047f66945322f42396219f"
 }
