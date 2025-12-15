@@ -51,22 +51,12 @@ impl<'c> CandidateRepository for Repository<'c> {
             .await
             .map_err(|_| CandidateRepositoryError::DatabaseError)?;
 
-        let asks: HashMap<_, _> = candidate_rows
-            .iter()
-            .map(|r| (r.ask, Ask::with(r.ask, *user.get_id(), r.ask_price)))
-            .collect();
-
-        let bids: HashMap<_, _> = candidate_rows
-            .iter()
-            .map(|r| (r.bid, Bid::with(r.bid, *user.get_id(), r.bid_price)))
-            .collect();
-
         let candidates = candidate_rows
             .iter()
             .map(|r| {
-                let ask = asks.get(&r.ask).unwrap();
-                let bid = bids.get(&r.bid).unwrap();
-                Candidate::with(r.id, *ask, *bid)
+                let ask = Ask::with(r.ask, *user.get_id(), r.ask_price);
+                let bid = Bid::with(r.bid, *user.get_id(), r.bid_price);
+                Candidate::with(r.id, ask, bid)
             })
             .collect();
 
