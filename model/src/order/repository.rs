@@ -10,13 +10,13 @@ pub trait OrderRepository {
     fn find_asks_below(
         &mut self,
         lock_mode: LockMode,
-        price: f32,
+        bid: &Bid,
     ) -> impl Future<Output = Result<Vec<Ask>, OrderRepositoryError>>;
 
     fn find_bids_above(
         &mut self,
         lock_mode: LockMode,
-        price: f32,
+        ask: &Ask,
     ) -> impl Future<Output = Result<Vec<Bid>, OrderRepositoryError>>;
 
     fn find_ask(&mut self, id: &Uuid) -> impl Future<Output = Result<Order, OrderRepositoryError>>;

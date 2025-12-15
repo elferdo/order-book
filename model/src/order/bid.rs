@@ -52,7 +52,7 @@ impl Bid {
         R: OrderRepository + OrderMatchRepository,
     {
         let mut matching_orders: BTreeSet<_> = repository
-            .find_asks_below(LockMode::KeyShare, self.get_price())
+            .find_asks_below(LockMode::KeyShare, self)
             .await?
             .into_iter()
             .collect();

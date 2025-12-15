@@ -14,11 +14,11 @@ impl<'c> OrderRepository for Repository<'c> {
     async fn find_asks_below(
         &mut self,
         lock_mode: LockMode,
-        price: f32,
+        bid: &Bid,
     ) -> Result<Vec<Ask>, OrderRepositoryError> {
         let mut qb = QueryBuilder::new("SELECT ask.id, ask.user, ask.price FROM ask LEFT JOIN match ON match.ask = ask.id WHERE match.bid IS NULL AND
  price <= ");
-        qb.push_bind(price);
+        qb.push_bind(bid.get_price());
 
         match lock_mode {
             LockMode::None => {}
@@ -53,11 +53,11 @@ impl<'c> OrderRepository for Repository<'c> {
     async fn find_bids_above(
         &mut self,
         lock_mode: LockMode,
-        price: f32,
+        ask: &Ask,
     ) -> Result<Vec<Bid>, OrderRepositoryError> {
         let mut qb = QueryBuilder::new("SELECT bid.id, bid.user, bid.price FROM bid LEFT JOIN match ON match.bid = bid.id WHERE match.bid IS NULL AND
  price >= ");
-        qb.push_bind(price);
+        qb.push_bind(ask.get_price());
 
         match lock_mode {
             LockMode::None => {}
