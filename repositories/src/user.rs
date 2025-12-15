@@ -30,7 +30,7 @@ impl<'c> UserRepository for Repository<'c> {
             .build()
             .fetch_one(&mut *self.conn)
             .await
-            .map_err(|_| UserRepositoryError::UserError)?;
+            .map_err(|_| UserRepositoryError::DatabaseError)?;
 
         Ok(User::new_as(user.get("id")))
     }
@@ -51,7 +51,7 @@ impl<'c> UserRepository for Repository<'c> {
             .map_err(|_| UserRepositoryError::DatabaseError)?;
 
         if result.rows_affected() < 1 {
-            Err(UserRepositoryError::DatabaseError)
+            Err(UserRepositoryError::UserError)
         } else {
             Ok(())
         }

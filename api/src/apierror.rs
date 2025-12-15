@@ -6,12 +6,10 @@ use axum::response::{IntoResponse, Response};
 use serde_json::json;
 
 #[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
 pub enum ApiError {
     #[error("user not found in the database")]
     UserNotFound,
-
-    #[error("general error, no further details")]
-    Error,
 
     #[error("database error")]
     DatabaseError,
