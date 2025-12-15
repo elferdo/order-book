@@ -4,8 +4,11 @@ use axum::{
     Json,
     extract::{Path, State},
 };
-use model::user::User;
-use model::{lock_mode::LockMode, repository::UserRepository};
+use model::user::repository::UserRepository;
+use model::{
+    lock_mode::LockMode,
+    user::{repository::UserRepositoryError, user::User},
+};
 use repositories::Repository;
 use serde_json::{Value, json};
 use tracing::{debug, instrument};
@@ -34,8 +37,8 @@ pub async fn post_handler(State(state): State<AppState>) -> Result<Json<Value>, 
             debug!("error");
 
             let result = match e {
-                model::repository::UserRepositoryError::DatabaseError => ApiError::DatabaseError,
-                model::repository::UserRepositoryError::UserError => ApiError::UserNotFound,
+                UserRepositoryError::DatabaseError => ApiError::DatabaseError,
+                UserRepositoryError::UserError => ApiError::UserNotFound,
             };
 
             Err(result)
@@ -61,8 +64,8 @@ pub async fn delete_handler(
         .find_user(LockMode::None, &id)
         .await
         .map_err(|e| match e {
-            model::repository::UserRepositoryError::DatabaseError => ApiError::DatabaseError,
-            model::repository::UserRepositoryError::UserError => ApiError::UserNotFound,
+            UserRepositoryError::DatabaseError => ApiError::DatabaseError,
+            UserRepositoryError::UserError => ApiError::UserNotFound,
         })?;
 
     match repo.delete_user(&user).await {
@@ -71,8 +74,8 @@ pub async fn delete_handler(
             debug!("error");
 
             let result = match e {
-                model::repository::UserRepositoryError::DatabaseError => ApiError::DatabaseError,
-                model::repository::UserRepositoryError::UserError => ApiError::UserNotFound,
+                UserRepositoryError::DatabaseError => ApiError::DatabaseError,
+                UserRepositoryError::UserError => ApiError::UserNotFound,
             };
 
             Err(result)

@@ -1,7 +1,9 @@
 use model::{
     lock_mode::LockMode,
-    repository::{UserRepository, UserRepositoryError},
-    user::User,
+    user::{
+        repository::{UserRepository, UserRepositoryError},
+        user::User,
+    },
 };
 use sqlx::{QueryBuilder, Row, query};
 use uuid::Uuid;

@@ -1,23 +1,6 @@
 use thiserror::Error;
-use uuid::Uuid;
 
-use crate::{lock_mode::LockMode, order_match::Match, user::User};
-
-pub trait UserRepository {
-    fn find_user(
-        &mut self,
-        lock_mode: LockMode,
-        id: &Uuid,
-    ) -> impl Future<Output = Result<User, UserRepositoryError>>;
-
-    fn persist_user(
-        &mut self,
-        user: &User,
-    ) -> impl Future<Output = Result<(), UserRepositoryError>>;
-
-    fn delete_user(&mut self, user: &User)
-    -> impl Future<Output = Result<(), UserRepositoryError>>;
-}
+use crate::{order_match::Match, user::user::User};
 
 pub trait OrderMatchRepository {
     fn find_order_matches_by_user(
@@ -36,15 +19,6 @@ pub trait OrderMatchRepository {
     ) -> impl Future<Output = Result<(), OrderMatchRepositoryError>>
     where
         I: IntoIterator<Item = Match>;
-}
-
-#[derive(Debug, Error)]
-pub enum UserRepositoryError {
-    #[error("repository error")]
-    DatabaseError,
-
-    #[error("user error")]
-    UserError,
 }
 
 #[derive(Debug, Error)]
