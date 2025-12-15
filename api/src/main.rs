@@ -2,12 +2,14 @@ mod apierror;
 mod ask;
 mod bid;
 mod order_match;
+mod stats;
 mod user;
 
 use anyhow::Result;
 use appconfig::appstate::AppState;
 use axum::{
-    routing::{delete, get, post}, Router
+    Router,
+    routing::{delete, get, post},
 };
 use tracing_subscriber::EnvFilter;
 
@@ -26,6 +28,8 @@ async fn main() -> Result<()> {
         .route("/user/{id}/bid", post(bid::post_handler))
         .route("/user/{id}/ask", post(ask::post_handler))
         .route("/user/{id}/match", get(order_match::get_handler))
+        .route("/stats/buy_price", get(stats::buy_price_get_handler))
+        .route("/stats/sell_price", get(stats::sell_price_get_handler))
         .with_state(state);
 
     // run our app with hyper, listening globally on port 3000
