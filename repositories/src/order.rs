@@ -1,10 +1,8 @@
-use model::{
-    ask::Ask,
-    bid::Bid,
-    lock_mode::LockMode,
-    order::Order,
-    repository::{OrderRepository, OrderRepositoryError},
-};
+use model::lock_mode::LockMode;
+use model::order::ask::Ask;
+use model::order::bid::Bid;
+use model::order::order::Order;
+use model::order::repository::{OrderRepository, OrderRepositoryError};
 use sqlx::{Database, Postgres, QueryBuilder};
 use sqlx::{Row, query};
 use tracing::{debug, instrument};

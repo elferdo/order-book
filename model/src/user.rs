@@ -1,6 +1,6 @@
 use uuid::{Timestamp, Uuid};
 
-use crate::{ask::Ask, bid::Bid};
+use crate::order::{ask::Ask, bid::Bid};
 
 pub struct User {
     id: Uuid,

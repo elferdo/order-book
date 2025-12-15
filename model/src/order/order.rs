@@ -1,6 +1,7 @@
 use uuid::{Timestamp, Uuid};
 
-use crate::{ask::Ask, bid::Bid};
+use super::ask::Ask;
+use super::bid::Bid;
 
 #[derive(Debug, PartialEq)]
 pub enum Order {

@@ -1,11 +1,10 @@
 use std::collections::HashMap;
 
 use model::{
-    ask::Ask,
-    bid::Bid,
+    order::{ask::Ask, bid::Bid},
     order_match::Match,
     repository::{OrderMatchRepository, OrderMatchRepositoryError},
-    user::User,
+    user::user::User,
 };
 use sqlx::{QueryBuilder, query};
 use tracing::{debug, instrument};

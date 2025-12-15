@@ -6,8 +6,8 @@ use axum::{
     extract::{Path, State},
 };
 use model::lock_mode::LockMode;
-use model::repository::OrderRepository;
-use model::repository::UserRepository;
+use model::order::repository::OrderRepository;
+use model::user::repository::UserRepository;
 use repositories::Repository;
 use serde::Deserialize;
 use serde_json::{Value, json};

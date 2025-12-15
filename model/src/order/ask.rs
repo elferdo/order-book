@@ -3,35 +3,34 @@ use std::{cmp::Ordering, collections::BTreeSet};
 use tracing::{error, info, instrument};
 use uuid::{ContextV7, Timestamp, Uuid};
 
-use crate::{
-    lock_mode::LockMode,
-    order_match::Match,
-    repository::{OrderMatchRepository, OrderRepository, OrderRepositoryError},
-};
+use crate::{lock_mode::LockMode, order_match::Match, repository::OrderMatchRepository};
+
+use crate::order::repository::OrderRepository;
+use crate::order::repository::OrderRepositoryError;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Bid {
+pub struct Ask {
     id: Uuid,
-    buyer: Uuid,
-    not_above: f32,
+    seller: Uuid,
+    not_below: f32,
 }
 
-impl Bid {
+impl Ask {
     pub fn new(t: Timestamp, user_id: Uuid, price: f32) -> Self {
         let id = Uuid::new_v7(t);
 
         Self {
             id,
-            buyer: user_id,
-            not_above: price,
+            seller: user_id,
+            not_below: price,
         }
     }
 
     pub fn with(id: Uuid, user_id: Uuid, price: f32) -> Self {
         Self {
             id,
-            buyer: user_id,
-            not_above: price,
+            seller: user_id,
+            not_below: price,
         }
     }
 
@@ -40,11 +39,11 @@ impl Bid {
     }
 
     pub fn get_user_id(&self) -> Uuid {
-        self.buyer
+        self.seller
     }
 
     pub fn get_price(&self) -> f32 {
-        self.not_above
+        self.not_below
     }
 
     #[instrument(skip(repository))]
@@ -53,21 +52,21 @@ impl Bid {
         R: OrderRepository + OrderMatchRepository,
     {
         let mut matching_orders: BTreeSet<_> = repository
-            .find_asks_below(LockMode::KeyShare, self.get_price())
+            .find_bids_above(LockMode::KeyShare, self.get_price())
             .await?
             .into_iter()
             .collect();
 
         if matching_orders.is_empty() {
             return Ok(());
-        }
+        };
 
         let first = matching_orders.pop_first().expect("this should never fail");
 
         let context = ContextV7::new();
         let t = Timestamp::now(context);
 
-        let order_match = Match::new(t, first, *self);
+        let order_match = Match::new(t, *self, first);
 
         if let Err(e) = repository.persist_order_matches([order_match]).await {
             match e {
@@ -78,13 +77,13 @@ impl Bid {
             }
         };
 
-        info!("processing matching orders for bid");
+        info!("processing matching orders for ask");
 
         Ok(())
     }
 }
 
-impl PartialOrd for Bid {
+impl PartialOrd for Ask {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         if self.get_price() < other.get_price() {
             Some(Ordering::Less)
@@ -98,9 +97,9 @@ impl PartialOrd for Bid {
     }
 }
 
-impl Eq for Bid {}
+impl Eq for Ask {}
 
-impl Ord for Bid {
+impl Ord for Ask {
     fn cmp(&self, other: &Self) -> Ordering {
         if let Some(c) = self.partial_cmp(other) {
             c

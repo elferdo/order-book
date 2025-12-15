@@ -6,7 +6,7 @@ use axum::{
     extract::{Path, State},
 };
 use model::lock_mode::LockMode;
-use model::repository::UserRepository;
+use model::user::repository::UserRepository;
 use model::{order_match::Match, repository::OrderMatchRepository};
 use repositories::Repository;
 use serde::Serialize;
