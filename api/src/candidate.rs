@@ -7,7 +7,7 @@ use axum::{
 };
 use model::lock_mode::LockMode;
 use model::user::repository::UserRepository;
-use model::{order::order_match::Match, order::order_match_repository::OrderMatchRepository};
+use model::{order::candidate::Candidate, order::candidate_repository::CandidateRepository  };
 use repositories::Repository;
 use serde::Serialize;
 use serde_json::{Value, json};
@@ -15,15 +15,15 @@ use tracing::instrument;
 use uuid::Uuid;
 
 #[derive(Serialize)]
-struct OrderMatchSummary {
+struct CandidateSummary {
     pub id: Uuid,
     pub ask: Uuid,
     pub bid: Uuid,
     pub price: f32,
 }
 
-impl From<Match> for OrderMatchSummary {
-    fn from(value: Match) -> Self {
+impl From<Candidate> for CandidateSummary {
+    fn from(value: Candidate) -> Self {
         let id = *value.get_id();
         let ask = *value.get_ask().get_id();
         let bid = *value.get_bid().get_id();
@@ -56,13 +56,13 @@ pub async fn get_handler(
         .await
         .map_err(|_| ApiError::UserNotFound)?;
 
-    let order_matches: Vec<OrderMatchSummary> = repo
-        .find_order_matches_by_user(&user)
+    let candidates: Vec<CandidateSummary> = repo
+        .find_candidates_by_user(&user)
         .await
         .map_err(|_| ApiError::DatabaseError)?
         .into_iter()
         .map(|m| m.into())
         .collect();
 
-    Ok(Json::from(json!(order_matches)))
+    Ok(Json::from(json!(candidates)))
 }

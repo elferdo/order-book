@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO match VALUES ($1, $2, $3)",
+  "query": "INSERT INTO candidate VALUES ($1, $2, $3)",
   "describe": {
     "columns": [],
     "parameters": {
@@ -12,5 +12,5 @@
     },
     "nullable": []
   },
-  "hash": "55d019e87c32f428b3c63d5fd95a9b42f6b6d69254f8113f7b027697c550b3b9"
+  "hash": "e57d1e9594720ab6ef4971ffdeb5ad5b70e83db37891b995a999100fbad18c87"
 }

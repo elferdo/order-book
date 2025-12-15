@@ -16,7 +16,7 @@ impl<'c> OrderRepository for Repository<'c> {
         lock_mode: LockMode,
         bid: &Bid,
     ) -> Result<Vec<Ask>, OrderRepositoryError> {
-        let mut qb = QueryBuilder::new("SELECT ask.id, ask.user, ask.price FROM ask LEFT JOIN match ON match.ask = ask.id WHERE match.bid IS NULL AND
+        let mut qb = QueryBuilder::new("SELECT ask.id, ask.user, ask.price FROM ask LEFT JOIN candidate ON candidate.ask = ask.id WHERE candidate.bid IS NULL AND
  price <= ");
         qb.push_bind(bid.get_price());
         qb.push(" AND ask.user <> ");
@@ -57,7 +57,7 @@ impl<'c> OrderRepository for Repository<'c> {
         lock_mode: LockMode,
         ask: &Ask,
     ) -> Result<Vec<Bid>, OrderRepositoryError> {
-        let mut qb = QueryBuilder::new("SELECT bid.id, bid.user, bid.price FROM bid LEFT JOIN match ON match.bid = bid.id WHERE match.bid IS NULL AND
+        let mut qb = QueryBuilder::new("SELECT bid.id, bid.user, bid.price FROM bid LEFT JOIN candidate ON candidate.bid = bid.id WHERE candidate.bid IS NULL AND
  price >= ");
         qb.push_bind(ask.get_price());
         qb.push(" AND bid.user <> ");

@@ -3,13 +3,13 @@ use uuid::{Timestamp, Uuid};
 use crate::order::{ask::Ask, bid::Bid};
 
 #[derive(Debug)]
-pub struct Match {
+pub struct Candidate {
     id: Uuid,
     ask: Ask,
     bid: Bid,
 }
 
-impl Match {
+impl Candidate {
     pub fn new(t: Timestamp, ask: Ask, bid: Bid) -> Self {
         let id = Uuid::new_v7(t);
 

@@ -47,7 +47,7 @@ pub async fn post_handler(
         .await
         .map_err(|_| ApiError::DatabaseError)?;
 
-    ask.generate_matches(&mut repo)
+    ask.generate_candidates(&mut repo)
         .await
         .map_err(|_| ApiError::DatabaseError)?;
 

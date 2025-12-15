@@ -3,11 +3,11 @@ use std::{cmp::Ordering, collections::BTreeSet};
 use tracing::{error, info, instrument};
 use uuid::{ContextV7, Timestamp, Uuid};
 
-use super::order_match_repository::OrderMatchRepository;
-use super::order_match_repository::OrderMatchRepositoryError;
+use super::candidate_repository::CandidateRepository;
+use super::candidate_repository::CandidateRepositoryError;
 use crate::order::repository::OrderRepository;
 use crate::order::repository::OrderRepositoryError;
-use crate::{lock_mode::LockMode, order::order_match::Match};
+use crate::{lock_mode::LockMode, order::candidate::Candidate};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Ask {
@@ -48,9 +48,9 @@ impl Ask {
     }
 
     #[instrument(skip(repository))]
-    pub async fn generate_matches<R>(&self, repository: &mut R) -> Result<(), OrderRepositoryError>
+    pub async fn generate_candidates<R>(&self, repository: &mut R) -> Result<(), OrderRepositoryError>
     where
-        R: OrderRepository + OrderMatchRepository,
+        R: OrderRepository + CandidateRepository,
     {
         let mut matching_orders: BTreeSet<_> = repository
             .find_bids_above(LockMode::KeyShare, self)
@@ -67,14 +67,14 @@ impl Ask {
         let context = ContextV7::new();
         let t = Timestamp::now(context);
 
-        let order_match = Match::new(t, *self, first);
+        let candidate = Candidate::new(t, *self, first);
 
-        if let Err(e) = repository.persist_order_matches([order_match]).await {
+        if let Err(e) = repository.persist_candidates([candidate]).await {
             match e {
-                OrderMatchRepositoryError::DatabaseError => {
+                CandidateRepositoryError::DatabaseError => {
                     error!("{e}");
                 }
-                OrderMatchRepositoryError::UserError => todo!(),
+                CandidateRepositoryError::UserError => todo!(),
             }
         };
 

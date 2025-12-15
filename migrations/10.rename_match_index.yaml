@@ -1,0 +1,4 @@
+operations:
+    - sql:
+        up: ALTER INDEX IF EXISTS match_pkey1 RENAME TO candidate_pkey1
+        down: ALTER INDEX IF EXISTS candidate_pkey1 RENAME TO match_pkey1

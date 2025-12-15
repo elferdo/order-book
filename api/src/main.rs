@@ -1,7 +1,7 @@
 mod apierror;
 mod ask;
 mod bid;
-mod order_match;
+mod candidate;
 mod stats;
 mod user;
 
@@ -27,7 +27,7 @@ async fn main() -> Result<()> {
         .route("/user/{id}", delete(user::delete_handler))
         .route("/user/{id}/bid", post(bid::post_handler))
         .route("/user/{id}/ask", post(ask::post_handler))
-        .route("/user/{id}/match", get(order_match::get_handler))
+        .route("/user/{id}/candidate", get(candidate::get_handler))
         .route("/stats/buy_price", get(stats::buy_price_get_handler))
         .route("/stats/sell_price", get(stats::sell_price_get_handler))
         .with_state(state);

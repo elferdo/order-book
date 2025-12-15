@@ -5,7 +5,7 @@ use crate::Repository;
 
 impl<'c> StatsRepository for Repository<'c> {
     async fn buy_price(&mut self) -> Result<f32, model::stats::repository::StatsRepositoryError> {
-        let row = query!("SELECT MAX(price) AS price FROM bid LEFT JOIN match ON match.bid = bid.id WHERE match.ask IS NULL;")
+        let row = query!("SELECT MAX(price) AS price FROM bid LEFT JOIN candidate ON candidate.bid = bid.id WHERE candidate.ask IS NULL;")
             .fetch_one(&mut *self.conn)
             .await
             .map_err(|_| StatsRepositoryError::DatabaseError)?;
@@ -18,7 +18,7 @@ impl<'c> StatsRepository for Repository<'c> {
     }
 
     async fn sell_price(&mut self) -> Result<f32, StatsRepositoryError> {
-        let row = query!("SELECT MIN(price) AS price FROM ask LEFT JOIN match ON match.ask = ask.id WHERE match.bid IS NULL;")
+        let row = query!("SELECT MIN(price) AS price FROM ask LEFT JOIN candidate ON candidate.ask = ask.id WHERE candidate.bid IS NULL;")
             .fetch_one(&mut *self.conn)
             .await
             .map_err(|_| StatsRepositoryError::DatabaseError)?;

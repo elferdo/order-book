@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT match.id, match.ask, match.bid, ask.price as ask_price, bid.price as bid_price FROM match JOIN ask ON match.ask = ask.id JOIN bid ON match.bid = bid.id WHERE ask.user = $1 OR bid.user = $1",
+  "query": "SELECT candidate.id, candidate.ask, candidate.bid, ask.price as ask_price, bid.price as bid_price FROM candidate JOIN ask ON candidate.ask = ask.id JOIN bid ON candidate.bid = bid.id WHERE ask.user = $1 OR bid.user = $1",
   "describe": {
     "columns": [
       {
@@ -42,5 +42,5 @@
       false
     ]
   },
-  "hash": "26e99730f4e34c5b26e865ba237420c53e7a5573bdc6ea91e3e1e7c0a5e2e598"
+  "hash": "dbe266d237ab98a34d9e5d252322d7a8a9d282f27651e51499d97d2dfec45b35"
 }

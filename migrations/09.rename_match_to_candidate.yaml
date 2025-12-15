@@ -1,0 +1,4 @@
+operations:
+    - rename_table:
+        from: match
+        to: candidate
