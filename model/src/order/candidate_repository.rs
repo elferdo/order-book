@@ -1,8 +1,15 @@
 use thiserror::Error;
+use uuid::Uuid;
 
-use crate::{order::candidate::Candidate, user::user::User};
+use crate::{lock_mode::LockMode, order::candidate::Candidate, user::user::User};
 
 pub trait CandidateRepository {
+    fn find_candidate(
+        &mut self,
+        lock_mode: LockMode,
+        id: &Uuid,
+    ) -> impl Future<Output = Result<Candidate, CandidateRepositoryError>>;
+
     fn find_candidates_by_user(
         &mut self,
         user: &User,

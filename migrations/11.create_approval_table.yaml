@@ -1,0 +1,16 @@
+operations:
+  - create_table:
+      name: approval
+      columns:
+        - name: candidate
+          type: uuid
+          references: 
+            name: fk_candidate_id
+            table: candidate
+            column: id
+        - name: ask
+          type: bool
+          nullable: false
+        - name: bid
+          type: bool
+          nullable: false

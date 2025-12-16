@@ -1,0 +1,8 @@
+operations:
+    - alter_column:
+          table: approval
+          column: candidate
+          unique:
+              name: candidate_unique
+          up: candidate
+          down: candidate

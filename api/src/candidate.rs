@@ -5,9 +5,9 @@ use axum::{
     Json,
     extract::{Path, State},
 };
-use model::lock_mode::LockMode;
 use model::user::repository::UserRepository;
-use model::{order::candidate::Candidate, order::candidate_repository::CandidateRepository  };
+use model::{lock_mode::LockMode, order::candidate::ApprovalResult};
+use model::{order::candidate::Candidate, order::candidate_repository::CandidateRepository};
 use repositories::Repository;
 use serde::Serialize;
 use serde_json::{Value, json};
@@ -65,4 +65,39 @@ pub async fn get_handler(
         .collect();
 
     Ok(Json::from(json!(candidates)))
+}
+
+pub async fn approve_post_handler(
+    State(state): State<AppState>,
+    Path((user_id, candidate_id)): Path<(Uuid, Uuid)>,
+) -> Result<Json<Value>, ApiError> {
+    let mut conn = state
+        .pool
+        .begin()
+        .await
+        .map_err(|_| ApiError::DatabaseError)?;
+
+    let mut repo = Repository::new(&mut conn).await;
+
+    let mut candidate = repo
+        .find_candidate(LockMode::KeyShare, &candidate_id)
+        .await
+        .map_err(|_| ApiError::UserNotFound)?;
+
+    match candidate
+        .approve(&user_id)
+        .await
+        .map_err(|_| ApiError::DatabaseError)?
+    {
+        ApprovalResult::Partial => {
+            repo.persist_candidate(&candidate)
+                .await
+                .map_err(|_| ApiError::DatabaseError)?;
+        }
+        ApprovalResult::Complete => todo!(),
+    };
+
+    conn.commit().await.map_err(|_| ApiError::DatabaseError)?;
+
+    Ok(Json::from(json!("ok")))
 }

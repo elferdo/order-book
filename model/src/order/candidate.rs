@@ -1,23 +1,51 @@
 use uuid::{Timestamp, Uuid};
 
-use crate::order::{ask::Ask, bid::Bid};
+use crate::order::{ask::Ask, bid::Bid, candidate_repository::CandidateRepositoryError};
 
 #[derive(Debug)]
 pub struct Candidate {
     id: Uuid,
     ask: Ask,
     bid: Bid,
+    approval: Approval,
+}
+
+#[derive(Default, Debug)]
+struct Approval {
+    pub ask: bool,
+    pub bid: bool,
+}
+
+impl Approval {
+    fn both_approved(&self) -> bool {
+        self.ask == self.bid
+    }
+}
+
+pub enum ApprovalResult {
+    Partial,
+    Complete,
 }
 
 impl Candidate {
     pub fn new(t: Timestamp, ask: Ask, bid: Bid) -> Self {
         let id = Uuid::new_v7(t);
 
-        Self { id, ask, bid }
+        Self {
+            id,
+            ask,
+            bid,
+            approval: Approval::default(),
+        }
     }
 
     pub fn with(id: Uuid, ask: Ask, bid: Bid) -> Self {
-        Self { id, ask, bid }
+        Self {
+            id,
+            ask,
+            bid,
+            approval: Approval::default(),
+        }
     }
 
     pub fn get_id(&self) -> &Uuid {
@@ -34,5 +62,32 @@ impl Candidate {
 
     pub fn get_price(&self) -> f32 {
         (self.ask.get_price() + self.bid.get_price()) / 2.0
+    }
+
+    pub fn get_ask_approval(&self) -> bool {
+        self.approval.ask
+    }
+
+    pub fn get_bid_approval(&self) -> bool {
+        self.approval.bid
+    }
+
+    pub async fn approve(
+        &mut self,
+        user_id: &Uuid,
+    ) -> Result<ApprovalResult, CandidateRepositoryError> {
+        if *user_id == self.ask.get_user_id() {
+            self.approval.ask = true;
+        } else if *user_id == self.bid.get_user_id() {
+            self.approval.bid = true;
+        } else {
+            return Err(CandidateRepositoryError::UserError);
+        }
+
+        if self.approval.both_approved() {
+            Ok(ApprovalResult::Complete)
+        } else {
+            Ok(ApprovalResult::Partial)
+        }
     }
 }
