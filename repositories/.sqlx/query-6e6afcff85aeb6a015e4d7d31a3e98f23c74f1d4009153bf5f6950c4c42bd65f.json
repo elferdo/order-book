@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO candidate VALUES ($1, $2, $3)",
+  "query": "INSERT INTO candidate (id, ask, bid) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
   "describe": {
     "columns": [],
     "parameters": {
@@ -12,5 +12,5 @@
     },
     "nullable": []
   },
-  "hash": "e57d1e9594720ab6ef4971ffdeb5ad5b70e83db37891b995a999100fbad18c87"
+  "hash": "6e6afcff85aeb6a015e4d7d31a3e98f23c74f1d4009153bf5f6950c4c42bd65f"
 }

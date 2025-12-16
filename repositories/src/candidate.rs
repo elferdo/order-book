@@ -1,9 +1,14 @@
+use sqlx::Row;
 use std::collections::HashMap;
 
 use model::{
-    order::candidate::Candidate,
-    order::candidate_repository::{CandidateRepository, CandidateRepositoryError},
-    order::{ask::Ask, bid::Bid},
+    lock_mode::LockMode,
+    order::{
+        ask::Ask,
+        bid::Bid,
+        candidate::Candidate,
+        candidate_repository::{CandidateRepository, CandidateRepositoryError},
+    },
     user::user::User,
 };
 use sqlx::{QueryBuilder, query};
@@ -68,7 +73,7 @@ impl<'c> CandidateRepository for Repository<'c> {
         candidate: &Candidate,
     ) -> Result<(), CandidateRepositoryError> {
         query!(
-            "INSERT INTO candidate VALUES ($1, $2, $3)",
+            "INSERT INTO candidate (id, ask, bid) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
             candidate.get_id(),
             candidate.get_ask().get_id(),
             candidate.get_bid().get_id(),
@@ -77,6 +82,48 @@ impl<'c> CandidateRepository for Repository<'c> {
         .await
         .map_err(|_| CandidateRepositoryError::DatabaseError)?;
 
+        query!(
+            "INSERT INTO approval (candidate, ask, bid) VALUES ($1, $2, $3) ON CONFLICT (candidate) DO UPDATE SET candidate = EXCLUDED.candidate, ask = EXCLUDED.ask, bid = EXCLUDED.bid",
+            candidate.get_id(),
+            candidate.get_ask_approval(),
+            candidate.get_bid_approval(),
+        )
+        .execute(&mut *self.conn)
+        .await
+        .map_err(|_| CandidateRepositoryError::DatabaseError)?;
+
         Ok(())
+    }
+
+    async fn find_candidate(
+        &mut self,
+        lock_mode: LockMode,
+        id: &uuid::Uuid,
+    ) -> Result<Candidate, CandidateRepositoryError> {
+        let mut qb = QueryBuilder::new(
+            "SELECT candidate.id, candidate.ask, candidate.bid, ask.price as ask_price, ask.user as ask_user, bid.price as bid_price, bid.user as bid_user FROM candidate JOIN ask ON candidate.ask = ask.id JOIN bid ON candidate.bid = bid.id WHERE candidate.id = ",
+        );
+
+        qb.push_bind(*id);
+
+        match lock_mode {
+            LockMode::None => {}
+            LockMode::KeyShare => {
+                qb.push(" FOR KEY SHARE;");
+            }
+        };
+
+        let row = qb
+            .build()
+            .fetch_one(&mut *self.conn)
+            .await
+            .map_err(|_| CandidateRepositoryError::DatabaseError)?;
+
+        let ask = Ask::with(row.get("ask"), row.get("ask_user"), row.get("ask_price"));
+        let bid = Bid::with(row.get("bid"), row.get("bid_user"), row.get("bid_price"));
+
+        let candidate = Candidate::with(row.get("id"), ask, bid);
+
+        Ok(candidate)
     }
 }
