@@ -38,8 +38,8 @@ impl Bid {
         &self.id
     }
 
-    pub fn get_user_id(&self) -> Uuid {
-        self.buyer
+    pub fn get_user_id(&self) -> &Uuid {
+        &self.buyer
     }
 
     pub fn get_price(&self) -> f32 {

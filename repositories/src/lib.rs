@@ -1,4 +1,5 @@
 mod candidate;
+mod deal;
 mod order;
 pub mod repository;
 mod stats;

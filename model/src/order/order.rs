@@ -58,7 +58,7 @@ impl From<&Ask> for Order {
         let user_id = value.get_user_id();
         let price = value.get_price();
 
-        Self::ask_with(*id, user_id, price)
+        Self::ask_with(*id, *user_id, price)
     }
 }
 
@@ -68,6 +68,6 @@ impl From<&Bid> for Order {
         let user_id = value.get_user_id();
         let price = value.get_price();
 
-        Self::bid_with(*id, user_id, price)
+        Self::bid_with(*id, *user_id, price)
     }
 }

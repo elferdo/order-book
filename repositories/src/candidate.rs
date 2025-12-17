@@ -1,5 +1,4 @@
 use sqlx::Row;
-use std::collections::HashMap;
 
 use model::{
     lock_mode::LockMode,
@@ -148,7 +147,7 @@ impl<'c> CandidateRepository for Repository<'c> {
         .await
         .map_err(|_| CandidateRepositoryError::DatabaseError)?;
 
-        let result = query!("DELETE FROM candidate WHERE id = $1", *candidate.get_id())
+        let _result = query!("DELETE FROM candidate WHERE id = $1", *candidate.get_id())
             .execute(&mut *self.conn)
             .await
             .map_err(|_| CandidateRepositoryError::DatabaseError)?;

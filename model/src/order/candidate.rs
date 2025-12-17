@@ -60,6 +60,14 @@ impl Candidate {
         &self.bid
     }
 
+    pub fn get_buyer_id(&self) -> &Uuid {
+        self.bid.get_user_id()
+    }
+
+    pub fn get_seller_id(&self) -> &Uuid {
+        &self.ask.get_user_id()
+    }
+
     pub fn get_price(&self) -> f32 {
         (self.ask.get_price() + self.bid.get_price()) / 2.0
     }
@@ -76,9 +84,9 @@ impl Candidate {
         &mut self,
         user_id: &Uuid,
     ) -> Result<ApprovalResult, CandidateRepositoryError> {
-        if *user_id == self.ask.get_user_id() {
+        if *user_id == *self.ask.get_user_id() {
             self.approval.ask = true;
-        } else if *user_id == self.bid.get_user_id() {
+        } else if *user_id == *self.bid.get_user_id() {
             self.approval.bid = true;
         } else {
             return Err(CandidateRepositoryError::UserError);

@@ -12,7 +12,7 @@ use repositories::Repository;
 use serde::Serialize;
 use serde_json::{Value, json};
 use tracing::instrument;
-use uuid::Uuid;
+use uuid::{ContextV7, Timestamp, Uuid};
 
 #[derive(Serialize)]
 struct CandidateSummary {
@@ -79,6 +79,9 @@ pub async fn approve_post_handler(
 
     let mut repo = Repository::new(&mut conn).await;
 
+    let context = ContextV7::new();
+    let timestamp = Timestamp::now(context);
+
     let mut candidate = repo
         .find_candidate(LockMode::KeyShare, &candidate_id)
         .await
@@ -96,10 +99,9 @@ pub async fn approve_post_handler(
         }
 
         ApprovalResult::Complete => {
-            match_service::commit_candidate(&mut repo, candidate)
+            match_service::seal(&mut repo, timestamp, candidate)
                 .await
                 .map_err(|_| ApiError::DatabaseError)?;
-            todo!();
         }
     };
 

@@ -39,8 +39,8 @@ impl Ask {
         &self.id
     }
 
-    pub fn get_user_id(&self) -> Uuid {
-        self.seller
+    pub fn get_user_id(&self) -> &Uuid {
+        &self.seller
     }
 
     pub fn get_price(&self) -> f32 {
@@ -48,7 +48,10 @@ impl Ask {
     }
 
     #[instrument(skip(repository))]
-    pub async fn generate_candidates<R>(&self, repository: &mut R) -> Result<(), OrderRepositoryError>
+    pub async fn generate_candidates<R>(
+        &self,
+        repository: &mut R,
+    ) -> Result<(), OrderRepositoryError>
     where
         R: OrderRepository + CandidateRepository,
     {
