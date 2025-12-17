@@ -2,6 +2,7 @@ use uuid::{Timestamp, Uuid};
 
 use crate::order::{ask::Ask, bid::Bid};
 
+#[derive(Debug)]
 pub struct User {
     id: Uuid,
 }

@@ -67,6 +67,7 @@ pub async fn get_handler(
     Ok(Json::from(json!(candidates)))
 }
 
+#[instrument(skip(state))]
 pub async fn approve_post_handler(
     State(state): State<AppState>,
     Path((user_id, candidate_id)): Path<(Uuid, Uuid)>,

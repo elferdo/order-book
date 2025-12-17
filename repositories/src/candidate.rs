@@ -22,8 +22,6 @@ impl<'c> CandidateRepository for Repository<'c> {
     where
         I: IntoIterator<Item = Candidate>,
     {
-        debug!("inserting candidate");
-
         let mut peekable = iterator.into_iter().peekable();
 
         if peekable.peek().is_none() {
@@ -47,14 +45,17 @@ impl<'c> CandidateRepository for Repository<'c> {
         Ok(())
     }
 
+    #[instrument(skip(self))]
     async fn find_candidates_by_user(
         &mut self,
         user: &User,
     ) -> Result<Vec<Candidate>, RepositoryError> {
-        let candidate_rows = query!("SELECT candidate.id, candidate.ask, candidate.bid, ask.price as ask_price, bid.price as bid_price, approval.ask as approval_ask, approval.bid as approval_bid FROM candidate JOIN ask ON candidate.ask = ask.id JOIN bid ON candidate.bid = bid.id JOIN approval ON approval.candidate = candidate.id WHERE ask.user = $1 OR bid.user = $1", user.get_id())
+        let result = query!("SELECT candidate.id, candidate.ask, candidate.bid, ask.price as ask_price, bid.price as bid_price,
+COALESCE(approval.ask, FALSE) as approval_ask, COALESCE(approval.bid, FALSE) as approval_bid FROM candidate JOIN ask ON candidate.ask = ask.id JOIN bid ON candidate.bid = bid.id LEFT JOIN approval ON approval.candidate = candidate.id WHERE ask.user = $1 OR bid.user = $1", *user.get_id())
             .fetch_all(&mut *self.conn)
-            .await
-            .map_err(|_| RepositoryError::DatabaseError)?;
+            .await;
+
+        let candidate_rows = result.map_err(|_| RepositoryError::DatabaseError)?;
 
         let candidates = candidate_rows
             .iter()
@@ -62,8 +63,8 @@ impl<'c> CandidateRepository for Repository<'c> {
                 let ask = Ask::with(row.ask, *user.get_id(), row.ask_price);
                 let bid = Bid::with(row.bid, *user.get_id(), row.bid_price);
                 let approval = Approval {
-                    ask: row.approval_ask,
-                    bid: row.approval_bid,
+                    ask: row.approval_ask.expect("protected by coalesce in query"),
+                    bid: row.approval_bid.expect("protected by coalesce in query"),
                 };
 
                 Candidate::with(row.id, ask, bid, approval)
@@ -97,13 +98,15 @@ impl<'c> CandidateRepository for Repository<'c> {
         Ok(())
     }
 
+    #[instrument(skip(self, lock_mode))]
     async fn find_candidate(
         &mut self,
         lock_mode: LockMode,
         id: &uuid::Uuid,
     ) -> Result<Candidate, RepositoryError> {
         let mut qb = QueryBuilder::new(
-            "SELECT candidate.id, candidate.ask, candidate.bid, ask.price as ask_price, ask.user as ask_user, bid.price as bid_price, bid.user as bid_user, approval.ask as approval_ask, approval.bid as approval_bid FROM candidate JOIN ask ON candidate.ask = ask.id JOIN bid ON candidate.bid = bid.id JOIN approval ON approval.candidate = candidate.id WHERE candidate.id = ",
+            "SELECT candidate.id, candidate.ask, candidate.bid, ask.price as ask_price, ask.user as ask_user, bid.price as bid_price, bid.user as bid_user,
+COALESCE(approval.ask, FALSE) as approval_ask, COALESCE(approval.bid, FALSE) as approval_bid FROM candidate JOIN ask ON candidate.ask = ask.id JOIN bid ON candidate.bid = bid.id LEFT JOIN approval ON approval.candidate = candidate.id WHERE candidate.id = ",
         );
 
         qb.push_bind(*id);
@@ -111,15 +114,12 @@ impl<'c> CandidateRepository for Repository<'c> {
         match lock_mode {
             LockMode::None => {}
             LockMode::KeyShare => {
-                qb.push(" FOR KEY SHARE;");
+                qb.push(" FOR KEY SHARE OF candidate;");
             }
         };
 
-        let row = qb
-            .build()
-            .fetch_one(&mut *self.conn)
-            .await
-            .map_err(|_| RepositoryError::DatabaseError)?;
+        let result = qb.build().fetch_one(&mut *self.conn).await;
+        let row = result.map_err(|_| RepositoryError::DatabaseError)?;
 
         let ask = Ask::with(row.get("ask"), row.get("ask_user"), row.get("ask_price"));
         let bid = Bid::with(row.get("bid"), row.get("bid_user"), row.get("bid_price"));

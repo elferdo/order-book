@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT candidate.id, candidate.ask, candidate.bid, ask.price as ask_price, bid.price as bid_price, approval.ask as approval_ask, approval.bid as approval_bid FROM candidate JOIN ask ON candidate.ask = ask.id JOIN bid ON candidate.bid = bid.id JOIN approval ON approval.candidate = candidate.id WHERE ask.user = $1 OR bid.user = $1",
+  "query": "SELECT candidate.id, candidate.ask, candidate.bid, ask.price as ask_price, bid.price as bid_price,\nCOALESCE(approval.ask, FALSE) as approval_ask, COALESCE(approval.bid, FALSE) as approval_bid FROM candidate JOIN ask ON candidate.ask = ask.id JOIN bid ON candidate.bid = bid.id LEFT JOIN approval ON approval.candidate = candidate.id WHERE ask.user = $1 OR bid.user = $1",
   "describe": {
     "columns": [
       {
@@ -50,9 +50,9 @@
       false,
       false,
       false,
-      false,
-      false
+      null,
+      null
     ]
   },
-  "hash": "4692552bc737b0c947274499ae8baf1823a8aac81bb92916a3b88f5b61253131"
+  "hash": "2dce40c846eb91334614ac4684cf6586f0fe888b352b0a63ad999c6d471fb764"
 }
