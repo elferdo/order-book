@@ -2,7 +2,8 @@ use model::lock_mode::LockMode;
 use model::order::ask::Ask;
 use model::order::bid::Bid;
 use model::order::order::Order;
-use model::order::repository::{OrderRepository, OrderRepositoryError};
+use model::order::repository::OrderRepository;
+use model::repository_error::RepositoryError;
 use sqlx::{Database, Postgres, QueryBuilder};
 use sqlx::{Row, query};
 use tracing::{debug, instrument};
@@ -15,7 +16,7 @@ impl<'c> OrderRepository for Repository<'c> {
         &mut self,
         lock_mode: LockMode,
         bid: &Bid,
-    ) -> Result<Vec<Ask>, OrderRepositoryError> {
+    ) -> Result<Vec<Ask>, RepositoryError> {
         let mut qb = QueryBuilder::new("SELECT ask.id, ask.user, ask.price FROM ask LEFT JOIN candidate ON candidate.ask = ask.id WHERE candidate.bid IS NULL AND
  price <= ");
         qb.push_bind(bid.get_price());
@@ -33,7 +34,7 @@ impl<'c> OrderRepository for Repository<'c> {
             .build()
             .fetch_all(&mut *self.conn)
             .await
-            .map_err(|_| OrderRepositoryError::DatabaseError)?;
+            .map_err(|_| RepositoryError::DatabaseError)?;
 
         let asks: Vec<_> = ask_rows
             .into_iter()
@@ -43,11 +44,11 @@ impl<'c> OrderRepository for Repository<'c> {
         Ok(asks)
     }
 
-    async fn find_ask(&mut self, id: &Uuid) -> Result<Order, OrderRepositoryError> {
+    async fn find_ask(&mut self, id: &Uuid) -> Result<Order, RepositoryError> {
         let ask = query!("select * from ask where id = $1", id)
             .fetch_one(&mut *self.conn)
             .await
-            .map_err(|_| OrderRepositoryError::DatabaseError)?;
+            .map_err(|_| RepositoryError::DatabaseError)?;
 
         Ok(Order::ask_with(ask.id, ask.user, ask.price))
     }
@@ -56,7 +57,7 @@ impl<'c> OrderRepository for Repository<'c> {
         &mut self,
         lock_mode: LockMode,
         ask: &Ask,
-    ) -> Result<Vec<Bid>, OrderRepositoryError> {
+    ) -> Result<Vec<Bid>, RepositoryError> {
         let mut qb = QueryBuilder::new("SELECT bid.id, bid.user, bid.price FROM bid LEFT JOIN candidate ON candidate.bid = bid.id WHERE candidate.bid IS NULL AND
  price >= ");
         qb.push_bind(ask.get_price());
@@ -74,7 +75,7 @@ impl<'c> OrderRepository for Repository<'c> {
             .build()
             .fetch_all(&mut *self.conn)
             .await
-            .map_err(|_| OrderRepositoryError::DatabaseError)?;
+            .map_err(|_| RepositoryError::DatabaseError)?;
 
         let bids: Vec<_> = bid_rows
             .into_iter()
@@ -84,23 +85,23 @@ impl<'c> OrderRepository for Repository<'c> {
         Ok(bids)
     }
 
-    async fn find_bid(&mut self, id: &Uuid) -> Result<Order, OrderRepositoryError> {
+    async fn find_bid(&mut self, id: &Uuid) -> Result<Order, RepositoryError> {
         let bid = query!("select * from bid where id = $1", id)
             .fetch_one(&mut *self.conn)
             .await
-            .map_err(|_| OrderRepositoryError::DatabaseError)?;
+            .map_err(|_| RepositoryError::DatabaseError)?;
 
         Ok(Order::bid_with(bid.id, bid.user, bid.price))
     }
 
-    async fn persist_ask(&mut self, ask: &Ask) -> Result<(), OrderRepositoryError> {
+    async fn persist_ask(&mut self, ask: &Ask) -> Result<(), RepositoryError> {
         let order = Order::from(ask);
 
         persist_order(&mut *self.conn, order).await
     }
 
     #[instrument(skip(self))]
-    async fn persist_bid(&mut self, bid: &Bid) -> Result<(), OrderRepositoryError> {
+    async fn persist_bid(&mut self, bid: &Bid) -> Result<(), RepositoryError> {
         debug!("entering persist_bid()");
 
         let order = Order::from(bid);
@@ -108,20 +109,20 @@ impl<'c> OrderRepository for Repository<'c> {
         persist_order(&mut *self.conn, order).await
     }
 
-    async fn remove_ask(&mut self, ask: &Ask) -> Result<(), OrderRepositoryError> {
+    async fn remove_ask(&mut self, ask: &Ask) -> Result<(), RepositoryError> {
         query!("DELETE FROM ask WHERE id = $1;", *ask.get_id())
             .execute(&mut *self.conn)
             .await
-            .map_err(|_| OrderRepositoryError::DatabaseError)?;
+            .map_err(|_| RepositoryError::DatabaseError)?;
 
         Ok(())
     }
 
-    async fn remove_bid(&mut self, bid: &Bid) -> Result<(), OrderRepositoryError> {
+    async fn remove_bid(&mut self, bid: &Bid) -> Result<(), RepositoryError> {
         query!("DELETE FROM bid WHERE id = $1;", *bid.get_id())
             .execute(&mut *self.conn)
             .await
-            .map_err(|_| OrderRepositoryError::DatabaseError)?;
+            .map_err(|_| RepositoryError::DatabaseError)?;
 
         Ok(())
     }
@@ -131,7 +132,7 @@ impl<'c> OrderRepository for Repository<'c> {
 async fn persist_order(
     conn: &mut <Postgres as Database>::Connection,
     order: Order,
-) -> Result<(), OrderRepositoryError> {
+) -> Result<(), RepositoryError> {
     let mut qb = QueryBuilder::new("INSERT INTO ");
 
     let table_name = match order {
@@ -153,10 +154,10 @@ async fn persist_order(
     let result = query
         .execute(&mut *conn)
         .await
-        .map_err(|_| OrderRepositoryError::DatabaseError)?;
+        .map_err(|_| RepositoryError::DatabaseError)?;
 
     if result.rows_affected() < 1 {
-        Err(OrderRepositoryError::DatabaseError)
+        Err(RepositoryError::UnexpectedResult)
     } else {
         Ok(())
     }

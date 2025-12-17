@@ -1,6 +1,7 @@
 use uuid::{Timestamp, Uuid};
 
-use crate::order::{ask::Ask, bid::Bid, candidate_repository::CandidateRepositoryError};
+use crate::order::{ask::Ask, bid::Bid};
+use crate::repository_error::RepositoryError;
 
 #[derive(Debug)]
 pub struct Candidate {
@@ -80,16 +81,13 @@ impl Candidate {
         self.approval.bid
     }
 
-    pub async fn approve(
-        &mut self,
-        user_id: &Uuid,
-    ) -> Result<ApprovalResult, CandidateRepositoryError> {
+    pub async fn approve(&mut self, user_id: &Uuid) -> Result<ApprovalResult, RepositoryError> {
         if *user_id == *self.ask.get_user_id() {
             self.approval.ask = true;
         } else if *user_id == *self.bid.get_user_id() {
             self.approval.bid = true;
         } else {
-            return Err(CandidateRepositoryError::UserError);
+            return Err(RepositoryError::UnexpectedResult);
         }
 
         if self.approval.both_approved() {

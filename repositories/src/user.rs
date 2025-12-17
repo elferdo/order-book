@@ -1,9 +1,7 @@
+use model::repository_error::RepositoryError;
 use model::{
     lock_mode::LockMode,
-    user::{
-        repository::{UserRepository, UserRepositoryError},
-        user::User,
-    },
+    user::{repository::UserRepository, user::User},
 };
 use sqlx::{QueryBuilder, Row, query};
 use uuid::Uuid;
@@ -11,11 +9,7 @@ use uuid::Uuid;
 use crate::Repository;
 
 impl<'c> UserRepository for Repository<'c> {
-    async fn find_user(
-        &mut self,
-        lock_mode: LockMode,
-        id: &Uuid,
-    ) -> Result<User, UserRepositoryError> {
+    async fn find_user(&mut self, lock_mode: LockMode, id: &Uuid) -> Result<User, RepositoryError> {
         let mut qb = QueryBuilder::new("SELECT * FROM public.user WHERE id = ");
         qb.push_bind(id);
 
@@ -30,28 +24,28 @@ impl<'c> UserRepository for Repository<'c> {
             .build()
             .fetch_one(&mut *self.conn)
             .await
-            .map_err(|_| UserRepositoryError::DatabaseError)?;
+            .map_err(|_| RepositoryError::DatabaseError)?;
 
         Ok(User::new_as(user.get("id")))
     }
 
-    async fn persist_user(&mut self, user: &User) -> Result<(), UserRepositoryError> {
+    async fn persist_user(&mut self, user: &User) -> Result<(), RepositoryError> {
         query!("INSERT INTO public.user (id) VALUES ($1)", user.get_id())
             .execute(&mut *self.conn)
             .await
-            .map_err(|_| UserRepositoryError::DatabaseError)?;
+            .map_err(|_| RepositoryError::DatabaseError)?;
 
         Ok(())
     }
 
-    async fn delete_user(&mut self, user: &User) -> Result<(), UserRepositoryError> {
+    async fn delete_user(&mut self, user: &User) -> Result<(), RepositoryError> {
         let result = query!("DELETE FROM public.user where id = $1", user.get_id())
             .execute(&mut *self.conn)
             .await
-            .map_err(|_| UserRepositoryError::DatabaseError)?;
+            .map_err(|_| RepositoryError::DatabaseError)?;
 
         if result.rows_affected() < 1 {
-            Err(UserRepositoryError::UserError)
+            Err(RepositoryError::UnexpectedResult)
         } else {
             Ok(())
         }

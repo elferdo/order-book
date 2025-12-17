@@ -4,9 +4,8 @@ use tracing::{error, info, instrument};
 use uuid::{ContextV7, Timestamp, Uuid};
 
 use super::candidate_repository::CandidateRepository;
-use super::candidate_repository::CandidateRepositoryError;
 use crate::order::repository::OrderRepository;
-use crate::order::repository::OrderRepositoryError;
+use crate::repository_error::RepositoryError;
 use crate::{lock_mode::LockMode, order::candidate::Candidate};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -48,10 +47,7 @@ impl Ask {
     }
 
     #[instrument(skip(repository))]
-    pub async fn generate_candidates<R>(
-        &self,
-        repository: &mut R,
-    ) -> Result<(), OrderRepositoryError>
+    pub async fn generate_candidates<R>(&self, repository: &mut R) -> Result<(), RepositoryError>
     where
         R: OrderRepository + CandidateRepository,
     {
@@ -74,10 +70,11 @@ impl Ask {
 
         if let Err(e) = repository.persist_candidates([candidate]).await {
             match e {
-                CandidateRepositoryError::DatabaseError => {
+                RepositoryError::DatabaseError => {
                     error!("{e}");
                 }
-                CandidateRepositoryError::UserError => todo!(),
+                RepositoryError::UnexpectedResult => todo!(),
+                RepositoryError::RootEntityNotFound => todo!(),
             }
         };
 

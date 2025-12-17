@@ -1,7 +1,6 @@
-use thiserror::Error;
 use uuid::Uuid;
 
-use crate::lock_mode::LockMode;
+use crate::{lock_mode::LockMode, repository_error::RepositoryError};
 
 use super::user::User;
 
@@ -10,22 +9,9 @@ pub trait UserRepository {
         &mut self,
         lock_mode: LockMode,
         id: &Uuid,
-    ) -> impl Future<Output = Result<User, UserRepositoryError>>;
+    ) -> impl Future<Output = Result<User, RepositoryError>>;
 
-    fn persist_user(
-        &mut self,
-        user: &User,
-    ) -> impl Future<Output = Result<(), UserRepositoryError>>;
+    fn persist_user(&mut self, user: &User) -> impl Future<Output = Result<(), RepositoryError>>;
 
-    fn delete_user(&mut self, user: &User)
-    -> impl Future<Output = Result<(), UserRepositoryError>>;
-}
-
-#[derive(Debug, Error)]
-pub enum UserRepositoryError {
-    #[error("repository error")]
-    DatabaseError,
-
-    #[error("user error")]
-    UserError,
+    fn delete_user(&mut self, user: &User) -> impl Future<Output = Result<(), RepositoryError>>;
 }

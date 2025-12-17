@@ -1,8 +1,6 @@
+use model::repository_error::RepositoryError;
 use model::{
-    deal::{
-        Deal,
-        repository::{DealRepository, DealRepositoryError},
-    },
+    deal::{Deal, repository::DealRepository},
     user::user::User,
 };
 use sqlx::query;
@@ -10,7 +8,7 @@ use sqlx::query;
 use crate::Repository;
 
 impl<'c> DealRepository for Repository<'c> {
-    async fn persist_deal(&mut self, _deal: &model::deal::Deal) -> Result<(), DealRepositoryError> {
+    async fn persist_deal(&mut self, _deal: &model::deal::Deal) -> Result<(), RepositoryError> {
         query!(
             "INSERT INTO deal (id, buyer, seller, price) VALUES ($1, $2, $3, $4);",
             *_deal.get_id(),
@@ -20,7 +18,7 @@ impl<'c> DealRepository for Repository<'c> {
         )
         .execute(&mut *self.conn)
         .await
-        .map_err(|_| DealRepositoryError::Error)?;
+        .map_err(|_| RepositoryError::DatabaseError)?;
 
         todo!()
     }
@@ -28,14 +26,14 @@ impl<'c> DealRepository for Repository<'c> {
     async fn find_deals_by_user(
         &mut self,
         user: &User,
-    ) -> Result<Vec<model::deal::Deal>, DealRepositoryError> {
+    ) -> Result<Vec<model::deal::Deal>, RepositoryError> {
         let deal_rows = query!(
             "SELECT * FROM deal WHERE buyer = $1 OR seller = $1;",
             user.get_id()
         )
         .fetch_all(&mut *self.conn)
         .await
-        .map_err(|_| DealRepositoryError::DatabaseError)?;
+        .map_err(|_| RepositoryError::DatabaseError)?;
 
         let deals = deal_rows
             .iter()
