@@ -1,6 +1,10 @@
 use uuid::{Timestamp, Uuid};
 
-use crate::order::{ask::Ask, bid::Bid};
+use crate::order::{
+    ask::Ask,
+    bid::Bid,
+    candidate::{ApprovalResult, Candidate},
+};
 
 #[derive(Debug)]
 pub struct User {
@@ -29,4 +33,14 @@ impl User {
     pub fn bid(&self, t: Timestamp, price: f32) -> Bid {
         Bid::new(t, self.id, price)
     }
+
+    pub fn approve(&self, candidate: &mut Candidate) -> Result<ApprovalResult, UserError> {
+        candidate.approve(&self.id).map_err(|_| UserError::Error)
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum UserError {
+    #[error("")]
+    Error,
 }

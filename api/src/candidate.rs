@@ -5,7 +5,9 @@ use axum::{
     Json,
     extract::{Path, State},
 };
-use model::{lock_mode::LockMode, order::candidate::ApprovalResult};
+use model::{
+    lock_mode::LockMode, order::candidate::ApprovalResult, repository_error::RepositoryError,
+};
 use model::{order::candidate::Candidate, order::candidate_repository::CandidateRepository};
 use model::{order::match_service, user::repository::UserRepository};
 use repositories::Repository;
@@ -83,14 +85,22 @@ pub async fn approve_post_handler(
     let context = ContextV7::new();
     let timestamp = Timestamp::now(context);
 
+    let user = repo
+        .find_user(LockMode::KeyShare, &user_id)
+        .await
+        .map_err(|e| match e {
+            RepositoryError::DatabaseError => ApiError::DatabaseError,
+            RepositoryError::UnexpectedResult => todo!(),
+            RepositoryError::RootEntityNotFound => todo!(),
+        })?;
+
     let mut candidate = repo
         .find_candidate(LockMode::KeyShare, &candidate_id)
         .await
         .map_err(|_| ApiError::UserNotFound)?;
 
-    match candidate
-        .approve(&user_id)
-        .await
+    match user
+        .approve(&mut candidate)
         .map_err(|_| ApiError::DatabaseError)?
     {
         ApprovalResult::Partial => {

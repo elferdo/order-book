@@ -12,7 +12,7 @@ use model::{
     user::user::User,
 };
 use sqlx::{QueryBuilder, query};
-use tracing::{debug, instrument};
+use tracing::instrument;
 
 use crate::Repository;
 

@@ -81,7 +81,7 @@ impl Candidate {
         self.approval.bid
     }
 
-    pub async fn approve(&mut self, user_id: &Uuid) -> Result<ApprovalResult, RepositoryError> {
+    pub fn approve(&mut self, user_id: &Uuid) -> Result<ApprovalResult, RepositoryError> {
         if *user_id == *self.ask.get_user_id() {
             self.approval.ask = true;
         } else if *user_id == *self.bid.get_user_id() {
