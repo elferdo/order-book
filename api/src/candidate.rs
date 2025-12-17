@@ -94,7 +94,11 @@ pub async fn approve_post_handler(
                 .await
                 .map_err(|_| ApiError::DatabaseError)?;
         }
-        ApprovalResult::Complete => todo!(),
+
+        ApprovalResult::Complete => repo
+            .remove_candidate(&candidate)
+            .await
+            .map_err(|_| ApiError::DatabaseError)?,
     };
 
     conn.commit().await.map_err(|_| ApiError::DatabaseError)?;

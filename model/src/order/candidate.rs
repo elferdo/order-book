@@ -10,8 +10,8 @@ pub struct Candidate {
     approval: Approval,
 }
 
-#[derive(Default, Debug)]
-struct Approval {
+#[derive(Default, Debug, Clone, Copy)]
+pub struct Approval {
     pub ask: bool,
     pub bid: bool,
 }
@@ -39,12 +39,12 @@ impl Candidate {
         }
     }
 
-    pub fn with(id: Uuid, ask: Ask, bid: Bid) -> Self {
+    pub fn with(id: Uuid, ask: Ask, bid: Bid, approval: Approval) -> Self {
         Self {
             id,
             ask,
             bid,
-            approval: Approval::default(),
+            approval,
         }
     }
 

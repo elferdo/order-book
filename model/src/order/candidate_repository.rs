@@ -26,6 +26,11 @@ pub trait CandidateRepository {
     ) -> impl Future<Output = Result<(), CandidateRepositoryError>>
     where
         I: IntoIterator<Item = Candidate>;
+
+    fn remove_candidate(
+        &mut self,
+        candidate: &Candidate,
+    ) -> impl Future<Output = Result<(), CandidateRepositoryError>>;
 }
 
 #[derive(Debug, Error)]

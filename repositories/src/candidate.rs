@@ -6,7 +6,7 @@ use model::{
     order::{
         ask::Ask,
         bid::Bid,
-        candidate::Candidate,
+        candidate::{Approval, Candidate},
         candidate_repository::{CandidateRepository, CandidateRepositoryError},
     },
     user::user::User,
@@ -51,17 +51,22 @@ impl<'c> CandidateRepository for Repository<'c> {
         &mut self,
         user: &User,
     ) -> Result<Vec<Candidate>, CandidateRepositoryError> {
-        let candidate_rows = query!("SELECT candidate.id, candidate.ask, candidate.bid, ask.price as ask_price, bid.price as bid_price FROM candidate JOIN ask ON candidate.ask = ask.id JOIN bid ON candidate.bid = bid.id WHERE ask.user = $1 OR bid.user = $1", user.get_id())
+        let candidate_rows = query!("SELECT candidate.id, candidate.ask, candidate.bid, ask.price as ask_price, bid.price as bid_price, approval.ask as approval_ask, approval.bid as approval_bid FROM candidate JOIN ask ON candidate.ask = ask.id JOIN bid ON candidate.bid = bid.id JOIN approval ON approval.candidate = candidate.id WHERE ask.user = $1 OR bid.user = $1", user.get_id())
             .fetch_all(&mut *self.conn)
             .await
             .map_err(|_| CandidateRepositoryError::DatabaseError)?;
 
         let candidates = candidate_rows
             .iter()
-            .map(|r| {
-                let ask = Ask::with(r.ask, *user.get_id(), r.ask_price);
-                let bid = Bid::with(r.bid, *user.get_id(), r.bid_price);
-                Candidate::with(r.id, ask, bid)
+            .map(|row| {
+                let ask = Ask::with(row.ask, *user.get_id(), row.ask_price);
+                let bid = Bid::with(row.bid, *user.get_id(), row.bid_price);
+                let approval = Approval {
+                    ask: row.approval_ask,
+                    bid: row.approval_bid,
+                };
+
+                Candidate::with(row.id, ask, bid, approval)
             })
             .collect();
 
@@ -101,7 +106,7 @@ impl<'c> CandidateRepository for Repository<'c> {
         id: &uuid::Uuid,
     ) -> Result<Candidate, CandidateRepositoryError> {
         let mut qb = QueryBuilder::new(
-            "SELECT candidate.id, candidate.ask, candidate.bid, ask.price as ask_price, ask.user as ask_user, bid.price as bid_price, bid.user as bid_user FROM candidate JOIN ask ON candidate.ask = ask.id JOIN bid ON candidate.bid = bid.id WHERE candidate.id = ",
+            "SELECT candidate.id, candidate.ask, candidate.bid, ask.price as ask_price, ask.user as ask_user, bid.price as bid_price, bid.user as bid_user, approval.ask as approval_ask, approval.bid as approval_bid FROM candidate JOIN ask ON candidate.ask = ask.id JOIN bid ON candidate.bid = bid.id JOIN approval ON approval.candidate = candidate.id WHERE candidate.id = ",
         );
 
         qb.push_bind(*id);
@@ -121,9 +126,33 @@ impl<'c> CandidateRepository for Repository<'c> {
 
         let ask = Ask::with(row.get("ask"), row.get("ask_user"), row.get("ask_price"));
         let bid = Bid::with(row.get("bid"), row.get("bid_user"), row.get("bid_price"));
+        let approval = Approval {
+            ask: row.get("approval_ask"),
+            bid: row.get("approval_bid"),
+        };
 
-        let candidate = Candidate::with(row.get("id"), ask, bid);
+        let candidate = Candidate::with(row.get("id"), ask, bid, approval);
 
         Ok(candidate)
+    }
+
+    async fn remove_candidate(
+        &mut self,
+        candidate: &Candidate,
+    ) -> Result<(), CandidateRepositoryError> {
+        query!(
+            "DELETE FROM approval WHERE candidate = $1",
+            *candidate.get_id()
+        )
+        .execute(&mut *self.conn)
+        .await
+        .map_err(|_| CandidateRepositoryError::DatabaseError)?;
+
+        let result = query!("DELETE FROM candidate WHERE id = $1", *candidate.get_id())
+            .execute(&mut *self.conn)
+            .await
+            .map_err(|_| CandidateRepositoryError::DatabaseError)?;
+
+        Ok(())
     }
 }
