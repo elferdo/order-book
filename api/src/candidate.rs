@@ -5,9 +5,9 @@ use axum::{
     Json,
     extract::{Path, State},
 };
-use model::user::repository::UserRepository;
 use model::{lock_mode::LockMode, order::candidate::ApprovalResult};
 use model::{order::candidate::Candidate, order::candidate_repository::CandidateRepository};
+use model::{order::match_service, user::repository::UserRepository};
 use repositories::Repository;
 use serde::Serialize;
 use serde_json::{Value, json};
@@ -95,10 +95,12 @@ pub async fn approve_post_handler(
                 .map_err(|_| ApiError::DatabaseError)?;
         }
 
-        ApprovalResult::Complete => repo
-            .remove_candidate(&candidate)
-            .await
-            .map_err(|_| ApiError::DatabaseError)?,
+        ApprovalResult::Complete => {
+            match_service::commit_candidate(&mut repo, candidate)
+                .await
+                .map_err(|_| ApiError::DatabaseError)?;
+            todo!();
+        }
     };
 
     conn.commit().await.map_err(|_| ApiError::DatabaseError)?;

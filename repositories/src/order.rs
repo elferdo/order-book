@@ -107,6 +107,24 @@ impl<'c> OrderRepository for Repository<'c> {
 
         persist_order(&mut *self.conn, order)
     }
+
+    async fn remove_ask(&mut self, ask: &Ask) -> Result<(), OrderRepositoryError> {
+        query!("DELETE FROM ask WHERE id = $1;", *ask.get_id())
+            .execute(&mut *self.conn)
+            .await
+            .map_err(|_| OrderRepositoryError::DatabaseError)?;
+
+        Ok(())
+    }
+
+    async fn remove_bid(&mut self, bid: &Bid) -> Result<(), OrderRepositoryError> {
+        query!("DELETE FROM bid WHERE id = $1;", *bid.get_id())
+            .execute(&mut *self.conn)
+            .await
+            .map_err(|_| OrderRepositoryError::DatabaseError)?;
+
+        Ok(())
+    }
 }
 
 #[instrument]

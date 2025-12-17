@@ -24,6 +24,9 @@ pub trait OrderRepository {
 
     fn persist_ask(&mut self, ask: &Ask) -> impl Future<Output = Result<(), OrderRepositoryError>>;
     fn persist_bid(&mut self, bid: &Bid) -> impl Future<Output = Result<(), OrderRepositoryError>>;
+
+    fn remove_ask(&mut self, ask: &Ask) -> impl Future<Output = Result<(), OrderRepositoryError>>;
+    fn remove_bid(&mut self, bid: &Bid) -> impl Future<Output = Result<(), OrderRepositoryError>>;
 }
 
 #[derive(Debug, Error)]
