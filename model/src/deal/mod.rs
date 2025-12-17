@@ -24,4 +24,20 @@ impl Deal {
             price,
         }
     }
+
+    pub fn get_id(&self) -> &Uuid {
+        &self.id
+    }
+
+    pub fn get_buyer_id(&self) -> &Uuid {
+        &self.buyer
+    }
+
+    pub fn get_seller_id(&self) -> &Uuid {
+        &self.seller
+    }
+
+    pub fn get_price(&self) -> f32 {
+        self.price
+    }
 }
