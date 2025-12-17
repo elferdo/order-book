@@ -66,7 +66,7 @@ impl Candidate {
     }
 
     pub fn get_seller_id(&self) -> &Uuid {
-        &self.ask.get_user_id()
+        self.ask.get_user_id()
     }
 
     pub fn get_price(&self) -> f32 {
