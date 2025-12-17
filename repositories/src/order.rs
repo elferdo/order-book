@@ -93,19 +93,19 @@ impl<'c> OrderRepository for Repository<'c> {
         Ok(Order::bid_with(bid.id, bid.user, bid.price))
     }
 
-    fn persist_ask(&mut self, ask: &Ask) -> impl Future<Output = Result<(), OrderRepositoryError>> {
+    async fn persist_ask(&mut self, ask: &Ask) -> Result<(), OrderRepositoryError> {
         let order = Order::from(ask);
 
-        persist_order(&mut *self.conn, order)
+        persist_order(&mut *self.conn, order).await
     }
 
     #[instrument(skip(self))]
-    fn persist_bid(&mut self, bid: &Bid) -> impl Future<Output = Result<(), OrderRepositoryError>> {
+    async fn persist_bid(&mut self, bid: &Bid) -> Result<(), OrderRepositoryError> {
         debug!("entering persist_bid()");
 
         let order = Order::from(bid);
 
-        persist_order(&mut *self.conn, order)
+        persist_order(&mut *self.conn, order).await
     }
 
     async fn remove_ask(&mut self, ask: &Ask) -> Result<(), OrderRepositoryError> {
