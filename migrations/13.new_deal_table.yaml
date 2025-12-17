@@ -1,0 +1,24 @@
+operations:
+  - create_table:
+      name: deal
+      columns:
+        - name: id
+          type: uuid
+          pk: true
+        - name: buyer
+          type: uuid
+          nullable: false
+          references: 
+            name: fk_buyer_id
+            table: user
+            column: id
+        - name: seller
+          type: uuid
+          nullable: false
+          references:
+            name: fk_seller_id
+            table: user
+            column: id
+        - name: price
+          type: real
+          nullable: false
