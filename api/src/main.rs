@@ -2,6 +2,7 @@ mod apierror;
 mod ask;
 mod bid;
 mod candidate;
+mod deal;
 mod stats;
 mod user;
 
@@ -28,6 +29,7 @@ async fn main() -> Result<()> {
         .route("/user/{id}/bid", post(bid::post_handler))
         .route("/user/{id}/ask", post(ask::post_handler))
         .route("/user/{id}/candidate", get(candidate::get_handler))
+        .route("/user/{id}/deal", get(deal::get_handler))
         .route("/stats/buy_price", get(stats::buy_price_get_handler))
         .route("/stats/sell_price", get(stats::sell_price_get_handler))
         .route(
