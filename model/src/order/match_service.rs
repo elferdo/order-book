@@ -1,12 +1,93 @@
+use std::collections::BTreeSet;
+
+use tracing::{error, info, instrument};
 use uuid::Timestamp;
 
 use crate::{
     deal::{Deal, repository::DealRepository},
+    lock_mode::LockMode,
     order::{
-        candidate::Candidate, candidate_repository::CandidateRepository,
+        ask::Ask, bid::Bid, candidate::Candidate, candidate_repository::CandidateRepository,
         repository::OrderRepository,
     },
+    repository_error::RepositoryError,
 };
+
+#[instrument(skip(repository))]
+pub async fn generate_candidates_for_ask<R>(
+    timestamp: Timestamp,
+    repository: &mut R,
+    ask: &Ask,
+) -> Result<(), RepositoryError>
+where
+    R: OrderRepository + CandidateRepository,
+{
+    let mut matching_orders: BTreeSet<_> = repository
+        .find_bids_above(LockMode::KeyShare, ask)
+        .await?
+        .into_iter()
+        .collect();
+
+    if matching_orders.is_empty() {
+        return Ok(());
+    };
+
+    let first = matching_orders.pop_first().expect("this should never fail");
+
+    let candidate = Candidate::new(timestamp, *ask, first);
+
+    if let Err(e) = repository.persist_candidates([candidate]).await {
+        match e {
+            RepositoryError::DatabaseError => {
+                error!("{e}");
+            }
+            RepositoryError::UnexpectedResult => todo!(),
+            RepositoryError::RootEntityNotFound => todo!(),
+        }
+    };
+
+    info!("processing matching orders for ask");
+
+    Ok(())
+}
+
+#[instrument(skip(repository))]
+pub async fn generate_candidates_for_bid<R>(
+    timestamp: Timestamp,
+    repository: &mut R,
+    bid: &Bid,
+) -> Result<(), RepositoryError>
+where
+    R: OrderRepository + CandidateRepository,
+{
+    let mut matching_orders: BTreeSet<_> = repository
+        .find_asks_below(LockMode::KeyShare, bid)
+        .await?
+        .into_iter()
+        .collect();
+
+    if matching_orders.is_empty() {
+        return Ok(());
+    }
+
+    let first = matching_orders.pop_first().expect("this should never fail");
+
+    let candidate = Candidate::new(timestamp, first, *bid);
+
+    if let Err(e) = repository.persist_candidates([candidate]).await {
+        match e {
+            RepositoryError::DatabaseError => {
+                error!("{e}");
+            }
+            RepositoryError::UnexpectedResult => todo!(),
+            RepositoryError::RootEntityNotFound => todo!(),
+        }
+    };
+
+    info!("processing matching orders for bid");
+
+    Ok(())
+}
 
 pub async fn seal<R>(
     repo: &mut R,

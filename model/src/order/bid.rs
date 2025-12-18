@@ -1,12 +1,5 @@
-use std::{cmp::Ordering, collections::BTreeSet};
-
-use tracing::{error, info, instrument};
-use uuid::{ContextV7, Timestamp, Uuid};
-
-use crate::order::candidate_repository::CandidateRepository;
-use crate::order::repository::OrderRepository;
-use crate::repository_error::RepositoryError;
-use crate::{lock_mode::LockMode, order::candidate::Candidate};
+use std::cmp::Ordering;
+use uuid::{Timestamp, Uuid};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Bid {
@@ -44,43 +37,6 @@ impl Bid {
 
     pub fn get_price(&self) -> f32 {
         self.not_above
-    }
-
-    #[instrument(skip(repository))]
-    pub async fn generate_candidates<R>(&self, repository: &mut R) -> Result<(), RepositoryError>
-    where
-        R: OrderRepository + CandidateRepository,
-    {
-        let mut matching_orders: BTreeSet<_> = repository
-            .find_asks_below(LockMode::KeyShare, self)
-            .await?
-            .into_iter()
-            .collect();
-
-        if matching_orders.is_empty() {
-            return Ok(());
-        }
-
-        let first = matching_orders.pop_first().expect("this should never fail");
-
-        let context = ContextV7::new();
-        let t = Timestamp::now(context);
-
-        let candidate = Candidate::new(t, first, *self);
-
-        if let Err(e) = repository.persist_candidates([candidate]).await {
-            match e {
-                RepositoryError::DatabaseError => {
-                    error!("{e}");
-                }
-                RepositoryError::UnexpectedResult => todo!(),
-                RepositoryError::RootEntityNotFound => todo!(),
-            }
-        };
-
-        info!("processing matching orders for bid");
-
-        Ok(())
     }
 }
 
