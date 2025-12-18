@@ -1,4 +1,10 @@
-use sqlx::PgConnection;
+use model::{
+    order::{ask::Ask, bid::Bid},
+    repository_error::RepositoryError,
+};
+use sqlx::{PgConnection, QueryBuilder};
+use std::fmt::Debug;
+use tracing::instrument;
 
 pub struct Repository<'c> {
     pub(crate) conn: &'c mut PgConnection,
@@ -7,5 +13,57 @@ pub struct Repository<'c> {
 impl<'c> Repository<'c> {
     pub async fn new(conn: &'c mut PgConnection) -> Self {
         Self { conn }
+    }
+
+    #[instrument(skip(self))]
+    pub async fn persist_asks<'a, T: Debug + Iterator<Item = &'a Ask>>(
+        &mut self,
+        asks: T,
+    ) -> Result<(), RepositoryError> {
+        let mut qb = QueryBuilder::new("INSERT INTO ask ");
+
+        qb.push_values(asks, |mut b, ask| {
+            b.push_bind(*ask.get_id())
+                .push_bind(*ask.get_user_id())
+                .push_bind(ask.get_price());
+        });
+
+        qb.push(" ON CONFLICT DO NOTHING;");
+
+        let query = qb.build();
+
+        let result = query.execute(&mut *self.conn).await?;
+
+        if result.rows_affected() < 1 {
+            Err(RepositoryError::UnexpectedResult)
+        } else {
+            Ok(())
+        }
+    }
+
+    #[instrument(skip(self))]
+    pub async fn persist_bids<'b, T: Debug + Iterator<Item = &'b Bid>>(
+        &mut self,
+        bids: T,
+    ) -> Result<(), RepositoryError> {
+        let mut qb = QueryBuilder::new("INSERT INTO bid ");
+
+        qb.push_values(bids, |mut b, bid| {
+            b.push_bind(*bid.get_id())
+                .push_bind(*bid.get_user_id())
+                .push_bind(bid.get_price());
+        });
+
+        qb.push(" ON CONFLICT DO NOTHING;");
+
+        let query = qb.build();
+
+        let result = query.execute(&mut *self.conn).await?;
+
+        if result.rows_affected() < 1 {
+            Err(RepositoryError::UnexpectedResult)
+        } else {
+            Ok(())
+        }
     }
 }

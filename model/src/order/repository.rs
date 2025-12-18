@@ -21,8 +21,10 @@ pub trait OrderRepository {
     fn find_ask(&mut self, id: &Uuid) -> impl Future<Output = Result<Order, RepositoryError>>;
     fn find_bid(&mut self, id: &Uuid) -> impl Future<Output = Result<Order, RepositoryError>>;
 
-    fn persist_ask(&mut self, ask: &Ask) -> impl Future<Output = Result<(), RepositoryError>>;
-    fn persist_bid(&mut self, bid: &Bid) -> impl Future<Output = Result<(), RepositoryError>>;
+    /*
+        fn persist_ask(&mut self, ask: &Ask) -> impl Future<Output = Result<(), RepositoryError>>;
+        fn persist_bid(&mut self, bid: &Bid) -> impl Future<Output = Result<(), RepositoryError>>;
+    */
 
     fn remove_ask(&mut self, ask: &Ask) -> impl Future<Output = Result<(), RepositoryError>>;
     fn remove_bid(&mut self, bid: &Bid) -> impl Future<Output = Result<(), RepositoryError>>;

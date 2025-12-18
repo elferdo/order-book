@@ -84,21 +84,6 @@ impl<'c> OrderRepository for Repository<'c> {
         Ok(Order::bid_with(bid.id, bid.user, bid.price))
     }
 
-    async fn persist_ask(&mut self, ask: &Ask) -> Result<(), RepositoryError> {
-        let order = Order::from(ask);
-
-        persist_order(&mut *self.conn, order).await
-    }
-
-    #[instrument(skip(self))]
-    async fn persist_bid(&mut self, bid: &Bid) -> Result<(), RepositoryError> {
-        debug!("entering persist_bid()");
-
-        let order = Order::from(bid);
-
-        persist_order(&mut *self.conn, order).await
-    }
-
     async fn remove_ask(&mut self, ask: &Ask) -> Result<(), RepositoryError> {
         query!("DELETE FROM ask WHERE id = $1;", *ask.get_id())
             .execute(&mut *self.conn)
@@ -112,38 +97,6 @@ impl<'c> OrderRepository for Repository<'c> {
             .execute(&mut *self.conn)
             .await?;
 
-        Ok(())
-    }
-}
-
-#[instrument]
-async fn persist_order(
-    conn: &mut <Postgres as Database>::Connection,
-    order: Order,
-) -> Result<(), RepositoryError> {
-    let mut qb = QueryBuilder::new("INSERT INTO ");
-
-    let table_name = match order {
-        Order::Ask { .. } => "ask",
-        Order::Bid { .. } => "bid",
-    };
-
-    qb.push(table_name);
-    qb.push(" ");
-
-    qb.push_values([order], |mut b, o| {
-        b.push_bind(*o.get_id())
-            .push_bind(*o.get_user_id())
-            .push_bind(o.get_price());
-    });
-
-    let query = qb.build();
-
-    let result = query.execute(&mut *conn).await?;
-
-    if result.rows_affected() < 1 {
-        Err(RepositoryError::UnexpectedResult)
-    } else {
         Ok(())
     }
 }

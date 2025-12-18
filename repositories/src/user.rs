@@ -22,13 +22,19 @@ impl<'c> UserRepository for Repository<'c> {
 
         let user = qb.build().fetch_one(&mut *self.conn).await?;
 
-        Ok(User::new_as(user.get("id")))
+        Ok(User::with(user.get("id")))
     }
 
     async fn persist_user(&mut self, user: &User) -> Result<(), RepositoryError> {
         query!("INSERT INTO public.user (id) VALUES ($1)", user.get_id())
             .execute(&mut *self.conn)
             .await?;
+
+        let asks = user.asks();
+        let bids = user.bids();
+
+        self.persist_asks(asks).await?;
+        self.persist_bids(bids).await?;
 
         Ok(())
     }

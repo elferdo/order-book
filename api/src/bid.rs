@@ -5,7 +5,6 @@ use axum::{
     Json,
     extract::{Path, State},
 };
-use model::order::repository::OrderRepository;
 use model::user::repository::UserRepository;
 use model::{lock_mode::LockMode, order::match_service::generate_candidates_for_bid};
 use repositories::Repository;
@@ -33,7 +32,7 @@ pub async fn post_handler(
 
     let mut repo = Repository::new(&mut t).await;
 
-    let user = repo
+    let mut user = repo
         .find_user(LockMode::KeyShare, &user_id)
         .await
         .map_err(|_| ApiError::UserNotFound)?;
@@ -41,9 +40,11 @@ pub async fn post_handler(
     let context = ContextV7::new();
     let timestamp = Timestamp::now(&context);
 
-    let bid = user.bid(timestamp, body.price);
+    let bid = user
+        .bid(timestamp, body.price)
+        .map_err(|_| ApiError::UserNotFound)?;
 
-    repo.persist_bid(&bid)
+    repo.persist_user(&user)
         .await
         .map_err(|_| ApiError::DatabaseError)?;
 
