@@ -1,11 +1,14 @@
 use anyhow::Result;
+use model::order::bid::Bid;
+use model::order::repository::OrderRepository;
+use repositories::Repository;
 use rstest::*;
 use sqlx::postgres::PgPoolOptions;
 use testcontainers_modules::{
     postgres::Postgres,
     testcontainers::{ImageExt, runners::AsyncRunner},
 };
-use url::Url;
+use uuid::{ContextV7, Timestamp, Uuid};
 
 #[rstest]
 #[tokio::test]
@@ -26,5 +29,22 @@ async fn test1_test() -> Result<()> {
 
     let pool = PgPoolOptions::new().connect(&connection_string).await?;
 
+    let mut conn = pool.acquire().await?;
+
+    let mut repo = Repository::new(&mut conn).await;
+
+    let context = ContextV7::new();
+    let timestamp = Timestamp::now(context);
+    let id = Uuid::new_v7(timestamp);
+
+    let bid = Bid::new(timestamp, id, 1.23);
+
+    repo.persist_bid(&bid).await?;
+
+    /*
+        let recover = repo.find_bid(bid.get_id()).await?;
+
+        assert_eq!(bid.get_id(), recover.get_id());
+    */
     Ok(())
 }

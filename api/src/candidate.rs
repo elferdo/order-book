@@ -89,7 +89,7 @@ pub async fn approve_post_handler(
         .find_user(LockMode::KeyShare, &user_id)
         .await
         .map_err(|e| match e {
-            RepositoryError::DatabaseError => ApiError::DatabaseError,
+            RepositoryError::DatabaseError(_) => ApiError::DatabaseError,
             RepositoryError::UnexpectedResult => todo!(),
             RepositoryError::RootEntityNotFound => todo!(),
         })?;

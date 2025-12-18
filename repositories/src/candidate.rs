@@ -36,11 +36,7 @@ impl<'c> CandidateRepository for Repository<'c> {
                 .push_bind(*m.get_bid().get_id());
         });
 
-        let _ = qb
-            .build()
-            .execute(&mut *self.conn)
-            .await
-            .map_err(|_| RepositoryError::DatabaseError);
+        let _ = qb.build().execute(&mut *self.conn).await;
 
         Ok(())
     }
@@ -55,7 +51,7 @@ COALESCE(approval.ask, FALSE) as approval_ask, COALESCE(approval.bid, FALSE) as 
             .fetch_all(&mut *self.conn)
             .await;
 
-        let candidate_rows = result.map_err(|_| RepositoryError::DatabaseError)?;
+        let candidate_rows = result?;
 
         let candidates = candidate_rows
             .iter()
@@ -82,8 +78,7 @@ COALESCE(approval.ask, FALSE) as approval_ask, COALESCE(approval.bid, FALSE) as 
             candidate.get_bid().get_id(),
         )
         .execute(&mut *self.conn)
-        .await
-        .map_err(|_| RepositoryError::DatabaseError)?;
+        .await?;
 
         query!(
             "INSERT INTO approval (candidate, ask, bid) VALUES ($1, $2, $3) ON CONFLICT (candidate) DO UPDATE SET candidate = EXCLUDED.candidate, ask = EXCLUDED.ask, bid = EXCLUDED.bid",
@@ -92,8 +87,7 @@ COALESCE(approval.ask, FALSE) as approval_ask, COALESCE(approval.bid, FALSE) as 
             candidate.get_bid_approval(),
         )
         .execute(&mut *self.conn)
-        .await
-        .map_err(|_| RepositoryError::DatabaseError)?;
+        .await?;
 
         Ok(())
     }
@@ -119,7 +113,7 @@ COALESCE(approval.ask, FALSE) as approval_ask, COALESCE(approval.bid, FALSE) as 
         };
 
         let result = qb.build().fetch_one(&mut *self.conn).await;
-        let row = result.map_err(|_| RepositoryError::DatabaseError)?;
+        let row = result?;
 
         let ask = Ask::with(row.get("ask"), row.get("ask_user"), row.get("ask_price"));
         let bid = Bid::with(row.get("bid"), row.get("bid_user"), row.get("bid_price"));
@@ -139,13 +133,11 @@ COALESCE(approval.ask, FALSE) as approval_ask, COALESCE(approval.bid, FALSE) as 
             *candidate.get_id()
         )
         .execute(&mut *self.conn)
-        .await
-        .map_err(|_| RepositoryError::DatabaseError)?;
+        .await?;
 
         let _result = query!("DELETE FROM candidate WHERE id = $1", *candidate.get_id())
             .execute(&mut *self.conn)
-            .await
-            .map_err(|_| RepositoryError::DatabaseError)?;
+            .await?;
 
         Ok(())
     }

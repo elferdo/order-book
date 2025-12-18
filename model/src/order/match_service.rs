@@ -38,7 +38,7 @@ where
 
     if let Err(e) = repository.persist_candidates([candidate]).await {
         match e {
-            RepositoryError::DatabaseError => {
+            RepositoryError::DatabaseError(e) => {
                 error!("{e}");
             }
             RepositoryError::UnexpectedResult => todo!(),
@@ -76,7 +76,7 @@ where
 
     if let Err(e) = repository.persist_candidates([candidate]).await {
         match e {
-            RepositoryError::DatabaseError => {
+            RepositoryError::DatabaseError(e) => {
                 error!("{e}");
             }
             RepositoryError::UnexpectedResult => todo!(),

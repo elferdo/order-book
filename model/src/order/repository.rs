@@ -1,10 +1,9 @@
-use uuid::Uuid;
-
 use super::ask::Ask;
 use super::bid::Bid;
 use super::order::Order;
 use crate::lock_mode::LockMode;
 use crate::repository_error::RepositoryError;
+use uuid::Uuid;
 
 pub trait OrderRepository {
     fn find_asks_below(

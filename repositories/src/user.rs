@@ -20,11 +20,7 @@ impl<'c> UserRepository for Repository<'c> {
             }
         };
 
-        let user = qb
-            .build()
-            .fetch_one(&mut *self.conn)
-            .await
-            .map_err(|_| RepositoryError::DatabaseError)?;
+        let user = qb.build().fetch_one(&mut *self.conn).await?;
 
         Ok(User::new_as(user.get("id")))
     }
@@ -32,8 +28,7 @@ impl<'c> UserRepository for Repository<'c> {
     async fn persist_user(&mut self, user: &User) -> Result<(), RepositoryError> {
         query!("INSERT INTO public.user (id) VALUES ($1)", user.get_id())
             .execute(&mut *self.conn)
-            .await
-            .map_err(|_| RepositoryError::DatabaseError)?;
+            .await?;
 
         Ok(())
     }
@@ -41,8 +36,7 @@ impl<'c> UserRepository for Repository<'c> {
     async fn delete_user(&mut self, user: &User) -> Result<(), RepositoryError> {
         let result = query!("DELETE FROM public.user where id = $1", user.get_id())
             .execute(&mut *self.conn)
-            .await
-            .map_err(|_| RepositoryError::DatabaseError)?;
+            .await?;
 
         if result.rows_affected() < 1 {
             Err(RepositoryError::UnexpectedResult)

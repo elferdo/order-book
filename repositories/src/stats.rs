@@ -8,8 +8,7 @@ impl<'c> StatsRepository for Repository<'c> {
     async fn buy_price(&mut self) -> Result<f32, RepositoryError> {
         let row = query!("SELECT MAX(price) AS price FROM bid LEFT JOIN candidate ON candidate.bid = bid.id WHERE candidate.ask IS NULL;")
             .fetch_one(&mut *self.conn)
-            .await
-            .map_err(|_| RepositoryError::DatabaseError)?;
+            .await?;
 
         if let Some(price) = row.price {
             Ok(price)
@@ -21,8 +20,7 @@ impl<'c> StatsRepository for Repository<'c> {
     async fn sell_price(&mut self) -> Result<f32, RepositoryError> {
         let row = query!("SELECT MIN(price) AS price FROM ask LEFT JOIN candidate ON candidate.ask = ask.id WHERE candidate.bid IS NULL;")
             .fetch_one(&mut *self.conn)
-            .await
-            .map_err(|_| RepositoryError::DatabaseError)?;
+            .await?;
 
         if let Some(price) = row.price {
             Ok(price)

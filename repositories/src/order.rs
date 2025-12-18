@@ -30,11 +30,7 @@ impl<'c> OrderRepository for Repository<'c> {
             }
         };
 
-        let ask_rows = qb
-            .build()
-            .fetch_all(&mut *self.conn)
-            .await
-            .map_err(|_| RepositoryError::DatabaseError)?;
+        let ask_rows = qb.build().fetch_all(&mut *self.conn).await?;
 
         let asks: Vec<_> = ask_rows
             .into_iter()
@@ -47,8 +43,7 @@ impl<'c> OrderRepository for Repository<'c> {
     async fn find_ask(&mut self, id: &Uuid) -> Result<Order, RepositoryError> {
         let ask = query!("select * from ask where id = $1", id)
             .fetch_one(&mut *self.conn)
-            .await
-            .map_err(|_| RepositoryError::DatabaseError)?;
+            .await?;
 
         Ok(Order::ask_with(ask.id, ask.user, ask.price))
     }
@@ -71,11 +66,7 @@ impl<'c> OrderRepository for Repository<'c> {
             }
         };
 
-        let bid_rows = qb
-            .build()
-            .fetch_all(&mut *self.conn)
-            .await
-            .map_err(|_| RepositoryError::DatabaseError)?;
+        let bid_rows = qb.build().fetch_all(&mut *self.conn).await?;
 
         let bids: Vec<_> = bid_rows
             .into_iter()
@@ -88,8 +79,7 @@ impl<'c> OrderRepository for Repository<'c> {
     async fn find_bid(&mut self, id: &Uuid) -> Result<Order, RepositoryError> {
         let bid = query!("select * from bid where id = $1", id)
             .fetch_one(&mut *self.conn)
-            .await
-            .map_err(|_| RepositoryError::DatabaseError)?;
+            .await?;
 
         Ok(Order::bid_with(bid.id, bid.user, bid.price))
     }
@@ -112,8 +102,7 @@ impl<'c> OrderRepository for Repository<'c> {
     async fn remove_ask(&mut self, ask: &Ask) -> Result<(), RepositoryError> {
         query!("DELETE FROM ask WHERE id = $1;", *ask.get_id())
             .execute(&mut *self.conn)
-            .await
-            .map_err(|_| RepositoryError::DatabaseError)?;
+            .await?;
 
         Ok(())
     }
@@ -121,8 +110,7 @@ impl<'c> OrderRepository for Repository<'c> {
     async fn remove_bid(&mut self, bid: &Bid) -> Result<(), RepositoryError> {
         query!("DELETE FROM bid WHERE id = $1;", *bid.get_id())
             .execute(&mut *self.conn)
-            .await
-            .map_err(|_| RepositoryError::DatabaseError)?;
+            .await?;
 
         Ok(())
     }
@@ -151,10 +139,7 @@ async fn persist_order(
 
     let query = qb.build();
 
-    let result = query
-        .execute(&mut *conn)
-        .await
-        .map_err(|_| RepositoryError::DatabaseError)?;
+    let result = query.execute(&mut *conn).await?;
 
     if result.rows_affected() < 1 {
         Err(RepositoryError::UnexpectedResult)

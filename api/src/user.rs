@@ -34,7 +34,7 @@ pub async fn post_handler(State(state): State<AppState>) -> Result<Json<Value>, 
             debug!("error");
 
             let result = match e {
-                RepositoryError::DatabaseError => ApiError::DatabaseError,
+                RepositoryError::DatabaseError(_) => ApiError::DatabaseError,
                 RepositoryError::UnexpectedResult => todo!(),
                 RepositoryError::RootEntityNotFound => todo!(),
             };
@@ -62,7 +62,7 @@ pub async fn delete_handler(
         .find_user(LockMode::None, &id)
         .await
         .map_err(|e| match e {
-            RepositoryError::DatabaseError => ApiError::DatabaseError,
+            RepositoryError::DatabaseError(_) => ApiError::DatabaseError,
             RepositoryError::UnexpectedResult => todo!(),
             RepositoryError::RootEntityNotFound => todo!(),
         })?;
@@ -73,7 +73,7 @@ pub async fn delete_handler(
             debug!("error");
 
             let result = match e {
-                RepositoryError::DatabaseError => ApiError::DatabaseError,
+                RepositoryError::DatabaseError(_) => ApiError::DatabaseError,
                 RepositoryError::UnexpectedResult => todo!(),
                 RepositoryError::RootEntityNotFound => todo!(),
             };

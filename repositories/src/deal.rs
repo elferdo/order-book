@@ -17,8 +17,7 @@ impl<'c> DealRepository for Repository<'c> {
             _deal.get_price()
         )
         .execute(&mut *self.conn)
-        .await
-        .map_err(|_| RepositoryError::DatabaseError)?;
+        .await?;
 
         todo!()
     }
@@ -32,8 +31,7 @@ impl<'c> DealRepository for Repository<'c> {
             user.get_id()
         )
         .fetch_all(&mut *self.conn)
-        .await
-        .map_err(|_| RepositoryError::DatabaseError)?;
+        .await?;
 
         let deals = deal_rows
             .iter()
