@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use model::repository_error::RepositoryError;
 use model::{
     lock_mode::LockMode,
@@ -22,7 +24,21 @@ impl<'c> UserRepository for Repository<'c> {
 
         let user = qb.build().fetch_one(&mut *self.conn).await?;
 
-        Ok(User::with(user.get("id")))
+        let asks: HashMap<_, _> = self
+            .find_asks(id)
+            .await?
+            .into_iter()
+            .map(|ask| (*ask.get_id(), ask))
+            .collect();
+
+        let bids: HashMap<_, _> = self
+            .find_bids(id)
+            .await?
+            .into_iter()
+            .map(|bid| (*bid.get_id(), bid))
+            .collect();
+
+        Ok(User::with(user.get("id"), asks, bids))
     }
 
     async fn persist_user(&mut self, user: &User) -> Result<(), RepositoryError> {

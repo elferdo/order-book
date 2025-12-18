@@ -1,13 +1,10 @@
 use model::lock_mode::LockMode;
 use model::order::ask::Ask;
 use model::order::bid::Bid;
-use model::order::order::Order;
 use model::order::repository::OrderRepository;
 use model::repository_error::RepositoryError;
-use sqlx::{Database, Postgres, QueryBuilder};
+use sqlx::QueryBuilder;
 use sqlx::{Row, query};
-use tracing::{debug, instrument};
-use uuid::Uuid;
 
 use crate::Repository;
 
@@ -40,14 +37,6 @@ impl<'c> OrderRepository for Repository<'c> {
         Ok(asks)
     }
 
-    async fn find_ask(&mut self, id: &Uuid) -> Result<Order, RepositoryError> {
-        let ask = query!("select * from ask where id = $1", id)
-            .fetch_one(&mut *self.conn)
-            .await?;
-
-        Ok(Order::ask_with(ask.id, ask.user, ask.price))
-    }
-
     async fn find_bids_above(
         &mut self,
         lock_mode: LockMode,
@@ -74,14 +63,6 @@ impl<'c> OrderRepository for Repository<'c> {
             .collect();
 
         Ok(bids)
-    }
-
-    async fn find_bid(&mut self, id: &Uuid) -> Result<Order, RepositoryError> {
-        let bid = query!("select * from bid where id = $1", id)
-            .fetch_one(&mut *self.conn)
-            .await?;
-
-        Ok(Order::bid_with(bid.id, bid.user, bid.price))
     }
 
     async fn remove_ask(&mut self, ask: &Ask) -> Result<(), RepositoryError> {

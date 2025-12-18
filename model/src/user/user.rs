@@ -20,13 +20,13 @@ impl User {
     pub fn new(t: Timestamp) -> Self {
         let id = Uuid::new_v7(t);
 
-        Self::with(id)
-    }
-
-    pub fn with(id: Uuid) -> Self {
         let asks = HashMap::new();
         let bids = HashMap::new();
 
+        Self::with(id, asks, bids)
+    }
+
+    pub fn with(id: Uuid, asks: HashMap<Uuid, Ask>, bids: HashMap<Uuid, Bid>) -> Self {
         Self { id, asks, bids }
     }
 

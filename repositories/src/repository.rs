@@ -2,9 +2,10 @@ use model::{
     order::{ask::Ask, bid::Bid},
     repository_error::RepositoryError,
 };
-use sqlx::{PgConnection, QueryBuilder};
+use sqlx::{PgConnection, QueryBuilder, query};
 use std::fmt::Debug;
 use tracing::instrument;
+use uuid::Uuid;
 
 pub struct Repository<'c> {
     pub(crate) conn: &'c mut PgConnection,
@@ -65,5 +66,31 @@ impl<'c> Repository<'c> {
         } else {
             Ok(())
         }
+    }
+
+    pub async fn find_asks(&mut self, user_id: &Uuid) -> Result<Vec<Ask>, RepositoryError> {
+        let ask_rows = query!("SELECT * FROM ask WHERE user = $1", user_id.to_string())
+            .fetch_all(&mut *self.conn)
+            .await?;
+
+        let asks = ask_rows
+            .iter()
+            .map(|row| Ask::with(row.id, row.user, row.price))
+            .collect();
+
+        Ok(asks)
+    }
+
+    pub async fn find_bids(&mut self, user_id: &Uuid) -> Result<Vec<Bid>, RepositoryError> {
+        let bid_rows = query!("SELECT * FROM bid WHERE user = $1", user_id.to_string())
+            .fetch_all(&mut *self.conn)
+            .await?;
+
+        let bids = bid_rows
+            .iter()
+            .map(|row| Bid::with(row.id, row.user, row.price))
+            .collect();
+
+        Ok(bids)
     }
 }
