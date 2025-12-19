@@ -1,0 +1,1 @@
+INSERT INTO public.user VALUES ('019b36f8-bb74-7ad3-8a02-465301b72d92');

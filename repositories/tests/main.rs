@@ -1,6 +1,6 @@
 use anyhow::Result;
-use model::user::repository::UserRepository;
 use model::user::user::User;
+use model::{lock_mode::LockMode, user::repository::UserRepository};
 use repositories::Repository;
 use rstest::*;
 use sqlx::{PgPool, Pool, postgres::PgPoolOptions, query};
@@ -52,15 +52,17 @@ async fn user_with_ask(pool: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test]
+#[sqlx::test(fixtures("first_user"))]
 async fn sqlx_test(pool: PgPool) -> Result<()> {
     let mut a = pool.acquire().await?;
 
-    let rows = query!("SELECT * FROM ask").fetch_all(&mut *a).await?;
+    let mut repo = Repository::new(&mut a).await;
 
-    for row in rows {
-        dbg!(row);
-    }
+    let id = Uuid::parse_str("019b36f8-bb74-7ad3-8a02-465301b72d92")?;
+
+    let user = repo.find_user(LockMode::None, &id).await?;
+
+    assert_eq!(*user.get_id(), id);
 
     Ok(())
 }
