@@ -4,40 +4,10 @@ use model::user::user::User;
 use repositories::Repository;
 use rstest::*;
 use sqlx::{PgPool, Pool, postgres::PgPoolOptions, query};
-use testcontainers_modules::{
-    postgres::Postgres,
-    testcontainers::{ContainerAsync, ImageExt, runners::AsyncRunner},
-};
 use uuid::{ContextV7, Timestamp, Uuid};
 
-#[fixture]
-async fn postgres_instance() -> Result<ContainerAsync<Postgres>> {
-    let postgres_instance = Postgres::default()
-        .with_init_sql(include_str!("markets.sql").to_string().into_bytes())
-        .with_user("fernando")
-        .with_password("postgres")
-        .with_tag("17.7")
-        .start()
-        .await?;
-
-    Ok(postgres_instance)
-}
-
-#[rstest]
-#[tokio::test]
-async fn user_with_no_orders(
-    #[future] postgres_instance: Result<ContainerAsync<Postgres>>,
-) -> Result<()> {
-    let db_instance = postgres_instance.await?;
-
-    let connection_string = format!(
-        "postgres://fernando:postgres@{}:{}/postgres",
-        db_instance.get_host().await?,
-        db_instance.get_host_port_ipv4(5432).await?
-    );
-
-    let pool = PgPoolOptions::new().connect(&connection_string).await?;
-
+#[sqlx::test]
+async fn user_with_no_orders(pool: PgPool) -> Result<()> {
     let mut conn = pool.acquire().await?;
 
     let mut repo = Repository::new(&mut conn).await;
@@ -58,21 +28,8 @@ async fn user_with_no_orders(
     Ok(())
 }
 
-#[rstest]
-#[tokio::test]
-async fn user_with_ask(
-    #[future] postgres_instance: Result<ContainerAsync<Postgres>>,
-) -> Result<()> {
-    let db_instance = postgres_instance.await?;
-
-    let connection_string = format!(
-        "postgres://fernando:postgres@{}:{}/postgres",
-        db_instance.get_host().await?,
-        db_instance.get_host_port_ipv4(5432).await?
-    );
-
-    let pool = PgPoolOptions::new().connect(&connection_string).await?;
-
+#[sqlx::test]
+async fn user_with_ask(pool: PgPool) -> Result<()> {
     let mut conn = pool.acquire().await?;
 
     let mut repo = Repository::new(&mut conn).await;
@@ -93,11 +50,6 @@ async fn user_with_ask(
     assert_eq!(user.get_id(), recover.get_id());
 
     Ok(())
-}
-
-#[fixture]
-fn hola() -> String {
-    "hola".to_string()
 }
 
 #[sqlx::test]
