@@ -21,9 +21,15 @@ impl<'c> Repository<'c> {
         &mut self,
         asks: T,
     ) -> Result<(), RepositoryError> {
+        let mut peekable = asks.peekable();
+
+        if peekable.peek().is_none() {
+            return Ok(());
+        }
+
         let mut qb = QueryBuilder::new("INSERT INTO ask ");
 
-        qb.push_values(asks, |mut b, ask| {
+        qb.push_values(peekable, |mut b, ask| {
             b.push_bind(*ask.get_id())
                 .push_bind(*ask.get_user_id())
                 .push_bind(ask.get_price());
@@ -47,9 +53,15 @@ impl<'c> Repository<'c> {
         &mut self,
         bids: T,
     ) -> Result<(), RepositoryError> {
+        let mut peekable = bids.peekable();
+
+        if peekable.peek().is_none() {
+            return Ok(());
+        }
+
         let mut qb = QueryBuilder::new("INSERT INTO bid ");
 
-        qb.push_values(bids, |mut b, bid| {
+        qb.push_values(peekable, |mut b, bid| {
             b.push_bind(*bid.get_id())
                 .push_bind(*bid.get_user_id())
                 .push_bind(bid.get_price());

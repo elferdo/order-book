@@ -51,7 +51,6 @@ impl<'c> UserRepository for Repository<'c> {
 
         self.persist_asks(asks).await?;
         self.persist_bids(bids).await?;
-
         Ok(())
     }
 
