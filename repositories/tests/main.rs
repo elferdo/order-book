@@ -66,3 +66,18 @@ async fn sqlx_test(pool: PgPool) -> Result<()> {
 
     Ok(())
 }
+
+#[sqlx::test(fixtures("first_user", "asks"))]
+async fn sqlx_test2(pool: PgPool) -> Result<()> {
+    let mut a = pool.acquire().await?;
+
+    let mut repo = Repository::new(&mut a).await;
+
+    let id = Uuid::parse_str("019b36f8-bb74-7ad3-8a02-465301b72d92")?;
+
+    let user = repo.find_user(LockMode::None, &id).await?;
+
+    assert_eq!(*user.get_id(), id);
+
+    Ok(())
+}
