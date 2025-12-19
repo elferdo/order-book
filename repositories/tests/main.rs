@@ -3,7 +3,7 @@ use model::user::repository::UserRepository;
 use model::user::user::User;
 use repositories::Repository;
 use rstest::*;
-use sqlx::{Pool, postgres::PgPoolOptions};
+use sqlx::{PgPool, Pool, postgres::PgPoolOptions, query};
 use testcontainers_modules::{
     postgres::Postgres,
     testcontainers::{ContainerAsync, ImageExt, runners::AsyncRunner},
@@ -91,6 +91,24 @@ async fn user_with_ask(
         .await?;
 
     assert_eq!(user.get_id(), recover.get_id());
+
+    Ok(())
+}
+
+#[fixture]
+fn hola() -> String {
+    "hola".to_string()
+}
+
+#[sqlx::test]
+async fn sqlx_test(pool: PgPool) -> Result<()> {
+    let mut a = pool.acquire().await?;
+
+    let rows = query!("SELECT * FROM ask").fetch_all(&mut *a).await?;
+
+    for row in rows {
+        dbg!(row);
+    }
 
     Ok(())
 }
