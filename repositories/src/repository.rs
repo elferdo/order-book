@@ -38,7 +38,6 @@ impl<'c> Repository<'c> {
         qb.push(" ON CONFLICT DO NOTHING;");
 
         let query = qb.build();
-
         let result = query.execute(&mut *self.conn).await?;
 
         if result.rows_affected() < 1 {

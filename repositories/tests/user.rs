@@ -1,3 +1,5 @@
+use std::collections::{BTreeSet, HashSet};
+
 use anyhow::Result;
 use model::repository_error::RepositoryError;
 use model::user::user::User;
@@ -28,27 +30,132 @@ async fn persist_user(pool: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[sqlx::test]
+#[sqlx::test(fixtures("first_user"))]
 async fn persist_user_with_ask(pool: PgPool) -> Result<()> {
     let mut conn = pool.acquire().await?;
 
-    let mut repo = Repository::new(&mut conn).await;
+    let mut repo = Repository::new(&mut *conn).await;
 
     let context = ContextV7::new();
     let timestamp = Timestamp::now(context);
 
-    let mut user = User::new(timestamp);
+    let mut user = repo
+        .find_user(
+            LockMode::None,
+            &Uuid::parse_str("019b3788-2ded-7f19-8191-9018a3939f60")?,
+        )
+        .await?;
 
     let _ = user.ask(timestamp, 4.32);
 
     repo.persist_user(&user).await?;
 
-    let recover = query!(
-        "SELECT * FROM ask WHERE user = $1",
-        user.get_id().to_string()
-    )
-    .fetch_one(&mut *conn)
-    .await?;
+    let recover = query!("SELECT * FROM ask").fetch_one(&mut *conn).await?;
+
+    assert_eq!(4.32, recover.price);
+
+    Ok(())
+}
+
+#[sqlx::test(fixtures("first_user"))]
+async fn persist_user_with_more_than_one_ask(pool: PgPool) -> Result<()> {
+    let mut conn = pool.acquire().await?;
+
+    let mut repo = Repository::new(&mut *conn).await;
+
+    let context = ContextV7::new();
+    let timestamp = Timestamp::now(context);
+
+    let mut user = repo
+        .find_user(
+            LockMode::None,
+            &Uuid::parse_str("019b3788-2ded-7f19-8191-9018a3939f60")?,
+        )
+        .await?;
+
+    let prices = vec![1.23, 4.32, 5.67];
+
+    for price in &prices {
+        let _ = user.ask(timestamp, *price);
+    }
+
+    repo.persist_user(&user).await?;
+
+    let recover = query!("SELECT * FROM ask").fetch_all(&mut *conn).await?;
+
+    let recovered_prices: Vec<_> = recover.iter().map(|r| r.price).collect();
+
+    for price in &prices {
+        assert!(recovered_prices.contains(price));
+    }
+
+    for price in &recovered_prices {
+        assert!(prices.contains(price));
+    }
+
+    Ok(())
+}
+
+#[sqlx::test(fixtures("first_user"))]
+async fn persist_user_with_more_than_one_bid(pool: PgPool) -> Result<()> {
+    let mut conn = pool.acquire().await?;
+
+    let mut repo = Repository::new(&mut *conn).await;
+
+    let context = ContextV7::new();
+    let timestamp = Timestamp::now(context);
+
+    let mut user = repo
+        .find_user(
+            LockMode::None,
+            &Uuid::parse_str("019b3788-2ded-7f19-8191-9018a3939f60")?,
+        )
+        .await?;
+
+    let prices = vec![1.23, 4.32, 5.67];
+
+    for price in &prices {
+        let _ = user.bid(timestamp, *price);
+    }
+
+    repo.persist_user(&user).await?;
+
+    let recover = query!("SELECT * FROM bid").fetch_all(&mut *conn).await?;
+
+    let recovered_prices: Vec<_> = recover.iter().map(|r| r.price).collect();
+
+    for price in &prices {
+        assert!(recovered_prices.contains(price));
+    }
+
+    for price in &recovered_prices {
+        assert!(prices.contains(price));
+    }
+
+    Ok(())
+}
+
+#[sqlx::test(fixtures("first_user"))]
+async fn persist_user_with_bid(pool: PgPool) -> Result<()> {
+    let mut conn = pool.acquire().await?;
+
+    let mut repo = Repository::new(&mut *conn).await;
+
+    let context = ContextV7::new();
+    let timestamp = Timestamp::now(context);
+
+    let mut user = repo
+        .find_user(
+            LockMode::None,
+            &Uuid::parse_str("019b3788-2ded-7f19-8191-9018a3939f60")?,
+        )
+        .await?;
+
+    let _ = user.bid(timestamp, 4.32);
+
+    repo.persist_user(&user).await?;
+
+    let recover = query!("SELECT * FROM bid").fetch_one(&mut *conn).await?;
 
     assert_eq!(4.32, recover.price);
 

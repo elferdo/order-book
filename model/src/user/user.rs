@@ -68,3 +68,46 @@ pub enum UserError {
     #[error("")]
     Error,
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use anyhow::Result;
+    use uuid::{ContextV7, Timestamp};
+
+    #[test]
+    fn user_ask() -> Result<()> {
+        let context = ContextV7::new();
+        let timestamp = Timestamp::now(context);
+
+        let mut user = User::new(timestamp);
+
+        let price = 1.23;
+
+        let _ = user.ask(timestamp, price)?;
+
+        let asks: Vec<_> = user.asks().collect();
+
+        assert_eq!(asks[0].get_price(), price);
+
+        Ok(())
+    }
+
+    #[test]
+    fn user_bid() -> Result<()> {
+        let context = ContextV7::new();
+        let timestamp = Timestamp::now(context);
+
+        let mut user = User::new(timestamp);
+
+        let price = 1.23;
+
+        let _ = user.bid(timestamp, price)?;
+
+        let bids: Vec<_> = user.bids().collect();
+
+        assert_eq!(bids[0].get_price(), price);
+
+        Ok(())
+    }
+}

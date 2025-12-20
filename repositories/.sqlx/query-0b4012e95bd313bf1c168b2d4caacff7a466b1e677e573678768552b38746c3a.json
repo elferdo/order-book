@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO public.user (id) VALUES ($1)",
+  "query": "INSERT INTO public.user (id) VALUES ($1) ON CONFLICT DO NOTHING",
   "describe": {
     "columns": [],
     "parameters": {
@@ -10,5 +10,5 @@
     },
     "nullable": []
   },
-  "hash": "72c8ebffa715e5ff0dda8a69baf3f3cd38870796180f3c8735d1c22e1afac428"
+  "hash": "0b4012e95bd313bf1c168b2d4caacff7a466b1e677e573678768552b38746c3a"
 }

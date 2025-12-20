@@ -4,7 +4,7 @@ pub enum RepositoryError {
      * model, but it's the most convenient way to surface database errors,
      * useful for debugging.
      */
-    #[error("database connection failure")]
+    #[error("database error")]
     DatabaseError(#[from] sqlx::Error),
 
     #[error("unexpedted result after running query")]

@@ -22,7 +22,9 @@ impl<'c> UserRepository for Repository<'c> {
             }
         };
 
-        let user = qb.build().fetch_one(&mut *self.conn).await?;
+        let result = qb.build().fetch_one(&mut *self.conn).await;
+
+        let user = result?;
 
         let asks: HashMap<_, _> = self
             .find_asks(id)
@@ -42,15 +44,19 @@ impl<'c> UserRepository for Repository<'c> {
     }
 
     async fn persist_user(&mut self, user: &User) -> Result<(), RepositoryError> {
-        query!("INSERT INTO public.user (id) VALUES ($1)", user.get_id())
-            .execute(&mut *self.conn)
-            .await?;
+        query!(
+            "INSERT INTO public.user (id) VALUES ($1) ON CONFLICT DO NOTHING",
+            user.get_id()
+        )
+        .execute(&mut *self.conn)
+        .await?;
 
         let asks = user.asks();
         let bids = user.bids();
 
         self.persist_asks(asks).await?;
         self.persist_bids(bids).await?;
+
         Ok(())
     }
 
