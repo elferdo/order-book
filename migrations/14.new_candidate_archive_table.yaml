@@ -1,0 +1,18 @@
+operations:
+  - create_table:
+      name: candidate_archive
+      columns:
+        - name: ask
+          type: uuid
+          nullable: false
+          references: 
+            name: fk_ask_id
+            table: ask
+            column: id
+        - name: bid
+          type: uuid
+          nullable: false
+          references:
+            name: fk_bid_id
+            table: bid
+            column: id
