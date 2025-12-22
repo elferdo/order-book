@@ -1,4 +1,7 @@
--- Add migration script here
+--
+-- PostgreSQL database dump
+--
+
 
 -- Dumped from database version 17.7 (Ubuntu 17.7-0ubuntu0.25.10.1)
 -- Dumped by pg_dump version 17.7 (Ubuntu 17.7-0ubuntu0.25.10.1)
@@ -15,6 +18,15 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
+-- Name: _sqlx_test; Type: SCHEMA; Schema: -; Owner: fernando
+--
+
+CREATE SCHEMA _sqlx_test;
+
+
+ALTER SCHEMA _sqlx_test OWNER TO fernando;
+
+--
 -- Name: pgroll; Type: SCHEMA; Schema: -; Owner: fernando
 --
 
@@ -24,13 +36,13 @@ CREATE SCHEMA pgroll;
 ALTER SCHEMA pgroll OWNER TO fernando;
 
 --
--- Name: public_13.new_deal_table; Type: SCHEMA; Schema: -; Owner: fernando
+-- Name: public_14.new_candidate_archive_table; Type: SCHEMA; Schema: -; Owner: fernando
 --
 
-CREATE SCHEMA "public_13.new_deal_table";
+CREATE SCHEMA "public_14.new_candidate_archive_table";
 
 
-ALTER SCHEMA "public_13.new_deal_table" OWNER TO fernando;
+ALTER SCHEMA "public_14.new_candidate_archive_table" OWNER TO fernando;
 
 --
 -- Name: find_version_schema(name, integer); Type: FUNCTION; Schema: pgroll; Owner: fernando
@@ -478,9 +490,36 @@ $$;
 
 ALTER FUNCTION pgroll.read_schema(schemaname text) OWNER TO fernando;
 
+--
+-- Name: database_ids; Type: SEQUENCE; Schema: _sqlx_test; Owner: fernando
+--
+
+CREATE SEQUENCE _sqlx_test.database_ids
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE _sqlx_test.database_ids OWNER TO fernando;
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
+
+--
+-- Name: databases; Type: TABLE; Schema: _sqlx_test; Owner: fernando
+--
+
+CREATE TABLE _sqlx_test.databases (
+    db_name text NOT NULL,
+    test_path text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE _sqlx_test.databases OWNER TO fernando;
 
 --
 -- Name: migrations; Type: TABLE; Schema: pgroll; Owner: fernando
@@ -567,6 +606,18 @@ CREATE TABLE public.candidate (
 ALTER TABLE public.candidate OWNER TO fernando;
 
 --
+-- Name: candidate_archive; Type: TABLE; Schema: public; Owner: fernando
+--
+
+CREATE TABLE public.candidate_archive (
+    ask uuid NOT NULL,
+    bid uuid NOT NULL
+);
+
+
+ALTER TABLE public.candidate_archive OWNER TO fernando;
+
+--
 -- Name: deal; Type: TABLE; Schema: public; Owner: fernando
 --
 
@@ -592,81 +643,101 @@ CREATE TABLE public."user" (
 ALTER TABLE public."user" OWNER TO fernando;
 
 --
--- Name: approval; Type: VIEW; Schema: public_13.new_deal_table; Owner: fernando
+-- Name: approval; Type: VIEW; Schema: public_14.new_candidate_archive_table; Owner: fernando
 --
 
-CREATE VIEW "public_13.new_deal_table".approval WITH (security_invoker='true') AS
+CREATE VIEW "public_14.new_candidate_archive_table".approval WITH (security_invoker='true') AS
  SELECT ask,
     bid,
     candidate
    FROM public.approval;
 
 
-ALTER VIEW "public_13.new_deal_table".approval OWNER TO fernando;
+ALTER VIEW "public_14.new_candidate_archive_table".approval OWNER TO fernando;
 
 --
--- Name: ask; Type: VIEW; Schema: public_13.new_deal_table; Owner: fernando
+-- Name: ask; Type: VIEW; Schema: public_14.new_candidate_archive_table; Owner: fernando
 --
 
-CREATE VIEW "public_13.new_deal_table".ask WITH (security_invoker='true') AS
- SELECT "user",
-    price,
-    id
+CREATE VIEW "public_14.new_candidate_archive_table".ask WITH (security_invoker='true') AS
+ SELECT id,
+    "user",
+    price
    FROM public.ask;
 
 
-ALTER VIEW "public_13.new_deal_table".ask OWNER TO fernando;
+ALTER VIEW "public_14.new_candidate_archive_table".ask OWNER TO fernando;
 
 --
--- Name: bid; Type: VIEW; Schema: public_13.new_deal_table; Owner: fernando
+-- Name: bid; Type: VIEW; Schema: public_14.new_candidate_archive_table; Owner: fernando
 --
 
-CREATE VIEW "public_13.new_deal_table".bid WITH (security_invoker='true') AS
+CREATE VIEW "public_14.new_candidate_archive_table".bid WITH (security_invoker='true') AS
  SELECT id,
     "user",
     price
    FROM public.bid;
 
 
-ALTER VIEW "public_13.new_deal_table".bid OWNER TO fernando;
+ALTER VIEW "public_14.new_candidate_archive_table".bid OWNER TO fernando;
 
 --
--- Name: candidate; Type: VIEW; Schema: public_13.new_deal_table; Owner: fernando
+-- Name: candidate; Type: VIEW; Schema: public_14.new_candidate_archive_table; Owner: fernando
 --
 
-CREATE VIEW "public_13.new_deal_table".candidate WITH (security_invoker='true') AS
- SELECT bid,
-    id,
-    ask
+CREATE VIEW "public_14.new_candidate_archive_table".candidate WITH (security_invoker='true') AS
+ SELECT id,
+    ask,
+    bid
    FROM public.candidate;
 
 
-ALTER VIEW "public_13.new_deal_table".candidate OWNER TO fernando;
+ALTER VIEW "public_14.new_candidate_archive_table".candidate OWNER TO fernando;
 
 --
--- Name: deal; Type: VIEW; Schema: public_13.new_deal_table; Owner: fernando
+-- Name: candidate_archive; Type: VIEW; Schema: public_14.new_candidate_archive_table; Owner: fernando
 --
 
-CREATE VIEW "public_13.new_deal_table".deal WITH (security_invoker='true') AS
+CREATE VIEW "public_14.new_candidate_archive_table".candidate_archive WITH (security_invoker='true') AS
+ SELECT ask,
+    bid
+   FROM public.candidate_archive;
+
+
+ALTER VIEW "public_14.new_candidate_archive_table".candidate_archive OWNER TO fernando;
+
+--
+-- Name: deal; Type: VIEW; Schema: public_14.new_candidate_archive_table; Owner: fernando
+--
+
+CREATE VIEW "public_14.new_candidate_archive_table".deal WITH (security_invoker='true') AS
  SELECT id,
     buyer,
-    seller,
-    price
+    price,
+    seller
    FROM public.deal;
 
 
-ALTER VIEW "public_13.new_deal_table".deal OWNER TO fernando;
+ALTER VIEW "public_14.new_candidate_archive_table".deal OWNER TO fernando;
 
 --
--- Name: user; Type: VIEW; Schema: public_13.new_deal_table; Owner: fernando
+-- Name: user; Type: VIEW; Schema: public_14.new_candidate_archive_table; Owner: fernando
 --
 
-CREATE VIEW "public_13.new_deal_table"."user" WITH (security_invoker='true') AS
+CREATE VIEW "public_14.new_candidate_archive_table"."user" WITH (security_invoker='true') AS
  SELECT id
    FROM public."user";
 
 
-ALTER VIEW "public_13.new_deal_table"."user" OWNER TO fernando;
+ALTER VIEW "public_14.new_candidate_archive_table"."user" OWNER TO fernando;
+
+--
+-- Name: databases databases_pkey; Type: CONSTRAINT; Schema: _sqlx_test; Owner: fernando
+--
+
+ALTER TABLE ONLY _sqlx_test.databases
+    ADD CONSTRAINT databases_pkey PRIMARY KEY (db_name);
+
 
 --
 -- Name: migrations migrations_pkey; Type: CONSTRAINT; Schema: pgroll; Owner: fernando
@@ -733,6 +804,13 @@ ALTER TABLE ONLY public."user"
 
 
 --
+-- Name: databases_created_at; Type: INDEX; Schema: _sqlx_test; Owner: fernando
+--
+
+CREATE INDEX databases_created_at ON _sqlx_test.databases USING btree (created_at);
+
+
+--
 -- Name: history_is_linear; Type: INDEX; Schema: pgroll; Owner: fernando
 --
 
@@ -784,10 +862,26 @@ ALTER TABLE ONLY public.candidate
 
 
 --
+-- Name: candidate_archive fk_ask_id; Type: FK CONSTRAINT; Schema: public; Owner: fernando
+--
+
+ALTER TABLE ONLY public.candidate_archive
+    ADD CONSTRAINT fk_ask_id FOREIGN KEY (ask) REFERENCES public.ask(id);
+
+
+--
 -- Name: candidate fk_bid_id; Type: FK CONSTRAINT; Schema: public; Owner: fernando
 --
 
 ALTER TABLE ONLY public.candidate
+    ADD CONSTRAINT fk_bid_id FOREIGN KEY (bid) REFERENCES public.bid(id);
+
+
+--
+-- Name: candidate_archive fk_bid_id; Type: FK CONSTRAINT; Schema: public; Owner: fernando
+--
+
+ALTER TABLE ONLY public.candidate_archive
     ADD CONSTRAINT fk_bid_id FOREIGN KEY (bid) REFERENCES public.bid(id);
 
 

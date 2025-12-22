@@ -123,6 +123,21 @@ where
     todo!()
 }
 
+pub async fn reject<R>(repo: &mut R, candidate: Candidate) -> Result<Deal, MatchServiceError>
+where
+    R: CandidateRepository + DealRepository + OrderRepository,
+{
+    repo.archive_candidate(&candidate)
+        .await
+        .map_err(|_| MatchServiceError::Error)?;
+
+    repo.remove_candidate(&candidate)
+        .await
+        .map_err(|_| MatchServiceError::Error)?;
+
+    todo!()
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum MatchServiceError {
     #[error("Some error")]

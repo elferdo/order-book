@@ -42,6 +42,19 @@ impl<'c> CandidateRepository for Repository<'c> {
     }
 
     #[instrument(skip(self))]
+    async fn archive_candidate(&mut self, candidate: &Candidate) -> Result<(), RepositoryError> {
+        let q = query!(
+            "INSERT INTO candidate_archive VALUES ($1, $2)",
+            candidate.get_ask().get_id(),
+            candidate.get_bid().get_id()
+        );
+
+        let result = q.execute(&mut *self.conn).await;
+
+        Ok(())
+    }
+
+    #[instrument(skip(self))]
     async fn find_candidates_by_user(
         &mut self,
         user: &User,

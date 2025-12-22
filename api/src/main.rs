@@ -35,6 +35,10 @@ async fn main() -> Result<()> {
             "/user/{user_id}/candidate/{candidate_id}/approve",
             post(candidate::approve_post_handler),
         )
+        .route(
+            "/user/{user_id}/candidate/{candidate_id}/reject",
+            post(candidate::reject_post_handler),
+        )
         .route("/stats/buy_price", get(stats::buy_price_get_handler))
         .route("/stats/sell_price", get(stats::sell_price_get_handler))
         .with_state(state);

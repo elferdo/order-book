@@ -22,6 +22,11 @@ pub trait CandidateRepository {
         candidate: &Candidate,
     ) -> impl Future<Output = Result<(), RepositoryError>>;
 
+    fn archive_candidate(
+        &mut self,
+        candidate: &Candidate,
+    ) -> impl Future<Output = Result<(), RepositoryError>>;
+
     fn persist_candidates<I>(
         &mut self,
         iterator: I,

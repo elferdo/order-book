@@ -120,3 +120,42 @@ pub async fn approve_post_handler(
 
     Ok(Json::from(json!("ok")))
 }
+
+#[instrument(skip(state))]
+pub async fn reject_post_handler(
+    State(state): State<AppState>,
+    Path((user_id, candidate_id)): Path<(Uuid, Uuid)>,
+) -> Result<Json<Value>, ApiError> {
+    let mut conn = state
+        .pool
+        .begin()
+        .await
+        .map_err(|_| ApiError::DatabaseError)?;
+
+    let mut repo = Repository::new(&mut conn).await;
+
+    let context = ContextV7::new();
+    let timestamp = Timestamp::now(context);
+
+    let user = repo
+        .find_user(LockMode::KeyShare, &user_id)
+        .await
+        .map_err(|e| match e {
+            RepositoryError::DatabaseError(_) => ApiError::DatabaseError,
+            RepositoryError::UnexpectedResult => todo!(),
+            RepositoryError::RootEntityNotFound => todo!(),
+        })?;
+
+    let mut candidate = repo
+        .find_candidate(LockMode::KeyShare, &candidate_id)
+        .await
+        .map_err(|_| ApiError::UserNotFound)?;
+
+    match_service::reject(&mut repo, candidate)
+        .await
+        .map_err(|_| ApiError::DatabaseError)?;
+
+    conn.commit().await.map_err(|_| ApiError::DatabaseError)?;
+
+    Ok(Json::from(json!("ok")))
+}
