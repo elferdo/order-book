@@ -234,6 +234,13 @@ mod test {
         ) -> std::result::Result<(), RepositoryError> {
             todo!()
         }
+
+        async fn archive_candidate(
+            &mut self,
+            candidate: &Candidate,
+        ) -> std::result::Result<(), RepositoryError> {
+            todo!()
+        }
     }
 
     #[tokio::test]
