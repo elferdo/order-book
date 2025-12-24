@@ -49,9 +49,13 @@ impl<'c> CandidateRepository for Repository<'c> {
             candidate.get_bid().get_id()
         );
 
-        let result = q.execute(&mut *self.conn).await;
+        let result = q.execute(&mut *self.conn).await?;
 
-        Ok(())
+        if result.rows_affected() != 1 {
+            Err(RepositoryError::UnexpectedResult)
+        } else {
+            Ok(())
+        }
     }
 
     #[instrument(skip(self))]

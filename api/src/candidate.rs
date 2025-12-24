@@ -5,7 +5,7 @@ use axum::{
     Json,
     extract::{Path, State},
 };
-use model::match_service;
+use model::match_service::{self, generate_candidates_for_ask, generate_candidates_for_bid};
 use model::user::repository::UserRepository;
 use model::{
     lock_mode::LockMode, order::candidate::ApprovalResult, repository_error::RepositoryError,
@@ -138,21 +138,20 @@ pub async fn reject_post_handler(
     let context = ContextV7::new();
     let timestamp = Timestamp::now(context);
 
-    let user = repo
-        .find_user(LockMode::KeyShare, &user_id)
-        .await
-        .map_err(|e| match e {
-            RepositoryError::DatabaseError(_) => ApiError::DatabaseError,
-            RepositoryError::UnexpectedResult => todo!(),
-            RepositoryError::RootEntityNotFound => todo!(),
-        })?;
-
-    let mut candidate = repo
+    let candidate = repo
         .find_candidate(LockMode::KeyShare, &candidate_id)
         .await
         .map_err(|_| ApiError::UserNotFound)?;
 
     match_service::reject(&mut repo, candidate)
+        .await
+        .map_err(|_| ApiError::DatabaseError)?;
+
+    generate_candidates_for_ask(timestamp, &mut repo, candidate.get_ask())
+        .await
+        .map_err(|_| ApiError::DatabaseError)?;
+
+    generate_candidates_for_bid(timestamp, &mut repo, candidate.get_bid())
         .await
         .map_err(|_| ApiError::DatabaseError)?;
 
