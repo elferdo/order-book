@@ -13,6 +13,10 @@ async fn given_one_ask_and_one_matching_bid_then_one_candidate() -> Result<()> {
     let timestamp = Timestamp::now(context);
 
     let ask = Ask::new(timestamp, Uuid::new_v7(timestamp), 1.23);
+    let bid = Bid::new(timestamp, Uuid::new_v7(timestamp), 2.34);
+
+    repo.asks.push(ask);
+    repo.bids.push(bid);
 
     generate_candidates_for_ask(timestamp, &mut repo, &ask).await?;
 

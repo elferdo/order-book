@@ -3,7 +3,7 @@ use uuid::{Timestamp, Uuid};
 use crate::order::{ask::Ask, bid::Bid};
 use crate::repository_error::RepositoryError;
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct Candidate {
     id: Uuid,
     ask: Ask,

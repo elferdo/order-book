@@ -12,6 +12,10 @@ use crate::{
 #[derive(Default)]
 pub(super) struct RepositoryMock {
     pub persisted_candidates: Vec<Candidate>,
+    pub archived_candidates: Vec<Candidate>,
+    pub candidates: Vec<Candidate>,
+    pub asks: Vec<Ask>,
+    pub bids: Vec<Bid>,
 }
 
 impl OrderRepository for RepositoryMock {
@@ -20,7 +24,14 @@ impl OrderRepository for RepositoryMock {
         lock_mode: LockMode,
         bid: &Bid,
     ) -> std::result::Result<Vec<Ask>, RepositoryError> {
-        todo!()
+        let result = self
+            .asks
+            .iter()
+            .filter(|&ask| ask.get_price() <= bid.get_price())
+            .cloned()
+            .collect();
+
+        Ok(result)
     }
 
     async fn find_bids_above(
@@ -28,16 +39,14 @@ impl OrderRepository for RepositoryMock {
         lock_mode: LockMode,
         ask: &Ask,
     ) -> std::result::Result<Vec<Bid>, RepositoryError> {
-        let context = ContextV7::new();
-        let timestamp = Timestamp::now(context);
+        let result = self
+            .bids
+            .iter()
+            .filter(|&bid| bid.get_price() >= ask.get_price())
+            .cloned()
+            .collect();
 
-        let user_id = Uuid::new_v7(timestamp);
-
-        let b1 = Bid::new(timestamp, user_id, 2.34);
-
-        let v = vec![b1];
-
-        Ok(v)
+        Ok(result)
     }
 
     async fn remove_ask(&mut self, ask: &Ask) -> std::result::Result<(), RepositoryError> {
@@ -55,7 +64,9 @@ impl CandidateRepository for RepositoryMock {
         lock_mode: LockMode,
         id: &uuid::Uuid,
     ) -> std::result::Result<Candidate, RepositoryError> {
-        todo!()
+        let result = self.candidates.iter().find(|&c| c.get_id() == id).cloned();
+
+        result.ok_or(RepositoryError::RootEntityNotFound)
     }
 
     async fn find_candidates_by_user(
@@ -69,7 +80,9 @@ impl CandidateRepository for RepositoryMock {
         &mut self,
         candidate: &Candidate,
     ) -> std::result::Result<(), RepositoryError> {
-        todo!()
+        self.persisted_candidates.push(*candidate);
+
+        Ok(())
     }
 
     async fn persist_candidates<I>(
@@ -90,13 +103,23 @@ impl CandidateRepository for RepositoryMock {
         &mut self,
         candidate: &Candidate,
     ) -> std::result::Result<(), RepositoryError> {
-        todo!()
+        if let Some(i) = self
+            .candidates
+            .iter()
+            .position(|c| c.get_id() == candidate.get_id())
+        {
+            self.candidates.remove(i);
+        };
+
+        Ok(())
     }
 
     async fn archive_candidate(
         &mut self,
         candidate: &Candidate,
     ) -> std::result::Result<(), RepositoryError> {
-        todo!()
+        self.archived_candidates.push(*candidate);
+
+        Ok(())
     }
 }
