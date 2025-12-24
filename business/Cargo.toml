@@ -1,0 +1,12 @@
+[package]
+name = "business"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+model = { version = "0.1.0", path = "../model" }
+repositories = { version = "0.1.0", path = "../repositories" }
+sqlx = "0.8.6"
+thiserror = "2.0.17"
+tracing = "0.1.44"
+uuid = { version = "1.19.0", features = ["v7"] }
