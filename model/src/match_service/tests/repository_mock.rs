@@ -11,7 +11,6 @@ use crate::{
 
 #[derive(Default)]
 pub(super) struct RepositoryMock {
-    pub persisted_candidates: Vec<Candidate>,
     pub archived_candidates: Vec<Candidate>,
     pub candidates: Vec<Candidate>,
     pub asks: Vec<Ask>,
@@ -24,10 +23,17 @@ impl OrderRepository for RepositoryMock {
         lock_mode: LockMode,
         bid: &Bid,
     ) -> std::result::Result<Vec<Ask>, RepositoryError> {
+        let locked_asks: Vec<_> = self
+            .candidates
+            .iter()
+            .map(|c| c.get_ask())
+            .cloned()
+            .collect();
+
         let result = self
             .asks
             .iter()
-            .filter(|&ask| ask.get_price() <= bid.get_price())
+            .filter(|&ask| ask.get_price() <= bid.get_price() && !locked_asks.contains(&ask))
             .cloned()
             .collect();
 
@@ -39,10 +45,17 @@ impl OrderRepository for RepositoryMock {
         lock_mode: LockMode,
         ask: &Ask,
     ) -> std::result::Result<Vec<Bid>, RepositoryError> {
+        let locked_bids: Vec<_> = self
+            .candidates
+            .iter()
+            .map(|c| c.get_bid())
+            .cloned()
+            .collect();
+
         let result = self
             .bids
             .iter()
-            .filter(|&bid| bid.get_price() >= ask.get_price())
+            .filter(|&bid| bid.get_price() >= ask.get_price() && !locked_bids.contains(&bid))
             .cloned()
             .collect();
 
@@ -80,7 +93,7 @@ impl CandidateRepository for RepositoryMock {
         &mut self,
         candidate: &Candidate,
     ) -> std::result::Result<(), RepositoryError> {
-        self.persisted_candidates.push(*candidate);
+        self.candidates.push(*candidate);
 
         Ok(())
     }
@@ -93,7 +106,7 @@ impl CandidateRepository for RepositoryMock {
         I: IntoIterator<Item = Candidate>,
     {
         for candidate in iterator {
-            self.persisted_candidates.push(candidate);
+            self.candidates.push(candidate);
         }
 
         Ok(())
