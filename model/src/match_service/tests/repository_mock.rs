@@ -18,7 +18,7 @@ pub(super) struct RepositoryMock {
 }
 
 impl OrderRepository for RepositoryMock {
-    async fn find_asks_below(
+    async fn find_asks_not_above(
         &mut self,
         lock_mode: LockMode,
         bid: &Bid,
@@ -40,7 +40,7 @@ impl OrderRepository for RepositoryMock {
         Ok(result)
     }
 
-    async fn find_bids_above(
+    async fn find_bids_not_below(
         &mut self,
         lock_mode: LockMode,
         ask: &Ask,

@@ -4,13 +4,13 @@ use crate::lock_mode::LockMode;
 use crate::repository_error::RepositoryError;
 
 pub trait OrderRepository {
-    fn find_asks_below(
+    fn find_asks_not_above(
         &mut self,
         lock_mode: LockMode,
         bid: &Bid,
     ) -> impl Future<Output = Result<Vec<Ask>, RepositoryError>>;
 
-    fn find_bids_above(
+    fn find_bids_not_below(
         &mut self,
         lock_mode: LockMode,
         ask: &Ask,

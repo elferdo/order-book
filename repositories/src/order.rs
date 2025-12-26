@@ -9,12 +9,12 @@ use sqlx::{Row, query};
 use crate::Repository;
 
 impl<'c> OrderRepository for Repository<'c> {
-    async fn find_asks_below(
+    async fn find_asks_not_above(
         &mut self,
         lock_mode: LockMode,
         bid: &Bid,
     ) -> Result<Vec<Ask>, RepositoryError> {
-        let mut qb = QueryBuilder::new("SELECT ask.id, ask.user, ask.price FROM ask LEFT JOIN candidate ON candidate.ask = ask.id WHERE candidate.bid IS NULL AND
+        let mut qb = QueryBuilder::new("SELECT ask.id, ask.user, ask.price FROM ask LEFT JOIN candidate_archive ON candidate_archive.ask = ask.id LEFT JOIN candidate ON candidate.ask = ask.id WHERE candidate_archive.bid IS NULL candidate.bid IS NULL AND
  price <= ");
         qb.push_bind(bid.get_price());
         qb.push(" AND ask.user <> ");
@@ -37,12 +37,12 @@ impl<'c> OrderRepository for Repository<'c> {
         Ok(asks)
     }
 
-    async fn find_bids_above(
+    async fn find_bids_not_below(
         &mut self,
         lock_mode: LockMode,
         ask: &Ask,
     ) -> Result<Vec<Bid>, RepositoryError> {
-        let mut qb = QueryBuilder::new("SELECT bid.id, bid.user, bid.price FROM bid LEFT JOIN candidate ON candidate.bid = bid.id WHERE candidate.bid IS NULL AND
+        let mut qb = QueryBuilder::new("SELECT bid.id, bid.user, bid.price FROM bid LEFT JOIN candidate_archive on candidate_archive.bid = bid.id LEFT JOIN candidate ON candidate.bid = bid.id WHERE candidate.ask IS NULL AND candidate_archive.ask IS NULL AND
  price >= ");
         qb.push_bind(ask.get_price());
         qb.push(" AND bid.user <> ");

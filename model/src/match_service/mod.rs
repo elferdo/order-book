@@ -26,7 +26,7 @@ where
     R: OrderRepository + CandidateRepository,
 {
     let mut matching_orders: BTreeSet<_> = repository
-        .find_bids_above(LockMode::KeyShare, ask)
+        .find_bids_not_below(LockMode::KeyShare, ask)
         .await?
         .into_iter()
         .collect();
@@ -64,7 +64,7 @@ where
     R: OrderRepository + CandidateRepository,
 {
     let mut matching_orders: BTreeSet<_> = repository
-        .find_asks_below(LockMode::KeyShare, bid)
+        .find_asks_not_above(LockMode::KeyShare, bid)
         .await?
         .into_iter()
         .collect();
@@ -126,7 +126,7 @@ where
     todo!()
 }
 
-pub async fn reject<R>(repo: &mut R, candidate: Candidate) -> Result<Deal, MatchServiceError>
+pub async fn reject<R>(repo: &mut R, candidate: Candidate) -> Result<(), MatchServiceError>
 where
     R: CandidateRepository + DealRepository + OrderRepository,
 {
@@ -138,7 +138,7 @@ where
         .await
         .map_err(|_| MatchServiceError::Error)?;
 
-    todo!()
+    Ok(())
 }
 
 #[derive(Debug, thiserror::Error)]
