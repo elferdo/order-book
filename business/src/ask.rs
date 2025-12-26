@@ -1,10 +1,16 @@
-use crate::{businesserror::BusinessError, response::Response};
+use crate::businesserror::BusinessError;
 use model::user::repository::UserRepository;
 use model::{lock_mode::LockMode, match_service::generate_candidates_for_ask};
 use repositories::Repository;
+use serde::Serialize;
 use sqlx::PgPool;
 use tracing::instrument;
 use uuid::{ContextV7, Timestamp, Uuid};
+
+#[derive(Serialize)]
+pub struct Response {
+    id: Uuid,
+}
 
 #[instrument(skip(pool))]
 pub async fn new_ask(pool: PgPool, user_id: Uuid, price: f32) -> Result<Response, BusinessError> {
@@ -37,5 +43,5 @@ pub async fn new_ask(pool: PgPool, user_id: Uuid, price: f32) -> Result<Response
 
     t.commit().await.map_err(|_| BusinessError::DatabaseError)?;
 
-    Ok(Response {})
+    Ok(Response { id: *ask.get_id() })
 }

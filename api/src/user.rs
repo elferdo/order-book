@@ -4,44 +4,17 @@ use axum::{
     Json,
     extract::{Path, State},
 };
-use model::{lock_mode::LockMode, user::user::User};
-use model::{repository_error::RepositoryError, user::repository::UserRepository};
-use repositories::Repository;
 use serde_json::{Value, json};
-use tracing::{debug, instrument};
-use uuid::{ContextV7, Timestamp, Uuid};
+use tracing::instrument;
+use uuid::Uuid;
 
 use crate::apierror::ApiError;
 
 #[instrument(skip(state))]
 pub async fn post_handler(State(state): State<AppState>) -> Result<Json<Value>, ApiError> {
-    let mut a = state
-        .pool
-        .acquire()
-        .await
-        .map_err(|_| ApiError::DatabaseError)?;
+    let result = business::user::new_user(state.pool).await?;
 
-    let mut repo = Repository::new(&mut a).await;
-
-    let context = ContextV7::new();
-    let timestamp = Timestamp::now(&context);
-
-    let user = User::new(timestamp);
-
-    match repo.persist_user(&user).await {
-        Ok(_) => Ok(Json::from(json!({"id":user.get_id()}))),
-        Err(e) => {
-            debug!("error");
-
-            let result = match e {
-                RepositoryError::DatabaseError(_) => ApiError::DatabaseError,
-                RepositoryError::UnexpectedResult => todo!(),
-                RepositoryError::RootEntityNotFound => todo!(),
-            };
-
-            Err(result)
-        }
-    }
+    Ok(Json::from(json!(result)))
 }
 
 #[instrument(skip(state))]
@@ -50,35 +23,7 @@ pub async fn delete_handler(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Value>, ApiError> {
-    let mut a = state
-        .pool
-        .acquire()
-        .await
-        .map_err(|_| ApiError::DatabaseError)?;
+    let result = business::user::delete_user(state.pool, id).await?;
 
-    let mut repo = Repository::new(&mut a).await;
-
-    let user = repo
-        .find_user(LockMode::None, &id)
-        .await
-        .map_err(|e| match e {
-            RepositoryError::DatabaseError(_) => ApiError::DatabaseError,
-            RepositoryError::UnexpectedResult => todo!(),
-            RepositoryError::RootEntityNotFound => todo!(),
-        })?;
-
-    match repo.delete_user(&user).await {
-        Ok(_) => Ok(Json::from(json!({"id":user.get_id()}))),
-        Err(e) => {
-            debug!("error");
-
-            let result = match e {
-                RepositoryError::DatabaseError(_) => ApiError::DatabaseError,
-                RepositoryError::UnexpectedResult => todo!(),
-                RepositoryError::RootEntityNotFound => todo!(),
-            };
-
-            Err(result)
-        }
-    }
+    Ok(Json::from(json!(result)))
 }

@@ -1,12 +1,17 @@
 use model::{lock_mode::LockMode, user::user::User};
 use model::{repository_error::RepositoryError, user::repository::UserRepository};
 use repositories::Repository;
+use serde::Serialize;
 use sqlx::PgPool;
-use tracing::{debug, instrument};
+use tracing::instrument;
 use uuid::{ContextV7, Timestamp, Uuid};
 
 use crate::businesserror::BusinessError;
-use crate::response::Response;
+
+#[derive(Serialize)]
+pub struct Response {
+    id: Uuid,
+}
 
 #[instrument(skip(pool))]
 pub async fn new_user(pool: PgPool) -> Result<Response, BusinessError> {
@@ -28,7 +33,7 @@ pub async fn new_user(pool: PgPool) -> Result<Response, BusinessError> {
         RepositoryError::RootEntityNotFound => todo!(),
     })?;
 
-    Ok(Response {})
+    Ok(Response { id: *user.get_id() })
 }
 
 #[instrument(skip(pool))]
@@ -55,5 +60,5 @@ pub async fn delete_user(pool: PgPool, id: Uuid) -> Result<Response, BusinessErr
         RepositoryError::RootEntityNotFound => todo!(),
     })?;
 
-    Ok(Response {})
+    Ok(Response { id: *user.get_id() })
 }

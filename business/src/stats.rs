@@ -1,9 +1,13 @@
 use model::stats::repository::StatsRepository;
 use repositories::Repository;
+use serde::Serialize;
 use sqlx::PgPool;
 use tracing::instrument;
 
-use crate::{businesserror::BusinessError, response::Response};
+use crate::businesserror::BusinessError;
+
+#[derive(Serialize)]
+pub struct Response {}
 
 #[instrument(skip(pool))]
 pub async fn get_buy_price(pool: PgPool) -> Result<Response, BusinessError> {

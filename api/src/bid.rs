@@ -5,13 +5,10 @@ use axum::{
     Json,
     extract::{Path, State},
 };
-use model::user::repository::UserRepository;
-use model::{lock_mode::LockMode, match_service::generate_candidates_for_bid};
-use repositories::Repository;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use tracing::instrument;
-use uuid::{ContextV7, Timestamp, Uuid};
+use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
 pub struct BidRequest {
@@ -24,35 +21,7 @@ pub async fn post_handler(
     Path(user_id): Path<Uuid>,
     Json(body): Json<BidRequest>,
 ) -> Result<Json<Value>, ApiError> {
-    let mut t = state
-        .pool
-        .begin()
-        .await
-        .map_err(|_| ApiError::DatabaseError)?;
+    let result = business::bid::new_bid(state.pool, user_id, body.price).await?;
 
-    let mut repo = Repository::new(&mut t).await;
-
-    let mut user = repo
-        .find_user(LockMode::KeyShare, &user_id)
-        .await
-        .map_err(|_| ApiError::UserNotFound)?;
-
-    let context = ContextV7::new();
-    let timestamp = Timestamp::now(&context);
-
-    let bid = user
-        .bid(timestamp, body.price)
-        .map_err(|_| ApiError::UserNotFound)?;
-
-    repo.persist_user(&user)
-        .await
-        .map_err(|_| ApiError::DatabaseError)?;
-
-    generate_candidates_for_bid(timestamp, &mut repo, &bid)
-        .await
-        .map_err(|_| ApiError::DatabaseError)?;
-
-    t.commit().await.map_err(|_| ApiError::DatabaseError)?;
-
-    Ok(Json::from(json!({"id": bid.get_id()})))
+    Ok(Json::from(json!(result)))
 }

@@ -3,6 +3,7 @@
 /// Here we can control what gets returned to the caller so that
 /// no unnecessary details are leaked.
 use axum::response::{IntoResponse, Response};
+use business::businesserror::BusinessError;
 use serde_json::json;
 
 #[derive(Debug, thiserror::Error)]
@@ -13,6 +14,9 @@ pub enum ApiError {
 
     #[error("database error")]
     DatabaseError,
+
+    #[error("business logic error")]
+    BusinessError(#[from] BusinessError),
 }
 
 impl IntoResponse for ApiError {

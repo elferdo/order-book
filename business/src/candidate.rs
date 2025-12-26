@@ -1,19 +1,50 @@
 use model::match_service::{self, generate_candidates_for_ask, generate_candidates_for_bid};
+use model::order::candidate::Candidate;
 use model::order::candidate_repository::CandidateRepository;
 use model::user::repository::UserRepository;
 use model::{
     lock_mode::LockMode, order::candidate::ApprovalResult, repository_error::RepositoryError,
 };
 use repositories::Repository;
+use serde::Serialize;
 use sqlx::PgPool;
 use tracing::instrument;
 use uuid::{ContextV7, Timestamp, Uuid};
 
 use crate::businesserror::BusinessError;
-use crate::response::Response;
+
+#[derive(Serialize)]
+pub struct CandidateSummary {
+    pub id: Uuid,
+    pub ask: Uuid,
+    pub bid: Uuid,
+    pub price: f32,
+}
+
+impl From<Candidate> for CandidateSummary {
+    fn from(value: Candidate) -> Self {
+        let id = *value.get_id();
+        let ask = *value.get_ask().get_id();
+        let bid = *value.get_bid().get_id();
+        let price = value.get_price();
+
+        Self {
+            id,
+            ask,
+            bid,
+            price,
+        }
+    }
+}
+
+#[derive(Serialize)]
+pub struct Response {}
 
 #[instrument(skip(pool))]
-pub async fn get_candidates(pool: PgPool, user_id: Uuid) -> Result<Response, BusinessError> {
+pub async fn get_candidates(
+    pool: PgPool,
+    user_id: Uuid,
+) -> Result<Vec<CandidateSummary>, BusinessError> {
     let mut conn = pool
         .acquire()
         .await
@@ -26,12 +57,15 @@ pub async fn get_candidates(pool: PgPool, user_id: Uuid) -> Result<Response, Bus
         .await
         .map_err(|_| BusinessError::UserNotFound)?;
 
-    let _candidates = repo
+    let candidates = repo
         .find_candidates_by_user(&user)
         .await
-        .map_err(|_| BusinessError::DatabaseError)?;
+        .map_err(|_| BusinessError::DatabaseError)?
+        .into_iter()
+        .map(CandidateSummary::from)
+        .collect();
 
-    Ok(Response {})
+    Ok(candidates)
 }
 
 #[instrument(skip(pool))]
