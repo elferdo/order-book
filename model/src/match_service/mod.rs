@@ -114,7 +114,7 @@ where
         .await
         .change_context(MatchServiceError::Error)?;
 
-    todo!()
+    Ok(deal)
 }
 
 pub async fn reject<R>(repo: &mut R, candidate: Candidate) -> Result<(), MatchServiceError>

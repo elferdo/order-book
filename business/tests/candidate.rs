@@ -35,11 +35,7 @@ async fn test1(pool: PgPool) -> Result<(), Report<TestError>> {
         .await
         .change_context(TestError)?;
 
-    for i in result {
-        println!("{}", i.id);
-    }
+    assert_eq!(result.len(), 1);
 
-    // dbg!(result);
-
-    todo!()
+    Ok(())
 }

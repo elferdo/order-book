@@ -1,12 +1,16 @@
 mod repository_mock;
 
 use super::*;
-use anyhow::Result;
 use repository_mock::RepositoryMock;
+use thiserror::Error;
 use uuid::{ContextV7, Uuid};
 
+#[derive(Error, Debug)]
+#[error("error running test")]
+struct TestError;
+
 #[tokio::test]
-async fn given_one_ask_and_no_matching_bid_then_no_candidate() -> Result<()> {
+async fn given_one_ask_and_no_matching_bid_then_no_candidate() -> Result<(), Report<TestError>> {
     let mut repo = RepositoryMock::default();
 
     let context = ContextV7::new();
@@ -16,7 +20,9 @@ async fn given_one_ask_and_no_matching_bid_then_no_candidate() -> Result<()> {
 
     repo.asks.push(ask);
 
-    generate_candidates_for_ask(timestamp, &mut repo, &ask).await?;
+    generate_candidates_for_ask(timestamp, &mut repo, &ask)
+        .await
+        .change_context(TestError)?;
 
     assert_eq!(repo.candidates.len(), 0);
 
@@ -24,7 +30,7 @@ async fn given_one_ask_and_no_matching_bid_then_no_candidate() -> Result<()> {
 }
 
 #[tokio::test]
-async fn given_one_ask_and_one_matching_bid_then_one_candidate() -> Result<()> {
+async fn given_one_ask_and_one_matching_bid_then_one_candidate() -> Result<(), Report<TestError>> {
     let mut repo = RepositoryMock::default();
 
     let context = ContextV7::new();
@@ -36,7 +42,9 @@ async fn given_one_ask_and_one_matching_bid_then_one_candidate() -> Result<()> {
     repo.asks.push(ask);
     repo.bids.push(bid);
 
-    generate_candidates_for_ask(timestamp, &mut repo, &ask).await?;
+    generate_candidates_for_ask(timestamp, &mut repo, &ask)
+        .await
+        .change_context(TestError)?;
 
     assert_eq!(repo.candidates.len(), 1);
 
@@ -49,7 +57,8 @@ async fn given_one_ask_and_one_matching_bid_then_one_candidate() -> Result<()> {
 }
 
 #[tokio::test]
-async fn given_one_ask_and_three_matching_bids_then_one_candidate() -> Result<()> {
+async fn given_one_ask_and_three_matching_bids_then_one_candidate() -> Result<(), Report<TestError>>
+{
     let mut repo = RepositoryMock::default();
 
     let context = ContextV7::new();
@@ -63,7 +72,9 @@ async fn given_one_ask_and_three_matching_bids_then_one_candidate() -> Result<()
     repo.asks.push(ask);
     repo.bids.extend([bid1, bid2, bid3]);
 
-    generate_candidates_for_ask(timestamp, &mut repo, &ask).await?;
+    generate_candidates_for_ask(timestamp, &mut repo, &ask)
+        .await
+        .change_context(TestError)?;
 
     assert_eq!(repo.candidates.len(), 1);
 
@@ -76,7 +87,8 @@ async fn given_one_ask_and_three_matching_bids_then_one_candidate() -> Result<()
 }
 
 #[tokio::test]
-async fn given_three_asks_and_one_matching_bid_then_one_candidate() -> Result<()> {
+async fn given_three_asks_and_one_matching_bid_then_one_candidate() -> Result<(), Report<TestError>>
+{
     let mut repo = RepositoryMock::default();
 
     let context = ContextV7::new();
@@ -90,7 +102,9 @@ async fn given_three_asks_and_one_matching_bid_then_one_candidate() -> Result<()
     repo.asks.extend([ask1, ask2, ask3]);
     repo.bids.push(bid);
 
-    generate_candidates_for_bid(timestamp, &mut repo, &bid).await?;
+    generate_candidates_for_bid(timestamp, &mut repo, &bid)
+        .await
+        .change_context(TestError)?;
 
     assert_eq!(repo.candidates.len(), 1);
 
@@ -103,7 +117,8 @@ async fn given_three_asks_and_one_matching_bid_then_one_candidate() -> Result<()
 }
 
 #[tokio::test]
-async fn given_three_asks_and_three_bids_only_one_matching_then_three_candidates() -> Result<()> {
+async fn given_three_asks_and_three_bids_only_one_matching_then_three_candidates()
+-> Result<(), Report<TestError>> {
     let mut repo = RepositoryMock::default();
 
     let context = ContextV7::new();
@@ -118,13 +133,17 @@ async fn given_three_asks_and_three_bids_only_one_matching_then_three_candidates
 
     repo.asks.extend([ask1, ask2, ask3]);
 
-    generate_candidates_for_bid(timestamp, &mut repo, &bid1).await?;
-    generate_candidates_for_bid(timestamp, &mut repo, &bid2).await?;
-    generate_candidates_for_bid(timestamp, &mut repo, &bid3).await?;
+    generate_candidates_for_bid(timestamp, &mut repo, &bid1)
+        .await
+        .change_context(TestError)?;
+    generate_candidates_for_bid(timestamp, &mut repo, &bid2)
+        .await
+        .change_context(TestError)?;
+    generate_candidates_for_bid(timestamp, &mut repo, &bid3)
+        .await
+        .change_context(TestError)?;
 
     assert_eq!(repo.candidates.len(), 1);
-
-    dbg!(&repo.candidates);
 
     let candidate = &repo.candidates[0];
 
