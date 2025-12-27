@@ -50,19 +50,19 @@ pub async fn get_candidates(
     let mut conn = pool
         .acquire()
         .await
-        .map_err(|_| BusinessError::DatabaseError)?;
+        .change_context(BusinessError::DatabaseError)?;
 
     let mut repo = Repository::new(&mut conn).await;
 
     let user = repo
         .find_user(LockMode::KeyShare, &user_id)
         .await
-        .map_err(|_| BusinessError::UserNotFound)?;
+        .change_context(BusinessError::UserNotFound)?;
 
     let candidates = repo
         .find_candidates_by_user(&user)
         .await
-        .map_err(|_| BusinessError::DatabaseError)?
+        .change_context(BusinessError::DatabaseError)?
         .into_iter()
         .map(CandidateSummary::from)
         .collect();

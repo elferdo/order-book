@@ -5,8 +5,9 @@ use axum::{
     Json,
     extract::{Path, State},
 };
+use error_stack::IntoReport;
 use serde_json::{Value, json};
-use tracing::instrument;
+use tracing::{debug, error, instrument};
 use uuid::Uuid;
 
 #[instrument(skip(state))]
@@ -16,7 +17,10 @@ pub async fn get_handler(
 ) -> Result<Json<Value>, ApiError> {
     let result = match business::candidate::get_candidates(state.pool, user_id).await {
         Ok(_) => "bien".to_string(),
-        Err(r) => r.to_string(),
+        Err(r) => {
+            error!("{}", &r);
+            r.to_string()
+        }
     };
 
     Ok(Json::from(json!(result)))
