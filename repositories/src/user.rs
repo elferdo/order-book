@@ -28,7 +28,7 @@ impl<'c> UserRepository for Repository<'c> {
 
         let result = qb.build().fetch_one(&mut *self.conn).await;
 
-        let user = result.change_context(RepositoryError::DatabaseError)?;
+        let user = result.change_context(RepositoryError::RootEntityNotFound)?;
 
         let asks: HashMap<_, _> = self
             .find_asks(id)

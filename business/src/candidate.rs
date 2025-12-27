@@ -89,7 +89,7 @@ pub async fn approve_candidate(
     let user = repo
         .find_user(LockMode::KeyShare, &user_id)
         .await
-        .change_context(BusinessError::DatabaseError)?;
+        .change_context(BusinessError::UserNotFound)?;
 
     let mut candidate = repo
         .find_candidate(LockMode::KeyShare, &candidate_id)
