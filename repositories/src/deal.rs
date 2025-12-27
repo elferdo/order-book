@@ -1,3 +1,4 @@
+use error_stack::{Report, ResultExt};
 use model::repository_error::RepositoryError;
 use model::{
     deal::{Deal, repository::DealRepository},
@@ -8,7 +9,10 @@ use sqlx::query;
 use crate::Repository;
 
 impl<'c> DealRepository for Repository<'c> {
-    async fn persist_deal(&mut self, _deal: &model::deal::Deal) -> Result<(), RepositoryError> {
+    async fn persist_deal(
+        &mut self,
+        _deal: &model::deal::Deal,
+    ) -> Result<(), Report<RepositoryError>> {
         query!(
             "INSERT INTO deal (id, buyer, seller, price) VALUES ($1, $2, $3, $4);",
             *_deal.get_id(),
@@ -17,7 +21,8 @@ impl<'c> DealRepository for Repository<'c> {
             _deal.get_price()
         )
         .execute(&mut *self.conn)
-        .await?;
+        .await
+        .change_context(RepositoryError::UnexpectedResult)?;
 
         Ok(())
     }
@@ -25,13 +30,14 @@ impl<'c> DealRepository for Repository<'c> {
     async fn find_deals_by_user(
         &mut self,
         user: &User,
-    ) -> Result<Vec<model::deal::Deal>, RepositoryError> {
+    ) -> Result<Vec<model::deal::Deal>, Report<RepositoryError>> {
         let deal_rows = query!(
             "SELECT * FROM deal WHERE buyer = $1 OR seller = $1;",
             user.get_id()
         )
         .fetch_all(&mut *self.conn)
-        .await?;
+        .await
+        .change_context(RepositoryError::UnexpectedResult)?;
 
         let deals = deal_rows
             .iter()

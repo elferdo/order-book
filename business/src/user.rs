@@ -1,5 +1,6 @@
+use error_stack::{Report, ResultExt};
+use model::user::repository::UserRepository;
 use model::{lock_mode::LockMode, user::user::User};
-use model::{repository_error::RepositoryError, user::repository::UserRepository};
 use repositories::Repository;
 use serde::Serialize;
 use sqlx::PgPool;
@@ -14,7 +15,7 @@ pub struct Response {
 }
 
 #[instrument(skip(pool))]
-pub async fn new_user(pool: PgPool) -> Result<Response, BusinessError> {
+pub async fn new_user(pool: PgPool) -> Result<Response, Report<BusinessError>> {
     let mut a = pool
         .acquire()
         .await
@@ -27,17 +28,15 @@ pub async fn new_user(pool: PgPool) -> Result<Response, BusinessError> {
 
     let user = User::new(timestamp);
 
-    repo.persist_user(&user).await.map_err(|e| match e {
-        RepositoryError::DatabaseError(_) => BusinessError::DatabaseError,
-        RepositoryError::UnexpectedResult => todo!(),
-        RepositoryError::RootEntityNotFound => todo!(),
-    })?;
+    repo.persist_user(&user)
+        .await
+        .change_context(BusinessError::DatabaseError)?;
 
     Ok(Response { id: *user.get_id() })
 }
 
 #[instrument(skip(pool))]
-pub async fn delete_user(pool: PgPool, id: Uuid) -> Result<Response, BusinessError> {
+pub async fn delete_user(pool: PgPool, id: Uuid) -> Result<Response, Report<BusinessError>> {
     let mut a = pool
         .acquire()
         .await
@@ -48,17 +47,11 @@ pub async fn delete_user(pool: PgPool, id: Uuid) -> Result<Response, BusinessErr
     let user = repo
         .find_user(LockMode::None, &id)
         .await
-        .map_err(|e| match e {
-            RepositoryError::DatabaseError(_) => BusinessError::DatabaseError,
-            RepositoryError::UnexpectedResult => todo!(),
-            RepositoryError::RootEntityNotFound => todo!(),
-        })?;
+        .change_context(BusinessError::DatabaseError)?;
 
-    repo.delete_user(&user).await.map_err(|e| match e {
-        RepositoryError::DatabaseError(_) => BusinessError::DatabaseError,
-        RepositoryError::UnexpectedResult => todo!(),
-        RepositoryError::RootEntityNotFound => todo!(),
-    })?;
+    repo.delete_user(&user)
+        .await
+        .change_context(BusinessError::DatabaseError)?;
 
     Ok(Response { id: *user.get_id() })
 }

@@ -1,17 +1,21 @@
-use std::collections::HashMap;
-
+use error_stack::{Report, ResultExt};
 use model::repository_error::RepositoryError;
 use model::{
     lock_mode::LockMode,
     user::{repository::UserRepository, user::User},
 };
 use sqlx::{QueryBuilder, Row, query};
+use std::collections::HashMap;
 use uuid::Uuid;
 
 use crate::Repository;
 
 impl<'c> UserRepository for Repository<'c> {
-    async fn find_user(&mut self, lock_mode: LockMode, id: &Uuid) -> Result<User, RepositoryError> {
+    async fn find_user(
+        &mut self,
+        lock_mode: LockMode,
+        id: &Uuid,
+    ) -> Result<User, Report<RepositoryError>> {
         let mut qb = QueryBuilder::new("SELECT * FROM public.user WHERE id = ");
         qb.push_bind(id);
 
@@ -24,7 +28,7 @@ impl<'c> UserRepository for Repository<'c> {
 
         let result = qb.build().fetch_one(&mut *self.conn).await;
 
-        let user = result?;
+        let user = result.change_context(RepositoryError::DatabaseError)?;
 
         let asks: HashMap<_, _> = self
             .find_asks(id)
@@ -43,13 +47,14 @@ impl<'c> UserRepository for Repository<'c> {
         Ok(User::with(user.get("id"), asks, bids))
     }
 
-    async fn persist_user(&mut self, user: &User) -> Result<(), RepositoryError> {
+    async fn persist_user(&mut self, user: &User) -> Result<(), Report<RepositoryError>> {
         query!(
             "INSERT INTO public.user (id) VALUES ($1) ON CONFLICT DO NOTHING",
             user.get_id()
         )
         .execute(&mut *self.conn)
-        .await?;
+        .await
+        .change_context(RepositoryError::UnexpectedResult)?;
 
         let asks = user.asks();
         let bids = user.bids();
@@ -60,13 +65,14 @@ impl<'c> UserRepository for Repository<'c> {
         Ok(())
     }
 
-    async fn delete_user(&mut self, user: &User) -> Result<(), RepositoryError> {
+    async fn delete_user(&mut self, user: &User) -> Result<(), Report<RepositoryError>> {
         let result = query!("DELETE FROM public.user where id = $1", user.get_id())
             .execute(&mut *self.conn)
-            .await?;
+            .await
+            .change_context(RepositoryError::UnexpectedResult)?;
 
         if result.rows_affected() < 1 {
-            Err(RepositoryError::UnexpectedResult)
+            Err(Report::new(RepositoryError::UnexpectedResult))
         } else {
             Ok(())
         }

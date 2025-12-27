@@ -1,3 +1,4 @@
+use error_stack::{Report, ResultExt};
 use model::{
     order::{ask::Ask, bid::Bid},
     repository_error::RepositoryError,
@@ -20,7 +21,7 @@ impl<'c> Repository<'c> {
     pub async fn persist_asks<'a, T: Debug + Iterator<Item = &'a Ask>>(
         &mut self,
         asks: T,
-    ) -> Result<(), RepositoryError> {
+    ) -> Result<(), Report<RepositoryError>> {
         let mut peekable = asks.peekable();
 
         if peekable.peek().is_none() {
@@ -38,10 +39,13 @@ impl<'c> Repository<'c> {
         qb.push(" ON CONFLICT DO NOTHING;");
 
         let query = qb.build();
-        let result = query.execute(&mut *self.conn).await?;
+        let result = query
+            .execute(&mut *self.conn)
+            .await
+            .change_context(RepositoryError::UnexpectedResult)?;
 
         if result.rows_affected() < 1 {
-            Err(RepositoryError::UnexpectedResult)
+            Err(Report::new(RepositoryError::UnexpectedResult))
         } else {
             Ok(())
         }
@@ -51,7 +55,7 @@ impl<'c> Repository<'c> {
     pub async fn persist_bids<'b, T: Debug + Iterator<Item = &'b Bid>>(
         &mut self,
         bids: T,
-    ) -> Result<(), RepositoryError> {
+    ) -> Result<(), Report<RepositoryError>> {
         let mut peekable = bids.peekable();
 
         if peekable.peek().is_none() {
@@ -70,19 +74,23 @@ impl<'c> Repository<'c> {
 
         let query = qb.build();
 
-        let result = query.execute(&mut *self.conn).await?;
+        let result = query
+            .execute(&mut *self.conn)
+            .await
+            .change_context(RepositoryError::UnexpectedResult)?;
 
         if result.rows_affected() < 1 {
-            Err(RepositoryError::UnexpectedResult)
+            Err(Report::new(RepositoryError::UnexpectedResult))
         } else {
             Ok(())
         }
     }
 
-    pub async fn find_asks(&mut self, user_id: &Uuid) -> Result<Vec<Ask>, RepositoryError> {
+    pub async fn find_asks(&mut self, user_id: &Uuid) -> Result<Vec<Ask>, Report<RepositoryError>> {
         let ask_rows = query!("SELECT * FROM ask WHERE user = $1", user_id.to_string())
             .fetch_all(&mut *self.conn)
-            .await?;
+            .await
+            .change_context(RepositoryError::UnexpectedResult)?;
 
         let asks = ask_rows
             .iter()
@@ -92,10 +100,11 @@ impl<'c> Repository<'c> {
         Ok(asks)
     }
 
-    pub async fn find_bids(&mut self, user_id: &Uuid) -> Result<Vec<Bid>, RepositoryError> {
+    pub async fn find_bids(&mut self, user_id: &Uuid) -> Result<Vec<Bid>, Report<RepositoryError>> {
         let bid_rows = query!("SELECT * FROM bid WHERE user = $1", user_id.to_string())
             .fetch_all(&mut *self.conn)
-            .await?;
+            .await
+            .change_context(RepositoryError::UnexpectedResult)?;
 
         let bids = bid_rows
             .iter()

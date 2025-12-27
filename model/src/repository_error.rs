@@ -5,7 +5,7 @@ pub enum RepositoryError {
      * useful for debugging.
      */
     #[error("database error")]
-    DatabaseError(#[from] sqlx::Error),
+    DatabaseError,
 
     #[error("unexpedted result after running query")]
     UnexpectedResult,

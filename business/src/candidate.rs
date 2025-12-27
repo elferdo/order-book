@@ -1,3 +1,5 @@
+use error_stack::Report;
+use error_stack::ResultExt;
 use model::match_service::{self, generate_candidates_for_ask, generate_candidates_for_bid};
 use model::order::candidate::Candidate;
 use model::order::candidate_repository::CandidateRepository;
@@ -44,7 +46,7 @@ pub struct Response {}
 pub async fn get_candidates(
     pool: PgPool,
     user_id: Uuid,
-) -> Result<Vec<CandidateSummary>, BusinessError> {
+) -> Result<Vec<CandidateSummary>, Report<BusinessError>> {
     let mut conn = pool
         .acquire()
         .await
@@ -73,7 +75,7 @@ pub async fn approve_candidate(
     pool: PgPool,
     user_id: Uuid,
     candidate_id: Uuid,
-) -> Result<Response, BusinessError> {
+) -> Result<Response, Report<BusinessError>> {
     let mut conn = pool
         .begin()
         .await
@@ -87,20 +89,17 @@ pub async fn approve_candidate(
     let user = repo
         .find_user(LockMode::KeyShare, &user_id)
         .await
-        .map_err(|e| match e {
-            RepositoryError::DatabaseError(e) => BusinessError::DatabaseError,
-            RepositoryError::UnexpectedResult => todo!(),
-            RepositoryError::RootEntityNotFound => todo!(),
-        })?;
+        .change_context(BusinessError::DatabaseError)?;
 
     let mut candidate = repo
         .find_candidate(LockMode::KeyShare, &candidate_id)
         .await
         .map_err(|_| BusinessError::UserNotFound)?;
 
-    match user.approve(&mut candidate).map_err(|e| match e {
-        model::user::user::UserError::Error => todo!(),
-    })? {
+    match user
+        .approve(&mut candidate)
+        .change_context(BusinessError::DatabaseError)?
+    {
         ApprovalResult::Partial => {
             repo.persist_candidate(&candidate)
                 .await
@@ -126,7 +125,7 @@ pub async fn reject_candidate(
     pool: PgPool,
     user_id: Uuid,
     candidate_id: Uuid,
-) -> Result<Response, BusinessError> {
+) -> Result<Response, Report<BusinessError>> {
     let mut conn = pool
         .begin()
         .await

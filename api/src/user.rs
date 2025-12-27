@@ -12,7 +12,10 @@ use crate::apierror::ApiError;
 
 #[instrument(skip(state))]
 pub async fn post_handler(State(state): State<AppState>) -> Result<Json<Value>, ApiError> {
-    let result = business::user::new_user(state.pool).await?;
+    let result = match business::user::new_user(state.pool).await {
+        Ok(_) => "bien".to_string(),
+        Err(r) => r.to_string(),
+    };
 
     Ok(Json::from(json!(result)))
 }
@@ -23,7 +26,10 @@ pub async fn delete_handler(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Value>, ApiError> {
-    let result = business::user::delete_user(state.pool, id).await?;
+    let result = match business::user::delete_user(state.pool, id).await {
+        Ok(_) => "bien".to_string(),
+        Err(r) => r.to_string(),
+    };
 
     Ok(Json::from(json!(result)))
 }

@@ -14,7 +14,10 @@ pub async fn get_handler(
     State(state): State<AppState>,
     Path(user_id): Path<Uuid>,
 ) -> Result<Json<Value>, ApiError> {
-    let result = business::candidate::get_candidates(state.pool, user_id).await?;
+    let result = match business::candidate::get_candidates(state.pool, user_id).await {
+        Ok(_) => "bien".to_string(),
+        Err(r) => r.to_string(),
+    };
 
     Ok(Json::from(json!(result)))
 }
@@ -24,7 +27,11 @@ pub async fn approve_post_handler(
     State(state): State<AppState>,
     Path((user_id, candidate_id)): Path<(Uuid, Uuid)>,
 ) -> Result<Json<Value>, ApiError> {
-    let result = business::candidate::approve_candidate(state.pool, user_id, candidate_id).await?;
+    let result =
+        match business::candidate::approve_candidate(state.pool, user_id, candidate_id).await {
+            Ok(_) => "bien".to_string(),
+            Err(r) => r.to_string(),
+        };
 
     Ok(Json::from(json!(result)))
 }
@@ -34,7 +41,11 @@ pub async fn reject_post_handler(
     State(state): State<AppState>,
     Path((user_id, candidate_id)): Path<(Uuid, Uuid)>,
 ) -> Result<Json<Value>, ApiError> {
-    let result = business::candidate::reject_candidate(state.pool, user_id, candidate_id).await?;
+    let result =
+        match business::candidate::reject_candidate(state.pool, user_id, candidate_id).await {
+            Ok(_) => "bien".to_string(),
+            Err(r) => r.to_string(),
+        };
 
     Ok(Json::from(json!(result)))
 }

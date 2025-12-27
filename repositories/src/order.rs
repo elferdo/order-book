@@ -1,3 +1,4 @@
+use error_stack::{Report, ResultExt};
 use model::lock_mode::LockMode;
 use model::order::ask::Ask;
 use model::order::bid::Bid;
@@ -13,7 +14,7 @@ impl<'c> OrderRepository for Repository<'c> {
         &mut self,
         lock_mode: LockMode,
         bid: &Bid,
-    ) -> Result<Vec<Ask>, RepositoryError> {
+    ) -> Result<Vec<Ask>, Report<RepositoryError>> {
         let mut qb = QueryBuilder::new("SELECT ask.id, ask.user, ask.price FROM ask LEFT JOIN candidate_archive ON candidate_archive.ask = ask.id LEFT JOIN candidate ON candidate.ask = ask.id WHERE candidate_archive.bid IS NULL candidate.bid IS NULL AND
  price <= ");
         qb.push_bind(bid.get_price());
@@ -27,7 +28,11 @@ impl<'c> OrderRepository for Repository<'c> {
             }
         };
 
-        let ask_rows = qb.build().fetch_all(&mut *self.conn).await?;
+        let ask_rows = qb
+            .build()
+            .fetch_all(&mut *self.conn)
+            .await
+            .change_context(RepositoryError::UnexpectedResult)?;
 
         let asks: Vec<_> = ask_rows
             .into_iter()
@@ -41,7 +46,7 @@ impl<'c> OrderRepository for Repository<'c> {
         &mut self,
         lock_mode: LockMode,
         ask: &Ask,
-    ) -> Result<Vec<Bid>, RepositoryError> {
+    ) -> Result<Vec<Bid>, Report<RepositoryError>> {
         let mut qb = QueryBuilder::new("SELECT bid.id, bid.user, bid.price FROM bid LEFT JOIN candidate_archive on candidate_archive.bid = bid.id LEFT JOIN candidate ON candidate.bid = bid.id WHERE candidate.ask IS NULL AND candidate_archive.ask IS NULL AND
  price >= ");
         qb.push_bind(ask.get_price());
@@ -55,7 +60,11 @@ impl<'c> OrderRepository for Repository<'c> {
             }
         };
 
-        let bid_rows = qb.build().fetch_all(&mut *self.conn).await?;
+        let bid_rows = qb
+            .build()
+            .fetch_all(&mut *self.conn)
+            .await
+            .change_context(RepositoryError::UnexpectedResult)?;
 
         let bids: Vec<_> = bid_rows
             .into_iter()
@@ -65,18 +74,20 @@ impl<'c> OrderRepository for Repository<'c> {
         Ok(bids)
     }
 
-    async fn remove_ask(&mut self, ask: &Ask) -> Result<(), RepositoryError> {
+    async fn remove_ask(&mut self, ask: &Ask) -> Result<(), Report<RepositoryError>> {
         query!("DELETE FROM ask WHERE id = $1;", *ask.get_id())
             .execute(&mut *self.conn)
-            .await?;
+            .await
+            .change_context(RepositoryError::UnexpectedResult)?;
 
         Ok(())
     }
 
-    async fn remove_bid(&mut self, bid: &Bid) -> Result<(), RepositoryError> {
+    async fn remove_bid(&mut self, bid: &Bid) -> Result<(), Report<RepositoryError>> {
         query!("DELETE FROM bid WHERE id = $1;", *bid.get_id())
             .execute(&mut *self.conn)
-            .await?;
+            .await
+            .change_context(RepositoryError::UnexpectedResult)?;
 
         Ok(())
     }

@@ -1,3 +1,5 @@
+use error_stack::Report;
+
 use super::ask::Ask;
 use super::bid::Bid;
 use crate::lock_mode::LockMode;
@@ -8,14 +10,20 @@ pub trait OrderRepository {
         &mut self,
         lock_mode: LockMode,
         bid: &Bid,
-    ) -> impl Future<Output = Result<Vec<Ask>, RepositoryError>>;
+    ) -> impl Future<Output = Result<Vec<Ask>, Report<RepositoryError>>>;
 
     fn find_bids_not_below(
         &mut self,
         lock_mode: LockMode,
         ask: &Ask,
-    ) -> impl Future<Output = Result<Vec<Bid>, RepositoryError>>;
+    ) -> impl Future<Output = Result<Vec<Bid>, Report<RepositoryError>>>;
 
-    fn remove_ask(&mut self, ask: &Ask) -> impl Future<Output = Result<(), RepositoryError>>;
-    fn remove_bid(&mut self, bid: &Bid) -> impl Future<Output = Result<(), RepositoryError>>;
+    fn remove_ask(
+        &mut self,
+        ask: &Ask,
+    ) -> impl Future<Output = Result<(), Report<RepositoryError>>>;
+    fn remove_bid(
+        &mut self,
+        bid: &Bid,
+    ) -> impl Future<Output = Result<(), Report<RepositoryError>>>;
 }

@@ -3,6 +3,7 @@ mod tests;
 
 use std::collections::BTreeSet;
 
+use error_stack::{Report, ResultExt};
 use tracing::{error, info, instrument};
 use uuid::Timestamp;
 
@@ -21,7 +22,7 @@ pub async fn generate_candidates_for_ask<R>(
     timestamp: Timestamp,
     repository: &mut R,
     ask: &Ask,
-) -> Result<(), RepositoryError>
+) -> Result<(), Report<RepositoryError>>
 where
     R: OrderRepository + CandidateRepository,
 {
@@ -39,15 +40,10 @@ where
 
     let candidate = Candidate::new(timestamp, *ask, first);
 
-    if let Err(e) = repository.persist_candidates([candidate]).await {
-        match e {
-            RepositoryError::DatabaseError(e) => {
-                error!("{e}");
-            }
-            RepositoryError::UnexpectedResult => todo!(),
-            RepositoryError::RootEntityNotFound => todo!(),
-        }
-    };
+    repository
+        .persist_candidates([candidate])
+        .await
+        .change_context(RepositoryError::UnexpectedResult)?;
 
     info!("processing matching orders for ask");
 
@@ -59,7 +55,7 @@ pub async fn generate_candidates_for_bid<R>(
     timestamp: Timestamp,
     repository: &mut R,
     bid: &Bid,
-) -> Result<(), RepositoryError>
+) -> Result<(), Report<RepositoryError>>
 where
     R: OrderRepository + CandidateRepository,
 {
@@ -77,15 +73,10 @@ where
 
     let candidate = Candidate::new(timestamp, first, *bid);
 
-    if let Err(e) = repository.persist_candidates([candidate]).await {
-        match e {
-            RepositoryError::DatabaseError(e) => {
-                error!("{e}");
-            }
-            RepositoryError::UnexpectedResult => todo!(),
-            RepositoryError::RootEntityNotFound => todo!(),
-        }
-    };
+    repository
+        .persist_candidates([candidate])
+        .await
+        .change_context(RepositoryError::UnexpectedResult)?;
 
     info!("processing matching orders for bid");
 
