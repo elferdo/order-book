@@ -5,7 +5,7 @@ use axum::{
     Json,
     extract::{Path, State},
 };
-use error_stack::{Report, ResultExt};
+use error_stack::ResultExt;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use tracing::instrument;

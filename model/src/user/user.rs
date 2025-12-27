@@ -42,12 +42,12 @@ impl User {
         ask
     }
 
-    pub fn bid(&mut self, t: Timestamp, price: f32) -> Result<Bid, UserError> {
+    pub fn bid(&mut self, t: Timestamp, price: f32) -> Bid {
         let bid = Bid::new(t, self.id, price);
 
         self.bids.insert(*bid.get_id(), bid);
 
-        Ok(bid)
+        bid
     }
 
     pub fn approve(&self, candidate: &mut Candidate) -> Result<ApprovalResult, UserError> {
@@ -102,7 +102,7 @@ mod test {
 
         let price = 1.23;
 
-        let _ = user.bid(timestamp, price)?;
+        let _ = user.bid(timestamp, price);
 
         let bids: Vec<_> = user.bids().collect();
 
