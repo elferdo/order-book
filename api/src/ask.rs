@@ -5,6 +5,7 @@ use axum::{
     Json,
     extract::{Path, State},
 };
+use error_stack::{Report, ResultExt};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use tracing::instrument;
@@ -21,7 +22,13 @@ pub async fn post_handler(
     Path(user_id): Path<Uuid>,
     Json(body): Json<AskRequest>,
 ) -> Result<Json<Value>, ApiError> {
-    let result = business::ask::new_ask(state.pool, user_id, body.price).await?;
+    let result = match business::ask::new_ask(state.pool, user_id, body.price)
+        .await
+        .change_context(ApiError::DatabaseError)
+    {
+        Ok(r) => "bien".to_string(),
+        Err(r) => r.to_string(),
+    };
 
     Ok(Json::from(json!(result)))
 }

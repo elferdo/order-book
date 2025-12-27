@@ -15,9 +15,30 @@ impl<'c> OrderRepository for Repository<'c> {
         lock_mode: LockMode,
         bid: &Bid,
     ) -> Result<Vec<Ask>, Report<RepositoryError>> {
-        let mut qb = QueryBuilder::new("SELECT ask.id, ask.user, ask.price FROM ask LEFT JOIN candidate_archive ON candidate_archive.ask = ask.id LEFT JOIN candidate ON candidate.ask = ask.id WHERE candidate_archive.bid IS NULL candidate.bid IS NULL AND
- price <= ");
+        /* asks that were already a candidate match for this bid */
+
+        let mut qb = QueryBuilder::new(
+            "SELECT ask.id, ask.user, ask.price
+                    FROM ask
+                    LEFT JOIN candidate_archive
+                        ON candidate_archive.bid <> ",
+        );
+
+        qb.push_bind(bid.get_id());
+
+        /* asks that are not already bound to another candidate */
+
+        qb.push(
+            " LEFT JOIN candidate
+                      ON candidate.ask = ask.id
+                  WHERE candidate.bid IS NULL
+                  AND price <= ",
+        );
+
         qb.push_bind(bid.get_price());
+
+        /* Don't match a user's own ask */
+
         qb.push(" AND ask.user <> ");
         qb.push_bind(bid.get_user_id());
 
@@ -47,9 +68,31 @@ impl<'c> OrderRepository for Repository<'c> {
         lock_mode: LockMode,
         ask: &Ask,
     ) -> Result<Vec<Bid>, Report<RepositoryError>> {
-        let mut qb = QueryBuilder::new("SELECT bid.id, bid.user, bid.price FROM bid LEFT JOIN candidate_archive on candidate_archive.bid = bid.id LEFT JOIN candidate ON candidate.bid = bid.id WHERE candidate.ask IS NULL AND candidate_archive.ask IS NULL AND
- price >= ");
+        /* bids that were already a candidate match for this ask */
+
+        let mut qb = QueryBuilder::new(
+            "SELECT bid.id, bid.user, bid.price
+                    FROM bid
+                    LEFT JOIN candidate_archive
+                        ON candidate_archive.bid = bid.id",
+        );
+
+        /* bids that are not already bound to another candidate */
+
+        qb.push(
+            " LEFT JOIN candidate
+                      ON candidate.bid = bid.id
+                  WHERE candidate.ask IS NULL
+                  AND price >= ",
+        );
+
         qb.push_bind(ask.get_price());
+
+        qb.push(" AND candidate_archive.ask <> ");
+        qb.push_bind(ask.get_id());
+
+        /* Don't match a user's own bid */
+
         qb.push(" AND bid.user <> ");
         qb.push_bind(ask.get_user_id());
 

@@ -34,12 +34,12 @@ impl User {
         &self.id
     }
 
-    pub fn ask(&mut self, t: Timestamp, price: f32) -> Result<Ask, UserError> {
+    pub fn ask(&mut self, t: Timestamp, price: f32) -> Ask {
         let ask = Ask::new(t, self.id, price);
 
         self.asks.insert(*ask.get_id(), ask);
 
-        Ok(ask)
+        ask
     }
 
     pub fn bid(&mut self, t: Timestamp, price: f32) -> Result<Bid, UserError> {
@@ -84,7 +84,7 @@ mod test {
 
         let price = 1.23;
 
-        let _ = user.ask(timestamp, price)?;
+        let _ = user.ask(timestamp, price);
 
         let asks: Vec<_> = user.asks().collect();
 

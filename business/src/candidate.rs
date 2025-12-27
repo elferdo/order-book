@@ -4,9 +4,7 @@ use model::match_service::{self, generate_candidates_for_ask, generate_candidate
 use model::order::candidate::Candidate;
 use model::order::candidate_repository::CandidateRepository;
 use model::user::repository::UserRepository;
-use model::{
-    lock_mode::LockMode, order::candidate::ApprovalResult, repository_error::RepositoryError,
-};
+use model::{lock_mode::LockMode, order::candidate::ApprovalResult};
 use repositories::Repository;
 use serde::Serialize;
 use sqlx::PgPool;
@@ -94,7 +92,7 @@ pub async fn approve_candidate(
     let mut candidate = repo
         .find_candidate(LockMode::KeyShare, &candidate_id)
         .await
-        .map_err(|_| BusinessError::UserNotFound)?;
+        .change_context(BusinessError::CandidateNotFound)?;
 
     match user
         .approve(&mut candidate)

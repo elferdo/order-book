@@ -1,4 +1,6 @@
 use crate::businesserror::BusinessError;
+use error_stack::Report;
+use error_stack::ResultExt;
 use model::user::repository::UserRepository;
 use model::{lock_mode::LockMode, match_service::generate_candidates_for_ask};
 use repositories::Repository;
@@ -13,35 +15,39 @@ pub struct Response {
 }
 
 #[instrument(skip(pool))]
-pub async fn new_ask(pool: PgPool, user_id: Uuid, price: f32) -> Result<Response, BusinessError> {
+pub async fn new_ask(
+    pool: PgPool,
+    user_id: Uuid,
+    price: f32,
+) -> Result<Response, Report<BusinessError>> {
     let mut t = pool
         .begin()
         .await
-        .map_err(|_| BusinessError::DatabaseError)?;
+        .change_context(BusinessError::DatabaseError)?;
 
     let mut repo = Repository::new(&mut t).await;
 
     let mut user = repo
         .find_user(LockMode::KeyShare, &user_id)
         .await
-        .map_err(|_| BusinessError::UserNotFound)?;
+        .change_context(BusinessError::UserNotFound)?;
 
     let context = ContextV7::new();
     let timestamp = Timestamp::now(&context);
 
-    let ask = user
-        .ask(timestamp, price)
-        .map_err(|_| BusinessError::UserNotFound)?;
+    let ask = user.ask(timestamp, price);
 
     repo.persist_user(&user)
         .await
-        .map_err(|_| BusinessError::DatabaseError)?;
+        .change_context(BusinessError::UserPersistenceError)?;
 
     generate_candidates_for_ask(timestamp, &mut repo, &ask)
         .await
-        .map_err(|_| BusinessError::DatabaseError)?;
+        .change_context(BusinessError::MatchingError)?;
 
-    t.commit().await.map_err(|_| BusinessError::DatabaseError)?;
+    t.commit()
+        .await
+        .change_context(BusinessError::DatabaseError)?;
 
     Ok(Response { id: *ask.get_id() })
 }
