@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 directories = "6.0.0"
+error-stack = "0.6.0"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_yaml = "0.9.34"
 sqlx = { version = "0.8.6", features = ["postgres"] }

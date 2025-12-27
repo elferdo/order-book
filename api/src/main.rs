@@ -6,23 +6,33 @@ mod deal;
 mod stats;
 mod user;
 
-use anyhow::Result;
 use appconfig::appstate::AppState;
 use axum::{
     Router,
     routing::{delete, get, post},
 };
+use error_stack::Report;
+use error_stack::ResultExt;
+use thiserror::Error;
 use tracing_subscriber::EnvFilter;
 
+#[derive(Debug, Error)]
+enum AppError {
+    #[error("application error")]
+    Error,
+}
+
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> Result<(), Report<AppError>> {
     tracing_subscriber::fmt()
         .pretty()
         .with_env_filter(EnvFilter::from_default_env())
         .init();
 
-    let config = appconfig::config::read()?;
-    let state = AppState::new(&config).await?;
+    let config = appconfig::config::read().change_context(AppError::Error)?;
+    let state = AppState::new(&config)
+        .await
+        .change_context(AppError::Error)?;
 
     let app = Router::new()
         .route("/user", post(user::post_handler))
@@ -44,9 +54,13 @@ async fn main() -> Result<()> {
         .with_state(state);
 
     // run our app with hyper, listening globally on port 3000
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:5000").await?;
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:5000")
+        .await
+        .change_context(AppError::Error)?;
 
-    axum::serve(listener, app).await?;
+    axum::serve(listener, app)
+        .await
+        .change_context(AppError::Error)?;
 
     Ok(())
 }
