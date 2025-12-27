@@ -14,7 +14,11 @@ use axum::{
 use error_stack::Report;
 use error_stack::ResultExt;
 use thiserror::Error;
-use tracing_subscriber::EnvFilter;
+use tracing_error::ErrorLayer;
+use tracing_subscriber::{EnvFilter, Layer, Registry};
+use tracing_subscriber::{fmt, prelude::*};
+
+use crate::apierror::ApiError;
 
 #[derive(Debug, Error)]
 enum AppError {
@@ -30,9 +34,10 @@ enum AppError {
 
 #[tokio::main]
 async fn main() -> Result<(), Report<AppError>> {
-    tracing_subscriber::fmt()
-        .pretty()
-        .with_env_filter(EnvFilter::from_default_env())
+    Registry::default()
+        .with(ErrorLayer::default())
+        .with(EnvFilter::from_default_env())
+        .with(fmt::layer().pretty())
         .init();
 
     let config = appconfig::config::read().change_context(AppError::Error)?;

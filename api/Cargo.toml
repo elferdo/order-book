@@ -17,5 +17,6 @@ sqlx = { version = "0.8.6"}
 thiserror = "2.0.17"
 tokio = { version = "1.48.0", features = ["macros", "rt-multi-thread"] }
 tracing = { version = "0.1.43", features = ["async-await", "log"] }
-tracing-subscriber = { version = "0.3.22", features = ["serde", "json", "local-time", "fmt", "env-filter"] }
+tracing-error = "0.2.1"
+tracing-subscriber = { version = "0.3.22", features = ["serde", "json", "local-time", "fmt", "env-filter", "ansi", "registry"] }
 uuid = { version = "1.19.0", features = ["serde", "v7"] }

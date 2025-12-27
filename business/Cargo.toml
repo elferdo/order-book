@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.100"
-error-stack = "0.6.0"
+error-stack = { version = "0.6.0", features = ["tracing"] }
 model = { version = "0.1.0", path = "../model" }
 repositories = { version = "0.1.0", path = "../repositories" }
 serde = { version = "1.0.228", features = ["derive"] }
