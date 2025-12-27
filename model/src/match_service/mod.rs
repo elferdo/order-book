@@ -87,7 +87,7 @@ pub async fn seal<R>(
     repo: &mut R,
     timestamp: Timestamp,
     candidate: Candidate,
-) -> Result<Deal, MatchServiceError>
+) -> Result<Deal, Report<MatchServiceError>>
 where
     R: CandidateRepository + DealRepository + OrderRepository,
 {
@@ -102,17 +102,17 @@ where
         .await
         .map_err(|_| MatchServiceError::Error)?;
 
+    repo.remove_candidate(&candidate)
+        .await
+        .change_context(MatchServiceError::Error)?;
+
     repo.remove_ask(candidate.get_ask())
         .await
-        .map_err(|_| MatchServiceError::Error)?;
+        .change_context(MatchServiceError::Error)?;
 
     repo.remove_bid(candidate.get_bid())
         .await
-        .map_err(|_| MatchServiceError::Error)?;
-
-    repo.remove_candidate(&candidate)
-        .await
-        .map_err(|_| MatchServiceError::Error)?;
+        .change_context(MatchServiceError::Error)?;
 
     todo!()
 }

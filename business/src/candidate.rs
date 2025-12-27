@@ -109,7 +109,7 @@ pub async fn approve_candidate(
         ApprovalResult::Complete => {
             match_service::seal(&mut repo, timestamp, candidate)
                 .await
-                .map_err(|_| BusinessError::DatabaseError)?;
+                .change_context(BusinessError::DatabaseError)?;
         }
     };
 
