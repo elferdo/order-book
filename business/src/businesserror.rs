@@ -5,5 +5,5 @@ pub enum BusinessError {
     UserNotFound,
 
     #[error("database error")]
-    DatabaseError(#[from] sqlx::Error),
+    DatabaseError,
 }

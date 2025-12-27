@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.100"
+error-stack = "0.6.0"
 rstest = "0.26.1"
 sqlx = "0.8.6"
 thiserror = "2.0.17"

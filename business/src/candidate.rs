@@ -74,7 +74,10 @@ pub async fn approve_candidate(
     user_id: Uuid,
     candidate_id: Uuid,
 ) -> Result<Response, BusinessError> {
-    let mut conn = pool.begin().await?;
+    let mut conn = pool
+        .begin()
+        .await
+        .map_err(|_| BusinessError::DatabaseError)?;
 
     let mut repo = Repository::new(&mut conn).await;
 
@@ -85,7 +88,7 @@ pub async fn approve_candidate(
         .find_user(LockMode::KeyShare, &user_id)
         .await
         .map_err(|e| match e {
-            RepositoryError::DatabaseError(e) => BusinessError::DatabaseError(e),
+            RepositoryError::DatabaseError(e) => BusinessError::DatabaseError,
             RepositoryError::UnexpectedResult => todo!(),
             RepositoryError::RootEntityNotFound => todo!(),
         })?;

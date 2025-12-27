@@ -19,7 +19,7 @@ impl<'c> DealRepository for Repository<'c> {
         .execute(&mut *self.conn)
         .await?;
 
-        todo!()
+        Ok(())
     }
 
     async fn find_deals_by_user(
