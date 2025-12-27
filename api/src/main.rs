@@ -20,6 +20,12 @@ use tracing_subscriber::EnvFilter;
 enum AppError {
     #[error("application error")]
     Error,
+
+    #[error("axum error")]
+    AxumError,
+
+    #[error("network error")]
+    NetworkError,
 }
 
 #[tokio::main]
@@ -56,11 +62,11 @@ async fn main() -> Result<(), Report<AppError>> {
     // run our app with hyper, listening globally on port 3000
     let listener = tokio::net::TcpListener::bind("0.0.0.0:5000")
         .await
-        .change_context(AppError::Error)?;
+        .change_context(AppError::NetworkError)?;
 
     axum::serve(listener, app)
         .await
-        .change_context(AppError::Error)?;
+        .change_context(AppError::AxumError)?;
 
     Ok(())
 }
