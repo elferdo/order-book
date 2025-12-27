@@ -6,11 +6,13 @@ use model::{
 };
 use sqlx::{QueryBuilder, Row, query};
 use std::collections::HashMap;
+use tracing::instrument;
 use uuid::Uuid;
 
 use crate::Repository;
 
 impl<'c> UserRepository for Repository<'c> {
+    #[instrument(skip(self, lock_mode))]
     async fn find_user(
         &mut self,
         lock_mode: LockMode,
@@ -47,6 +49,7 @@ impl<'c> UserRepository for Repository<'c> {
         Ok(User::with(user.get("id"), asks, bids))
     }
 
+    #[instrument(skip(self))]
     async fn persist_user(&mut self, user: &User) -> Result<(), Report<RepositoryError>> {
         query!(
             "INSERT INTO public.user (id) VALUES ($1) ON CONFLICT DO NOTHING",
@@ -65,6 +68,7 @@ impl<'c> UserRepository for Repository<'c> {
         Ok(())
     }
 
+    #[instrument(skip(self))]
     async fn delete_user(&mut self, user: &User) -> Result<(), Report<RepositoryError>> {
         let result = query!("DELETE FROM public.user where id = $1", user.get_id())
             .execute(&mut *self.conn)

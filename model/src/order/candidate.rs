@@ -1,3 +1,4 @@
+use thiserror::Error;
 use uuid::{Timestamp, Uuid};
 
 use crate::order::{ask::Ask, bid::Bid};
@@ -27,6 +28,10 @@ pub enum ApprovalResult {
     Partial,
     Complete,
 }
+
+#[derive(Debug, Error)]
+#[error("invalid user")]
+pub struct InvalidUserError;
 
 impl Candidate {
     pub fn new(t: Timestamp, ask: Ask, bid: Bid) -> Self {
@@ -81,13 +86,13 @@ impl Candidate {
         self.approval.bid
     }
 
-    pub fn approve(&mut self, user_id: &Uuid) -> Result<ApprovalResult, RepositoryError> {
+    pub fn approve(&mut self, user_id: &Uuid) -> Result<ApprovalResult, InvalidUserError> {
         if *user_id == *self.ask.get_user_id() {
             self.approval.ask = true;
         } else if *user_id == *self.bid.get_user_id() {
             self.approval.bid = true;
         } else {
-            return Err(RepositoryError::UnexpectedResult);
+            return Err(InvalidUserError {});
         }
 
         if self.approval.both_approved() {

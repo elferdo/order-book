@@ -15,10 +15,8 @@ use error_stack::Report;
 use error_stack::ResultExt;
 use thiserror::Error;
 use tracing_error::ErrorLayer;
-use tracing_subscriber::{EnvFilter, Layer, Registry};
+use tracing_subscriber::{EnvFilter, Registry};
 use tracing_subscriber::{fmt, prelude::*};
-
-use crate::apierror::ApiError;
 
 #[derive(Debug, Error)]
 enum AppError {
