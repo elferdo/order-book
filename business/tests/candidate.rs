@@ -14,7 +14,9 @@ use uuid::Uuid;
 struct TestError;
 
 #[sqlx::test(fixtures("one_candidate"))]
-async fn test1(pool: PgPool) -> Result<(), Report<TestError>> {
+async fn given_one_candidate_when_approved_then_one_deal(
+    pool: PgPool,
+) -> Result<(), Report<TestError>> {
     let mut conn = pool.acquire().await.change_context(TestError)?;
 
     let seller =
@@ -55,7 +57,9 @@ async fn test1(pool: PgPool) -> Result<(), Report<TestError>> {
 }
 
 #[sqlx::test(fixtures("one_archived_candidate"))]
-async fn test2(pool: PgPool) -> Result<(), Report<TestError>> {
+async fn given_one_archived_candidate_when_new_matching_ask_then_bid_matches(
+    pool: PgPool,
+) -> Result<(), Report<TestError>> {
     let mut conn = pool.acquire().await.change_context(TestError)?;
 
     let seller =
@@ -68,8 +72,6 @@ async fn test2(pool: PgPool) -> Result<(), Report<TestError>> {
         .await
         .change_context(TestError)?;
 
-    let candidates = get_candidates(pool.clone(), seller);
-
     let result = query!("SELECT * FROM candidate")
         .fetch_all(&mut *conn)
         .await
@@ -77,11 +79,22 @@ async fn test2(pool: PgPool) -> Result<(), Report<TestError>> {
 
     assert_eq!(result.len(), 1);
 
+    let candidate = &result[0];
+
+    assert_eq!(candidate.ask, ask.id);
+
+    assert_eq!(
+        candidate.bid,
+        Uuid::parse_str("019b5f60-61c3-707f-a3e9-1f25169fac8f").change_context(TestError)?
+    );
+
     Ok(())
 }
 
 #[sqlx::test(fixtures("one_archived_candidate"))]
-async fn test3(pool: PgPool) -> Result<(), Report<TestError>> {
+async fn given_one_archived_candidate_when_new_matching_bid_then_ask_matches(
+    pool: PgPool,
+) -> Result<(), Report<TestError>> {
     let mut conn = pool.acquire().await.change_context(TestError)?;
 
     let seller =
@@ -103,11 +116,22 @@ async fn test3(pool: PgPool) -> Result<(), Report<TestError>> {
 
     assert_eq!(result.len(), 1);
 
+    let candidate = &result[0];
+
+    assert_eq!(candidate.bid, bid.id);
+
+    assert_eq!(
+        candidate.ask,
+        Uuid::parse_str("019b5f69-843b-7b58-9a62-d559fd3db43b").change_context(TestError)?
+    );
+
     Ok(())
 }
 
 #[sqlx::test(fixtures("one_archived_candidate"))]
-async fn test4(pool: PgPool) -> Result<(), Report<TestError>> {
+async fn given_one_archived_candidate_when_not_matching_ask_then_no_candidate(
+    pool: PgPool,
+) -> Result<(), Report<TestError>> {
     let mut conn = pool.acquire().await.change_context(TestError)?;
 
     let seller =
@@ -133,7 +157,9 @@ async fn test4(pool: PgPool) -> Result<(), Report<TestError>> {
 }
 
 #[sqlx::test(fixtures("one_archived_candidate"))]
-async fn test5(pool: PgPool) -> Result<(), Report<TestError>> {
+async fn given_one_archived_candidate_when_not_matching_bid_then_no_candidate(
+    pool: PgPool,
+) -> Result<(), Report<TestError>> {
     let mut conn = pool.acquire().await.change_context(TestError)?;
 
     let seller =

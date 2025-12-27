@@ -11,7 +11,7 @@ use uuid::{ContextV7, Timestamp, Uuid};
 
 #[derive(Serialize)]
 pub struct Response {
-    id: Uuid,
+    pub id: Uuid,
 }
 
 #[instrument(skip(pool))]
