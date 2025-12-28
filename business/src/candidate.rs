@@ -40,7 +40,7 @@ impl From<Candidate> for CandidateSummary {
 #[derive(Serialize)]
 pub struct Response {}
 
-#[instrument(skip(pool))]
+#[instrument(err, skip(pool))]
 pub async fn get_candidates(
     pool: PgPool,
     user_id: Uuid,

@@ -5,25 +5,20 @@ use axum::{
     Json,
     extract::{Path, State},
 };
-use error_stack::IntoReport;
+use error_stack::{IntoReport, ResultExt};
 use serde_json::{Value, json};
 use tracing::{debug, error, instrument};
 use uuid::Uuid;
 
-#[instrument(skip(state))]
+#[instrument(err, skip(state))]
 pub async fn get_handler(
     State(state): State<AppState>,
     Path(user_id): Path<Uuid>,
 ) -> Result<Json<Value>, ApiError> {
-    let result = match business::candidate::get_candidates(state.pool, user_id).await {
-        Ok(_) => "bien".to_string(),
-        Err(r) => {
-            error!("{}", &r);
-            r.to_string()
-        }
-    };
-
-    Ok(Json::from(json!(result)))
+    business::candidate::get_candidates(state.pool, user_id)
+        .await
+        .map_err(|_| ApiError::DatabaseError)
+        .map(|v| Json::from(json!(v)))
 }
 
 #[instrument(skip(state))]

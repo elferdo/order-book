@@ -12,7 +12,7 @@ use uuid::Uuid;
 use crate::Repository;
 
 impl<'c> UserRepository for Repository<'c> {
-    #[instrument(skip(self, lock_mode))]
+    #[instrument(err, skip(self, lock_mode))]
     async fn find_user(
         &mut self,
         lock_mode: LockMode,

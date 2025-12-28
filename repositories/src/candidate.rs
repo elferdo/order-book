@@ -18,7 +18,7 @@ use tracing::instrument;
 use crate::Repository;
 
 impl<'c> CandidateRepository for Repository<'c> {
-    #[instrument(skip(self, iterator))]
+    #[instrument(err, skip(self, iterator))]
     async fn persist_candidates<I>(&mut self, iterator: I) -> Result<(), Report<RepositoryError>>
     where
         I: IntoIterator<Item = Candidate>,
