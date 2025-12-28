@@ -1,7 +1,7 @@
 use business::{
     ask::new_ask,
     bid::new_bid,
-    candidate::{approve_candidate, get_candidates},
+    candidate::{approve_candidate, get_candidates, reject_candidate},
 };
 use error_stack::{Report, ResultExt};
 use sqlx::{PgPool, Row, query};
@@ -180,6 +180,68 @@ async fn given_one_archived_candidate_when_not_matching_bid_then_no_candidate(
         .change_context(TestError)?;
 
     assert!(result.is_empty());
+
+    Ok(())
+}
+
+#[sqlx::test(fixtures("three_asks_two_bids"))]
+async fn given_three_asks_and_two_bids_when_candidate_rejected_then_next_ask_matched(
+    pool: PgPool,
+) -> Result<(), Report<TestError>> {
+    let mut conn = pool.acquire().await.change_context(TestError)?;
+
+    let seller =
+        Uuid::parse_str("019b5f63-7b50-7188-8062-5f678bc9a409").change_context(TestError)?;
+
+    let buyer =
+        Uuid::parse_str("019b5f5f-2ad7-7c02-ab5e-f13d608ff85a").change_context(TestError)?;
+
+    let rejected_candidate =
+        Uuid::parse_str("019b5f61-181d-7afe-83c6-168d9bb5e69b").change_context(TestError)?;
+
+    reject_candidate(pool, buyer, rejected_candidate)
+        .await
+        .change_context(TestError)?;
+
+    /* Existing candidate is archived */
+
+    let result = query!("SELECT * FROM candidate_archive")
+        .fetch_all(&mut *conn)
+        .await
+        .change_context(TestError)?;
+
+    assert_eq!(result.len(), 1);
+
+    let archived_candidate = &result[0];
+
+    let matched_ask =
+        Uuid::parse_str("019b5f69-843b-7b58-9a62-d559fd3db43b").change_context(TestError)?;
+
+    let matched_bid =
+        Uuid::parse_str("019b5f60-61c3-707f-a3e9-1f25169fac8f").change_context(TestError)?;
+
+    assert_eq!(archived_candidate.ask, matched_ask);
+    assert_eq!(archived_candidate.bid, matched_bid);
+
+    /* New candidate */
+
+    let result = query!("SELECT * FROM candidate")
+        .fetch_all(&mut *conn)
+        .await
+        .change_context(TestError)?;
+
+    assert_eq!(result.len(), 1);
+
+    let new_candidate = &result[0];
+
+    let matched_ask =
+        Uuid::parse_str("019b5f69-843b-7b58-9a62-d559fd3db43b").change_context(TestError)?;
+
+    let matched_bid =
+        Uuid::parse_str("019b6589-57e2-77be-9e7d-c1257408074e").change_context(TestError)?;
+
+    assert_eq!(new_candidate.ask, matched_ask);
+    assert_eq!(new_candidate.bid, matched_bid);
 
     Ok(())
 }

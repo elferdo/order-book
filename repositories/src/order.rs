@@ -18,10 +18,11 @@ impl<'c> OrderRepository for Repository<'c> {
         /* asks that were already a candidate match for this bid */
 
         let mut qb = QueryBuilder::new(
-            "SELECT ask.id, ask.user, ask.price
-                    FROM ask
-                    LEFT JOIN candidate_archive
-                        ON candidate_archive.bid <> ",
+            "WITH already_matched AS (
+                   SELECT ask.id FROM ask
+                   LEFT JOIN candidate_archive
+                       ON candidate_archive.ask = ask.id
+                   WHERE candidate_archive.bid = ",
         );
 
         qb.push_bind(bid.get_id());
@@ -29,9 +30,17 @@ impl<'c> OrderRepository for Repository<'c> {
         /* asks that are not already bound to another candidate */
 
         qb.push(
-            " LEFT JOIN candidate
+            "),
+                  free_asks AS (
+                  SELECT ask.* FROM ask
+                  LEFT JOIN candidate
                       ON candidate.ask = ask.id
-                  WHERE candidate.bid IS NULL
+                  WHERE candidate.bid IS NULL)
+
+                  SELECT free_asks.* FROM free_asks
+                  LEFT JOIN already_matched
+                      ON already_matched.id = free_asks.id
+                  WHERE already_matched IS NULL
                   AND price <= ",
         );
 
@@ -39,16 +48,18 @@ impl<'c> OrderRepository for Repository<'c> {
 
         /* Don't match a user's own ask */
 
-        qb.push(" AND ask.user <> ");
+        qb.push(" AND free_asks.user <> ");
         qb.push_bind(bid.get_user_id());
+        qb.push(";");
 
-        match lock_mode {
-            LockMode::None => {}
-            LockMode::KeyShare => {
-                qb.push(" FOR KEY SHARE OF ask;");
-            }
-        };
-
+        /*
+                match lock_mode {
+                    LockMode::None => {}
+                    LockMode::KeyShare => {
+                        qb.push(" FOR KEY SHARE OF ask;");
+                    }
+                };
+        */
         let ask_rows = qb
             .build()
             .fetch_all(&mut *self.conn)
@@ -71,38 +82,48 @@ impl<'c> OrderRepository for Repository<'c> {
         /* bids that were already a candidate match for this ask */
 
         let mut qb = QueryBuilder::new(
-            "SELECT bid.id, bid.user, bid.price
-                    FROM bid
-                    LEFT JOIN candidate_archive
-                        ON candidate_archive.bid = bid.id",
+            "WITH already_matched AS (
+                   SELECT bid.id FROM bid
+                   LEFT JOIN candidate_archive
+                       ON candidate_archive.bid = bid.id
+                   WHERE candidate_archive.ask = ",
         );
+
+        qb.push_bind(ask.get_id());
 
         /* bids that are not already bound to another candidate */
 
         qb.push(
-            " LEFT JOIN candidate
+            "),
+                  free_bids AS (
+                  SELECT bid.* FROM bid
+                  LEFT JOIN candidate
                       ON candidate.bid = bid.id
-                  WHERE candidate.ask IS NULL
+                  WHERE candidate.ask IS NULL)
+
+                  SELECT free_bids.* FROM free_bids
+                  LEFT JOIN already_matched
+                      ON already_matched.id = free_bids.id
+                  WHERE already_matched IS NULL
                   AND price >= ",
         );
 
         qb.push_bind(ask.get_price());
 
-        qb.push(" AND candidate_archive.ask <> ");
-        qb.push_bind(ask.get_id());
-
         /* Don't match a user's own bid */
 
-        qb.push(" AND bid.user <> ");
+        qb.push(" AND free_bids.user <> ");
         qb.push_bind(ask.get_user_id());
+        qb.push(";");
 
-        match lock_mode {
-            LockMode::None => {}
-            LockMode::KeyShare => {
-                qb.push(" FOR KEY SHARE OF bid;");
-            }
-        };
-
+        /*
+                match lock_mode {
+                    LockMode::None => {}
+                    LockMode::KeyShare => {
+                        qb.push(" FOR KEY SHARE OF bid;");
+                    }
+                };
+        */
         let bid_rows = qb
             .build()
             .fetch_all(&mut *self.conn)

@@ -1,4 +1,4 @@
-use error_stack::{Report, ResultExt};
+use error_stack::{IntoReport, Report, ResultExt};
 use sqlx::Row;
 
 use model::repository_error::RepositoryError;
@@ -59,7 +59,7 @@ impl<'c> CandidateRepository for Repository<'c> {
             .change_context(RepositoryError::DatabaseError)?;
 
         if result.rows_affected() != 1 {
-            Err(Report::new(RepositoryError::UnexpectedResult))
+            Err(RepositoryError::UnexpectedResult.into_report())
         } else {
             Ok(())
         }

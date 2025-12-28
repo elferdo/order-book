@@ -118,7 +118,7 @@ pub async fn approve_candidate(
     Ok(Response {})
 }
 
-#[instrument(skip(pool))]
+#[instrument(err, skip(pool))]
 pub async fn reject_candidate(
     pool: PgPool,
     user_id: Uuid,
