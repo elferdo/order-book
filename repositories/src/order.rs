@@ -52,14 +52,6 @@ impl<'c> OrderRepository for Repository<'c> {
         qb.push_bind(bid.get_user_id());
         qb.push(";");
 
-        /*
-                match lock_mode {
-                    LockMode::None => {}
-                    LockMode::KeyShare => {
-                        qb.push(" FOR KEY SHARE OF ask;");
-                    }
-                };
-        */
         let ask_rows = qb
             .build()
             .fetch_all(&mut *self.conn)
@@ -116,14 +108,6 @@ impl<'c> OrderRepository for Repository<'c> {
         qb.push_bind(ask.get_user_id());
         qb.push(";");
 
-        /*
-                match lock_mode {
-                    LockMode::None => {}
-                    LockMode::KeyShare => {
-                        qb.push(" FOR KEY SHARE OF bid;");
-                    }
-                };
-        */
         let bid_rows = qb
             .build()
             .fetch_all(&mut *self.conn)

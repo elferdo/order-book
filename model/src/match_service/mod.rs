@@ -26,6 +26,8 @@ pub async fn generate_candidates_for_ask<R>(
 where
     R: OrderRepository + CandidateRepository,
 {
+    repository.lock_candidates().await?;
+
     let mut matching_orders: BTreeSet<_> = repository
         .find_bids_not_below(LockMode::KeyShare, ask)
         .await?
@@ -59,6 +61,8 @@ pub async fn generate_candidates_for_bid<R>(
 where
     R: OrderRepository + CandidateRepository,
 {
+    repository.lock_candidates().await?;
+
     let mut matching_orders: BTreeSet<_> = repository
         .find_asks_not_above(LockMode::KeyShare, bid)
         .await?
