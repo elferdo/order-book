@@ -8,6 +8,7 @@ use model::{lock_mode::LockMode, match_service::generate_candidates_for_bid};
 use repositories::Repository;
 use serde::Serialize;
 use sqlx::PgPool;
+use sqlx::query;
 use tracing::debug;
 use tracing::instrument;
 use uuid::{ContextV7, Timestamp, Uuid};
@@ -28,6 +29,11 @@ pub async fn new_bid(
         .await
         .change_context(BusinessError::DatabaseError)?;
 
+    query!("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;")
+        .execute(&mut *t)
+        .await
+        .unwrap();
+
     let mut repo = Repository::new(&mut t).await;
 
     let mut user = repo
@@ -43,6 +49,8 @@ pub async fn new_bid(
     repo.persist_user(&user)
         .await
         .change_context(BusinessError::UserPersistenceError)?;
+
+    tokio::time::sleep(Duration::from_secs(5)).await;
 
     generate_candidates_for_bid(timestamp, &mut repo, &bid)
         .await

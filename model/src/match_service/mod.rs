@@ -1,10 +1,9 @@
 #[cfg(test)]
 mod tests;
 
-use std::collections::BTreeSet;
-
 use error_stack::{Report, ResultExt};
-use tracing::{error, info, instrument};
+use std::collections::BTreeSet;
+use tracing::{debug, error, info, instrument};
 use uuid::Timestamp;
 
 use crate::{
@@ -26,13 +25,15 @@ pub async fn generate_candidates_for_ask<R>(
 where
     R: OrderRepository + CandidateRepository,
 {
-    repository.lock_candidates().await?;
+    info!("entering");
 
     let mut matching_orders: BTreeSet<_> = repository
         .find_bids_not_below(LockMode::KeyShare, ask)
         .await?
         .into_iter()
         .collect();
+
+    info!("collected matching orders");
 
     if matching_orders.is_empty() {
         return Ok(());
@@ -61,8 +62,6 @@ pub async fn generate_candidates_for_bid<R>(
 where
     R: OrderRepository + CandidateRepository,
 {
-    repository.lock_candidates().await?;
-
     let mut matching_orders: BTreeSet<_> = repository
         .find_asks_not_above(LockMode::KeyShare, bid)
         .await?

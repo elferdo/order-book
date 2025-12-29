@@ -6,6 +6,7 @@ use model::{lock_mode::LockMode, match_service::generate_candidates_for_ask};
 use repositories::Repository;
 use serde::Serialize;
 use sqlx::PgPool;
+use sqlx::query;
 use tracing::instrument;
 use uuid::{ContextV7, Timestamp, Uuid};
 
@@ -24,6 +25,11 @@ pub async fn new_ask(
         .begin()
         .await
         .change_context(BusinessError::DatabaseError)?;
+
+    query!("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;")
+        .execute(&mut *t)
+        .await
+        .unwrap();
 
     let mut repo = Repository::new(&mut t).await;
 

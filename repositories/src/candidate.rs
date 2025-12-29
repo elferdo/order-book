@@ -18,16 +18,6 @@ use tracing::instrument;
 use crate::Repository;
 
 impl<'c> CandidateRepository for Repository<'c> {
-    #[instrument(err, skip(self))]
-    async fn lock_candidates(&mut self) -> Result<(), Report<RepositoryError>> {
-        query!("LOCK TABLE candidate")
-            .execute(&mut *self.conn)
-            .await
-            .change_context(RepositoryError::DatabaseError)?;
-
-        Ok(())
-    }
-
     #[instrument(err, skip(self, iterator))]
     async fn persist_candidates<I>(&mut self, iterator: I) -> Result<(), Report<RepositoryError>>
     where
@@ -47,7 +37,10 @@ impl<'c> CandidateRepository for Repository<'c> {
                 .push_bind(*m.get_bid().get_id());
         });
 
-        let _ = qb.build().execute(&mut *self.conn).await;
+        qb.build()
+            .execute(&mut *self.conn)
+            .await
+            .change_context(RepositoryError::DatabaseError)?;
 
         Ok(())
     }

@@ -7,8 +7,6 @@ use crate::{
 };
 
 pub trait CandidateRepository {
-    fn lock_candidates(&mut self) -> impl Future<Output = Result<(), Report<RepositoryError>>>;
-
     fn find_candidate(
         &mut self,
         lock_mode: LockMode,
