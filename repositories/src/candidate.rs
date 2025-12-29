@@ -18,7 +18,7 @@ use tracing::instrument;
 use crate::Repository;
 
 impl<'c> CandidateRepository for Repository<'c> {
-    #[instrument(err, skip(self, iterator))]
+    #[instrument(err(Debug), skip(self, iterator))]
     async fn persist_candidates<I>(&mut self, iterator: I) -> Result<(), Report<RepositoryError>>
     where
         I: IntoIterator<Item = Candidate>,
@@ -45,7 +45,7 @@ impl<'c> CandidateRepository for Repository<'c> {
         Ok(())
     }
 
-    #[instrument(skip(self))]
+    #[instrument(err(Debug), skip(self))]
     async fn archive_candidate(
         &mut self,
         candidate: &Candidate,
@@ -68,7 +68,7 @@ impl<'c> CandidateRepository for Repository<'c> {
         }
     }
 
-    #[instrument(skip(self))]
+    #[instrument(err(Debug), skip(self))]
     async fn find_candidates_by_user(
         &mut self,
         user: &User,
@@ -97,6 +97,7 @@ COALESCE(approval.ask, FALSE) as approval_ask, COALESCE(approval.bid, FALSE) as 
         Ok(candidates)
     }
 
+    #[instrument(err(Debug), skip(self))]
     async fn persist_candidate(
         &mut self,
         candidate: &Candidate,
@@ -124,7 +125,7 @@ COALESCE(approval.ask, FALSE) as approval_ask, COALESCE(approval.bid, FALSE) as 
         Ok(())
     }
 
-    #[instrument(skip(self, lock_mode))]
+    #[instrument(err(Debug), skip(self, lock_mode))]
     async fn find_candidate(
         &mut self,
         lock_mode: LockMode,
@@ -159,6 +160,7 @@ COALESCE(approval.ask, FALSE) as approval_ask, COALESCE(approval.bid, FALSE) as 
         Ok(candidate)
     }
 
+    #[instrument(err(Debug), skip(self))]
     async fn remove_candidate(
         &mut self,
         candidate: &Candidate,

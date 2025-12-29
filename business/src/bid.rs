@@ -50,8 +50,6 @@ pub async fn new_bid(
         .await
         .change_context(BusinessError::UserPersistenceError)?;
 
-    tokio::time::sleep(Duration::from_secs(5)).await;
-
     generate_candidates_for_bid(timestamp, &mut repo, &bid)
         .await
         .change_context(BusinessError::MatchingError)?;
