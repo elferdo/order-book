@@ -13,6 +13,8 @@ use axum::{
 };
 use error_stack::Report;
 use error_stack::ResultExt;
+use opentelemetry::trace::TracerProvider;
+use opentelemetry_otlp::{Protocol, WithExportConfig};
 use thiserror::Error;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{EnvFilter, Registry};
@@ -32,10 +34,26 @@ enum AppError {
 
 #[tokio::main]
 async fn main() -> Result<(), Report<AppError>> {
+    let otlp_exporter = opentelemetry_otlp::SpanExporter::builder()
+        .with_http()
+        .with_protocol(Protocol::HttpBinary)
+        // .with_tonic()
+        .build()
+        .unwrap();
+
+    let provider = opentelemetry_sdk::trace::SdkTracerProvider::builder()
+        .with_batch_exporter(otlp_exporter)
+        .build();
+
+    let tracer = provider.tracer("reverse_market");
+
+    let telemetry_layer = tracing_opentelemetry::layer().with_tracer(tracer);
+
     Registry::default()
         .with(ErrorLayer::default())
         .with(EnvFilter::from_default_env())
         .with(fmt::layer().pretty())
+        .with(telemetry_layer)
         .init();
 
     let config = appconfig::config::read().change_context(AppError::Error)?;
