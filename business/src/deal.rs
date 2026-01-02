@@ -1,6 +1,5 @@
 use model::deal::Deal;
 use model::deal::repository::DealRepository;
-use model::lock_mode::LockMode;
 use model::user::repository::UserRepository;
 use repositories::Repository;
 use serde::Serialize;
@@ -46,7 +45,7 @@ pub async fn get_deals(pool: PgPool, user_id: Uuid) -> Result<Vec<DealSummary>, 
     let mut repo = Repository::new(&mut conn).await;
 
     let user = repo
-        .find_user(LockMode::KeyShare, &user_id)
+        .find_user(&user_id)
         .await
         .map_err(|_| BusinessError::UserNotFound)?;
 

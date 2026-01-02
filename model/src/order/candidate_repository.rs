@@ -1,15 +1,11 @@
 use error_stack::Report;
 use uuid::Uuid;
 
-use crate::{
-    lock_mode::LockMode, order::candidate::Candidate, repository_error::RepositoryError,
-    user::user::User,
-};
+use crate::{order::candidate::Candidate, repository_error::RepositoryError, user::user::User};
 
 pub trait CandidateRepository {
     fn find_candidate(
         &mut self,
-        lock_mode: LockMode,
         id: &Uuid,
     ) -> impl Future<Output = Result<Candidate, Report<RepositoryError>>>;
 

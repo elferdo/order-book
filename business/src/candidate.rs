@@ -1,10 +1,10 @@
 use error_stack::Report;
 use error_stack::ResultExt;
 use model::match_service::{self, generate_candidates_for_ask, generate_candidates_for_bid};
+use model::order::candidate::ApprovalResult;
 use model::order::candidate::Candidate;
 use model::order::candidate_repository::CandidateRepository;
 use model::user::repository::UserRepository;
-use model::{lock_mode::LockMode, order::candidate::ApprovalResult};
 use repositories::Repository;
 use serde::Serialize;
 use sqlx::PgPool;
@@ -53,7 +53,7 @@ pub async fn get_candidates(
     let mut repo = Repository::new(&mut conn).await;
 
     let user = repo
-        .find_user(LockMode::KeyShare, &user_id)
+        .find_user(&user_id)
         .await
         .change_context(BusinessError::UserNotFound)?;
 
@@ -85,12 +85,12 @@ pub async fn approve_candidate(
     let timestamp = Timestamp::now(context);
 
     let user = repo
-        .find_user(LockMode::KeyShare, &user_id)
+        .find_user(&user_id)
         .await
         .change_context(BusinessError::UserNotFound)?;
 
     let mut candidate = repo
-        .find_candidate(LockMode::KeyShare, &candidate_id)
+        .find_candidate(&candidate_id)
         .await
         .change_context(BusinessError::CandidateNotFound)?;
 
@@ -135,7 +135,7 @@ pub async fn reject_candidate(
     let timestamp = Timestamp::now(context);
 
     let candidate = repo
-        .find_candidate(LockMode::KeyShare, &candidate_id)
+        .find_candidate(&candidate_id)
         .await
         .map_err(|_| BusinessError::UserNotFound)?;
 

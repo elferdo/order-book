@@ -1,6 +1,6 @@
 use error_stack::{Report, ResultExt};
 use model::user::repository::UserRepository;
-use model::{lock_mode::LockMode, user::user::User};
+use model::user::user::User;
 use repositories::Repository;
 use serde::Serialize;
 use sqlx::PgPool;
@@ -45,7 +45,7 @@ pub async fn delete_user(pool: PgPool, id: Uuid) -> Result<Response, Report<Busi
     let mut repo = Repository::new(&mut a).await;
 
     let user = repo
-        .find_user(LockMode::None, &id)
+        .find_user(&id)
         .await
         .change_context(BusinessError::DatabaseError)?;
 

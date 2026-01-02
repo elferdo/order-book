@@ -2,7 +2,6 @@ use error_stack::Report;
 use uuid::{ContextV7, Timestamp, Uuid};
 
 use crate::{
-    lock_mode::LockMode,
     order::{
         ask::Ask, bid::Bid, candidate::Candidate, candidate_repository::CandidateRepository,
         repository::OrderRepository,
@@ -21,7 +20,6 @@ pub(super) struct RepositoryMock {
 impl OrderRepository for RepositoryMock {
     async fn find_asks_not_above(
         &mut self,
-        lock_mode: LockMode,
         bid: &Bid,
     ) -> std::result::Result<Vec<Ask>, Report<RepositoryError>> {
         let locked_asks: Vec<_> = self
@@ -43,7 +41,6 @@ impl OrderRepository for RepositoryMock {
 
     async fn find_bids_not_below(
         &mut self,
-        lock_mode: LockMode,
         ask: &Ask,
     ) -> std::result::Result<Vec<Bid>, Report<RepositoryError>> {
         let locked_bids: Vec<_> = self
@@ -75,7 +72,6 @@ impl OrderRepository for RepositoryMock {
 impl CandidateRepository for RepositoryMock {
     async fn find_candidate(
         &mut self,
-        lock_mode: LockMode,
         id: &uuid::Uuid,
     ) -> std::result::Result<Candidate, Report<RepositoryError>> {
         let result = self.candidates.iter().find(|&c| c.get_id() == id).cloned();

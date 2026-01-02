@@ -5,7 +5,6 @@ use axum::{
     Json,
     extract::{Path, State},
 };
-use error_stack::{IntoReport, ResultExt};
 use serde_json::{Value, json};
 use tracing::{debug, error, instrument};
 use uuid::Uuid;

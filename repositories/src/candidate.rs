@@ -1,9 +1,6 @@
 use error_stack::{IntoReport, Report, ResultExt};
-use sqlx::Row;
-
 use model::repository_error::RepositoryError;
 use model::{
-    lock_mode::LockMode,
     order::{
         ask::Ask,
         bid::Bid,
@@ -86,8 +83,8 @@ COALESCE(approval.ask, FALSE) as approval_ask, COALESCE(approval.bid, FALSE) as 
                 let ask = Ask::with(row.ask, *user.get_id(), row.ask_price);
                 let bid = Bid::with(row.bid, *user.get_id(), row.bid_price);
                 let approval = Approval {
-                    ask: row.approval_ask.expect("protected by coalesce in query"),
-                    bid: row.approval_bid.expect("protected by coalesce in query"),
+                    ask: row.approval_ask.unwrap_or(false),
+                    bid: row.approval_bid.unwrap_or(false),
                 };
 
                 Candidate::with(row.id, ask, bid, approval)
@@ -125,37 +122,26 @@ COALESCE(approval.ask, FALSE) as approval_ask, COALESCE(approval.bid, FALSE) as 
         Ok(())
     }
 
-    #[instrument(err(Debug), skip(self, lock_mode))]
+    #[instrument(err(Debug), skip(self,))]
     async fn find_candidate(
         &mut self,
-        lock_mode: LockMode,
         id: &uuid::Uuid,
     ) -> Result<Candidate, Report<RepositoryError>> {
-        let mut qb = QueryBuilder::new(
+        let result = query!(
             "SELECT candidate.id, candidate.ask, candidate.bid, ask.price as ask_price, ask.user as ask_user, bid.price as bid_price, bid.user as bid_user,
-COALESCE(approval.ask, FALSE) as approval_ask, COALESCE(approval.bid, FALSE) as approval_bid FROM candidate JOIN ask ON candidate.ask = ask.id JOIN bid ON candidate.bid = bid.id LEFT JOIN approval ON approval.candidate = candidate.id WHERE candidate.id = ",
-        );
+COALESCE(approval.ask, FALSE) as approval_ask, COALESCE(approval.bid, FALSE) as approval_bid FROM candidate JOIN ask ON candidate.ask = ask.id JOIN bid ON candidate.bid = bid.id LEFT JOIN approval ON approval.candidate = candidate.id WHERE candidate.id =
+$1", *id).fetch_one(&mut *self.conn).await;
 
-        qb.push_bind(*id);
-
-        match lock_mode {
-            LockMode::None => {}
-            LockMode::KeyShare => {
-                qb.push(" FOR KEY SHARE OF candidate;");
-            }
-        };
-
-        let result = qb.build().fetch_one(&mut *self.conn).await;
         let row = result.change_context(RepositoryError::UnexpectedResult)?;
 
-        let ask = Ask::with(row.get("ask"), row.get("ask_user"), row.get("ask_price"));
-        let bid = Bid::with(row.get("bid"), row.get("bid_user"), row.get("bid_price"));
+        let ask = Ask::with(row.ask, row.ask_user, row.ask_price);
+        let bid = Bid::with(row.bid, row.bid_user, row.bid_price);
         let approval = Approval {
-            ask: row.get("approval_ask"),
-            bid: row.get("approval_bid"),
+            ask: row.approval_ask.unwrap_or(false),
+            bid: row.approval_bid.unwrap_or(false),
         };
 
-        let candidate = Candidate::with(row.get("id"), ask, bid, approval);
+        let candidate = Candidate::with(row.id, ask, bid, approval);
 
         Ok(candidate)
     }

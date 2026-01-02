@@ -1,10 +1,7 @@
 use error_stack::{Report, ResultExt};
 use model::repository_error::RepositoryError;
-use model::{
-    lock_mode::LockMode,
-    user::{repository::UserRepository, user::User},
-};
-use sqlx::{QueryBuilder, Row, query};
+use model::user::{repository::UserRepository, user::User};
+use sqlx::query;
 use std::collections::HashMap;
 use tracing::instrument;
 use uuid::Uuid;
@@ -13,25 +10,13 @@ use crate::Repository;
 use crate::repository::{persist_asks, persist_bids};
 
 impl<'c> UserRepository for Repository<'c> {
-    #[instrument(err, skip(self, lock_mode))]
-    async fn find_user(
-        &mut self,
-        lock_mode: LockMode,
-        id: &Uuid,
-    ) -> Result<User, Report<RepositoryError>> {
-        let mut qb = QueryBuilder::new("SELECT * FROM public.user WHERE id = ");
-        qb.push_bind(id);
+    #[instrument(err, skip(self))]
+    async fn find_user(&mut self, id: &Uuid) -> Result<User, Report<RepositoryError>> {
+        let result = query!("SELECT * FROM public.user WHERE id = $1", id)
+            .fetch_one(&mut *self.conn)
+            .await;
 
-        match lock_mode {
-            LockMode::None => {}
-            LockMode::KeyShare => {
-                qb.push(" FOR KEY SHARE;");
-            }
-        };
-
-        let result = qb.build().fetch_one(&mut *self.conn).await;
-
-        let user = result.change_context(RepositoryError::RootEntityNotFound)?;
+        let user_id = result.change_context(RepositoryError::RootEntityNotFound)?;
 
         let asks: HashMap<_, _> = self
             .find_asks(id)
@@ -47,7 +32,7 @@ impl<'c> UserRepository for Repository<'c> {
             .map(|bid| (*bid.get_id(), bid))
             .collect();
 
-        Ok(User::with(user.get("id"), asks, bids))
+        Ok(User::with(user_id.id, asks, bids))
     }
 
     #[instrument(skip(self))]

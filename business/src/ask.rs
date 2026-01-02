@@ -1,8 +1,8 @@
 use crate::businesserror::BusinessError;
 use error_stack::Report;
 use error_stack::ResultExt;
+use model::match_service::generate_candidates_for_ask;
 use model::user::repository::UserRepository;
-use model::{lock_mode::LockMode, match_service::generate_candidates_for_ask};
 use repositories::Repository;
 use serde::Serialize;
 use sqlx::PgPool;
@@ -34,7 +34,7 @@ pub async fn new_ask(
     let mut repo = Repository::new(&mut t).await;
 
     let mut user = repo
-        .find_user(LockMode::KeyShare, &user_id)
+        .find_user(&user_id)
         .await
         .change_context(BusinessError::UserNotFound)?;
 
