@@ -26,7 +26,7 @@ pub async fn post_handler(
         .await
         .change_context(ApiError::DatabaseError)
     {
-        Ok(r) => "bien".to_string(),
+        Ok(_) => "bien".to_string(),
         Err(r) => r.to_string(),
     };
 

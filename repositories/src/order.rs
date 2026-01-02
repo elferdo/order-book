@@ -1,5 +1,4 @@
 use error_stack::{Report, ResultExt};
-use model::lock_mode::LockMode;
 use model::order::ask::Ask;
 use model::order::bid::Bid;
 use model::order::repository::OrderRepository;
@@ -12,7 +11,6 @@ use crate::Repository;
 impl<'c> OrderRepository for Repository<'c> {
     async fn find_asks_not_above(
         &mut self,
-        lock_mode: LockMode,
         bid: &Bid,
     ) -> Result<Vec<Ask>, Report<RepositoryError>> {
         /* asks that were already a candidate match for this bid */
@@ -68,7 +66,6 @@ impl<'c> OrderRepository for Repository<'c> {
 
     async fn find_bids_not_below(
         &mut self,
-        lock_mode: LockMode,
         ask: &Ask,
     ) -> Result<Vec<Bid>, Report<RepositoryError>> {
         /* bids that were already a candidate match for this ask */

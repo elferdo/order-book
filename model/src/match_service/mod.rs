@@ -8,7 +8,6 @@ use uuid::Timestamp;
 
 use crate::{
     deal::{Deal, repository::DealRepository},
-    lock_mode::LockMode,
     order::{
         ask::Ask, bid::Bid, candidate::Candidate, candidate_repository::CandidateRepository,
         repository::OrderRepository,
@@ -28,7 +27,7 @@ where
     info!("entering");
 
     let mut matching_orders: BTreeSet<_> = repository
-        .find_bids_not_below(LockMode::KeyShare, ask)
+        .find_bids_not_below(ask)
         .await?
         .into_iter()
         .collect();
@@ -63,7 +62,7 @@ where
     R: OrderRepository + CandidateRepository,
 {
     let mut matching_orders: BTreeSet<_> = repository
-        .find_asks_not_above(LockMode::KeyShare, bid)
+        .find_asks_not_above(bid)
         .await?
         .into_iter()
         .collect();

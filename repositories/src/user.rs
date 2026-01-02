@@ -10,6 +10,7 @@ use tracing::instrument;
 use uuid::Uuid;
 
 use crate::Repository;
+use crate::repository::{persist_asks, persist_bids};
 
 impl<'c> UserRepository for Repository<'c> {
     #[instrument(err, skip(self, lock_mode))]
@@ -62,8 +63,8 @@ impl<'c> UserRepository for Repository<'c> {
         let asks = user.asks();
         let bids = user.bids();
 
-        self.persist_asks(asks).await?;
-        self.persist_bids(bids).await?;
+        persist_asks(self, asks).await?;
+        persist_bids(self, bids).await?;
 
         Ok(())
     }

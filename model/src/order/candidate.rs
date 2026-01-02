@@ -2,7 +2,6 @@ use thiserror::Error;
 use uuid::{Timestamp, Uuid};
 
 use crate::order::{ask::Ask, bid::Bid};
-use crate::repository_error::RepositoryError;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Candidate {

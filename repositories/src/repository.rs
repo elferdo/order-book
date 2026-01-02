@@ -17,75 +17,6 @@ impl<'c> Repository<'c> {
         Self { conn }
     }
 
-    #[instrument(skip(self))]
-    pub async fn persist_asks<'a, T: Debug + Iterator<Item = &'a Ask>>(
-        &mut self,
-        asks: T,
-    ) -> Result<(), Report<RepositoryError>> {
-        let mut peekable = asks.peekable();
-
-        if peekable.peek().is_none() {
-            return Ok(());
-        }
-
-        let mut qb = QueryBuilder::new("INSERT INTO ask ");
-
-        qb.push_values(peekable, |mut b, ask| {
-            b.push_bind(*ask.get_id())
-                .push_bind(*ask.get_user_id())
-                .push_bind(ask.get_price());
-        });
-
-        qb.push(" ON CONFLICT DO NOTHING;");
-
-        let query = qb.build();
-        let result = query
-            .execute(&mut *self.conn)
-            .await
-            .change_context(RepositoryError::UnexpectedResult)?;
-
-        if result.rows_affected() < 1 {
-            Err(Report::new(RepositoryError::UnexpectedResult))
-        } else {
-            Ok(())
-        }
-    }
-
-    #[instrument(skip(self))]
-    pub async fn persist_bids<'b, T: Debug + Iterator<Item = &'b Bid>>(
-        &mut self,
-        bids: T,
-    ) -> Result<(), Report<RepositoryError>> {
-        let mut peekable = bids.peekable();
-
-        if peekable.peek().is_none() {
-            return Ok(());
-        }
-
-        let mut qb = QueryBuilder::new("INSERT INTO bid ");
-
-        qb.push_values(peekable, |mut b, bid| {
-            b.push_bind(*bid.get_id())
-                .push_bind(*bid.get_user_id())
-                .push_bind(bid.get_price());
-        });
-
-        qb.push(" ON CONFLICT DO NOTHING;");
-
-        let query = qb.build();
-
-        let result = query
-            .execute(&mut *self.conn)
-            .await
-            .change_context(RepositoryError::UnexpectedResult)?;
-
-        if result.rows_affected() < 1 {
-            Err(Report::new(RepositoryError::UnexpectedResult))
-        } else {
-            Ok(())
-        }
-    }
-
     pub async fn find_asks(&mut self, user_id: &Uuid) -> Result<Vec<Ask>, Report<RepositoryError>> {
         let ask_rows = query!("SELECT * FROM ask WHERE user = $1", user_id.to_string())
             .fetch_all(&mut *self.conn)
@@ -112,5 +43,74 @@ impl<'c> Repository<'c> {
             .collect();
 
         Ok(bids)
+    }
+}
+
+#[instrument(skip(repo))]
+pub async fn persist_asks<'a, 'c, T: Debug + Iterator<Item = &'a Ask>>(
+    repo: &mut Repository<'c>,
+    asks: T,
+) -> Result<(), Report<RepositoryError>> {
+    let mut peekable = asks.peekable();
+
+    if peekable.peek().is_none() {
+        return Ok(());
+    }
+
+    let mut qb = QueryBuilder::new("INSERT INTO ask ");
+
+    qb.push_values(peekable, |mut b, ask| {
+        b.push_bind(*ask.get_id())
+            .push_bind(*ask.get_user_id())
+            .push_bind(ask.get_price());
+    });
+
+    qb.push(" ON CONFLICT DO NOTHING;");
+
+    let query = qb.build();
+    let result = query
+        .execute(&mut *repo.conn)
+        .await
+        .change_context(RepositoryError::UnexpectedResult)?;
+
+    if result.rows_affected() < 1 {
+        Err(Report::new(RepositoryError::UnexpectedResult))
+    } else {
+        Ok(())
+    }
+}
+
+#[instrument(skip(repo))]
+pub async fn persist_bids<'b, 'c, T: Debug + Iterator<Item = &'b Bid>>(
+    repo: &mut Repository<'c>,
+    bids: T,
+) -> Result<(), Report<RepositoryError>> {
+    let mut peekable = bids.peekable();
+
+    if peekable.peek().is_none() {
+        return Ok(());
+    }
+
+    let mut qb = QueryBuilder::new("INSERT INTO bid ");
+
+    qb.push_values(peekable, |mut b, bid| {
+        b.push_bind(*bid.get_id())
+            .push_bind(*bid.get_user_id())
+            .push_bind(bid.get_price());
+    });
+
+    qb.push(" ON CONFLICT DO NOTHING;");
+
+    let query = qb.build();
+
+    let result = query
+        .execute(&mut *repo.conn)
+        .await
+        .change_context(RepositoryError::UnexpectedResult)?;
+
+    if result.rows_affected() < 1 {
+        Err(Report::new(RepositoryError::UnexpectedResult))
+    } else {
+        Ok(())
     }
 }
