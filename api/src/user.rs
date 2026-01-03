@@ -13,11 +13,11 @@ use crate::apierror::ApiError;
 #[instrument(skip(state))]
 pub async fn post_handler(State(state): State<AppState>) -> Result<Json<Value>, ApiError> {
     let result = match business::user::new_user(state.pool).await {
-        Ok(_) => "bien".to_string(),
-        Err(r) => r.to_string(),
+        Ok(r) => json!(r),
+        Err(r) => json!(r.to_string()),
     };
 
-    Ok(Json::from(json!(result)))
+    Ok(Json::from(result))
 }
 
 #[instrument(skip(state))]
