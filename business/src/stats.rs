@@ -7,10 +7,17 @@ use tracing::instrument;
 use crate::businesserror::BusinessError;
 
 #[derive(Serialize)]
-pub struct Response {}
+pub struct SellResponse {
+    sell_price: f32,
+}
+
+#[derive(Serialize)]
+pub struct BuyResponse {
+    buy_price: f32,
+}
 
 #[instrument(skip(pool))]
-pub async fn get_buy_price(pool: PgPool) -> Result<Response, BusinessError> {
+pub async fn get_buy_price(pool: PgPool) -> Result<BuyResponse, BusinessError> {
     let mut conn = pool
         .acquire()
         .await
@@ -18,16 +25,16 @@ pub async fn get_buy_price(pool: PgPool) -> Result<Response, BusinessError> {
 
     let mut repo = Repository::new(&mut conn).await;
 
-    let _buy_price = repo
+    let buy_price = repo
         .buy_price()
         .await
         .map_err(|_| BusinessError::UserNotFound)?;
 
-    Ok(Response {})
+    Ok(BuyResponse { buy_price })
 }
 
 #[instrument(skip(pool))]
-pub async fn get_sell_price(pool: PgPool) -> Result<Response, BusinessError> {
+pub async fn get_sell_price(pool: PgPool) -> Result<SellResponse, BusinessError> {
     let mut conn = pool
         .acquire()
         .await
@@ -35,10 +42,10 @@ pub async fn get_sell_price(pool: PgPool) -> Result<Response, BusinessError> {
 
     let mut repo = Repository::new(&mut conn).await;
 
-    let _sell_price = repo
+    let sell_price = repo
         .sell_price()
         .await
         .map_err(|_| BusinessError::UserNotFound)?;
 
-    Ok(Response {})
+    Ok(SellResponse { sell_price })
 }
