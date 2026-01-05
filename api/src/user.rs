@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::apierror::ApiError;
 
 #[instrument(skip(state))]
-pub async fn post_handler(State(state): State<AppState>) -> Result<Json<Value>, ApiError> {
+pub async fn create_user(State(state): State<AppState>) -> Result<Json<Value>, ApiError> {
     let result = match business::user::new_user(state.pool).await {
         Ok(r) => json!(r),
         Err(r) => json!(r.to_string()),
@@ -22,7 +22,7 @@ pub async fn post_handler(State(state): State<AppState>) -> Result<Json<Value>, 
 
 #[instrument(skip(state))]
 #[axum::debug_handler]
-pub async fn delete_handler(
+pub async fn delete_user(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Value>, ApiError> {

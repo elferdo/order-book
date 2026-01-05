@@ -52,7 +52,7 @@ async fn main() -> Result<(), Report<AppError>> {
     Registry::default()
         .with(ErrorLayer::default())
         .with(EnvFilter::from_default_env())
-        .with(fmt::layer().pretty())
+        //.with(fmt::layer().pretty())
         .with(telemetry_layer)
         .init();
 
@@ -62,12 +62,12 @@ async fn main() -> Result<(), Report<AppError>> {
         .change_context(AppError::Error)?;
 
     let app = Router::new()
-        .route("/user", post(user::post_handler))
-        .route("/user/{id}", delete(user::delete_handler))
-        .route("/user/{id}/bid", post(bid::post_handler))
-        .route("/user/{id}/ask", post(ask::post_handler))
-        .route("/user/{id}/candidate", get(candidate::get_handler))
-        .route("/user/{id}/deal", get(deal::get_handler))
+        .route("/user", post(user::create_user))
+        .route("/user/{id}", delete(user::delete_user))
+        .route("/user/{id}/bid", post(bid::create_bid))
+        .route("/user/{id}/ask", post(ask::create_ask))
+        .route("/user/{id}/candidate", get(candidate::get_candidate))
+        .route("/user/{id}/deal", get(deal::get_deal))
         .route(
             "/user/{user_id}/candidate/{candidate_id}/approve",
             post(candidate::approve_post_handler),

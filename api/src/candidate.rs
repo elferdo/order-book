@@ -10,7 +10,7 @@ use tracing::{debug, error, instrument};
 use uuid::Uuid;
 
 #[instrument(err, skip(state))]
-pub async fn get_handler(
+pub async fn get_candidate(
     State(state): State<AppState>,
     Path(user_id): Path<Uuid>,
 ) -> Result<Json<Value>, ApiError> {

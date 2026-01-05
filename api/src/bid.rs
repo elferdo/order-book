@@ -17,7 +17,7 @@ pub struct BidRequest {
 }
 
 #[instrument(skip(state))]
-pub async fn post_handler(
+pub async fn create_bid(
     State(state): State<AppState>,
     Path(user_id): Path<Uuid>,
     Json(body): Json<BidRequest>,
