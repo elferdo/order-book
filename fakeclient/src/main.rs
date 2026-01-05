@@ -42,51 +42,9 @@ async fn post_orders(user_id: &Uuid) -> Result<()> {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // tracing_subscriber::fmt().pretty().init();
-    tracing_subscriber::fmt().json().init();
-    // let j = json!("{}");
+    tracing_subscriber::fmt().json().flatten_event(true).init();
+
     let client = reqwest::Client::new();
-
-    // let result = c.post(u).body(j.to_string()).send().await?;
-    // let t = result.text().await?;
-    // let user: User = serde_json::from_str(&t)?;
-    // let user_id = Arc::new(user.id);
-
-    /*
-        let u = Url::parse("http://localhost:5000/user/019b079b-941f-7343-b80a-21acb0cda274/ask")?;
-
-        let data = json!({"price": 1200.0});
-
-        let result = client.post(u.clone()).json(&data).send().await?;
-        let result = client.post(u).json(&data).send().await?;
-
-
-        let c = client.clone();
-
-        let handle = tokio::spawn(async move {
-            let u = Url::parse("http://localhost:5000/user/019b07a2-6cd5-7ad0-93db-53c19101ecf3/bid")
-                .unwrap();
-
-            let data = json!({"price": 1200.0});
-
-            let result = c.post(u).json(&data).send().await.unwrap();
-        });
-
-        handles.push(handle);
-
-        let c = client.clone();
-
-        let handle = tokio::spawn(async move {
-            let u = Url::parse("http://localhost:5000/user/019b07a2-76b2-76a0-a45c-b22f5fa485ab/bid")
-                .unwrap();
-
-            let data = json!({"price": 1200.0});
-
-            let result = c.post(u).json(&data).send().await.unwrap();
-        });
-
-        handles.push(handle);
-    */
 
     let mut handles = Vec::new();
 

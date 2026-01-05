@@ -26,6 +26,12 @@ pub enum AgentError {
 
     #[error("agent error")]
     Error,
+
+    #[error("url error")]
+    UrlError,
+
+    #[error("parse error")]
+    ParseError,
 }
 
 #[derive(Deserialize)]
@@ -56,6 +62,7 @@ impl Distribution<AgentAction> for AgentActionDist {
     }
 }
 
+#[instrument(err(Debug))]
 async fn post_new_user() -> Result<Uuid, Report<AgentError>> {
     let c = reqwest::ClientBuilder::new()
         .connect_timeout(Duration::from_secs(30))
@@ -64,7 +71,7 @@ async fn post_new_user() -> Result<Uuid, Report<AgentError>> {
         .change_context(AgentError::NetworkError)?;
 
     let u = Url::parse(&format!("http://127.0.0.1:5000/user").to_string())
-        .change_context(AgentError::NetworkError)?;
+        .change_context(AgentError::UrlError)?;
 
     let response: UserResponse = c
         .post(u)
@@ -73,7 +80,7 @@ async fn post_new_user() -> Result<Uuid, Report<AgentError>> {
         .change_context(AgentError::NetworkError)?
         .json()
         .await
-        .change_context(AgentError::NetworkError)?;
+        .change_context(AgentError::ParseError)?;
 
     Ok(response.id)
 }
@@ -90,7 +97,7 @@ impl Agent {
         })
     }
 
-    #[instrument(skip(self))]
+    #[instrument(err, skip(self))]
     pub async fn run(&mut self) -> Result<(), Report<AgentError>> {
         while *self.should_run {
             tokio::time::sleep(Duration::from_secs(3)).await;
@@ -106,7 +113,7 @@ impl Agent {
         Ok(())
     }
 
-    #[instrument(skip(self))]
+    #[instrument(err(Debug), skip(self))]
     async fn buy(&mut self) -> Result<(), Report<AgentError>> {
         let c = build_client().await?;
 
@@ -116,21 +123,21 @@ impl Agent {
         let bid = json!({"price": price});
 
         let u = Url::parse(&format!("http://127.0.0.1:5000/user/{}/bid", self.id).to_string())
-            .change_context(AgentError::NetworkError)?;
+            .change_context(AgentError::UrlError)?;
 
         let response = c
             .post(u)
             .json(&bid)
             .send()
             .await
-            .change_context(AgentError::NetworkError)?;
+            .change_context(AgentError::ParseError)?;
 
         info!(user = self.id.to_string(), price = price);
 
         Ok(())
     }
 
-    #[instrument(skip(self))]
+    #[instrument(err(Debug), skip(self))]
     async fn sell(&mut self) -> Result<(), Report<AgentError>> {
         let c = build_client().await?;
 
@@ -147,14 +154,14 @@ impl Agent {
             .json(&ask)
             .send()
             .await
-            .change_context(AgentError::NetworkError)?;
+            .change_context(AgentError::ParseError)?;
 
         info!(user = self.id.to_string(), price = price);
 
         Ok(())
     }
 
-    #[instrument(skip(self))]
+    #[instrument(err(Debug), skip(self))]
     async fn approve(&mut self) -> Result<(), Report<AgentError>> {
         info!("approve");
 
@@ -162,14 +169,35 @@ impl Agent {
 
         let u =
             Url::parse(&format!("http://127.0.0.1:5000/user/{}/candidate", self.id).to_string())
-                .change_context(AgentError::NetworkError)?;
+                .change_context(AgentError::UrlError)?;
 
         let response: Vec<Candidate> = c
-            .post(u)
+            .get(u)
             .send()
             .await
             .change_context(AgentError::NetworkError)?
             .json()
+            .await
+            .change_context(AgentError::ParseError)
+            .attach(self.id)?;
+
+        if response.is_empty() {
+            return Ok(());
+        }
+
+        let candidate_id = response[0].id;
+
+        let u = Url::parse(
+            &format!(
+                "http://127.0.0.1:5000/user/{}/candidate/{}/approve",
+                self.id, candidate_id
+            )
+            .to_string(),
+        )
+        .change_context(AgentError::UrlError)?;
+
+        c.post(u)
+            .send()
             .await
             .change_context(AgentError::NetworkError)?;
 
@@ -178,20 +206,40 @@ impl Agent {
         Ok(())
     }
 
-    #[instrument(skip(self))]
+    #[instrument(err(Debug), skip(self))]
     async fn reject(&mut self) -> Result<(), Report<AgentError>> {
         let c = build_client().await?;
 
         let u =
             Url::parse(&format!("http://127.0.0.1:5000/user/{}/candidate", self.id).to_string())
-                .change_context(AgentError::NetworkError)?;
+                .change_context(AgentError::UrlError)?;
 
         let response: Vec<Candidate> = c
-            .post(u)
+            .get(u)
             .send()
             .await
             .change_context(AgentError::NetworkError)?
             .json()
+            .await
+            .change_context(AgentError::ParseError)?;
+
+        if response.is_empty() {
+            return Ok(());
+        }
+
+        let candidate_id = response[0].id;
+
+        let u = Url::parse(
+            &format!(
+                "http://127.0.0.1:5000/user/{}/candidate/{}/reject",
+                self.id, candidate_id
+            )
+            .to_string(),
+        )
+        .change_context(AgentError::NetworkError)?;
+
+        c.post(u)
+            .send()
             .await
             .change_context(AgentError::NetworkError)?;
 
@@ -209,7 +257,8 @@ async fn build_client() -> Result<Client, Report<AgentError>> {
 
 #[derive(Deserialize, Serialize)]
 struct Candidate {
-    buyer: Uuid,
-    seller: Uuid,
+    ask: Uuid,
+    bid: Uuid,
+    id: Uuid,
     price: f32,
 }
