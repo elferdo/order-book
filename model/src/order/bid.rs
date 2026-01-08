@@ -42,11 +42,11 @@ impl Bid {
 
 impl PartialOrd for Bid {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        if self.get_price() < other.get_price() {
+        if self.get_price() > other.get_price() {
             Some(Ordering::Less)
         } else if self.get_price() == other.get_price() {
             Some(Ordering::Equal)
-        } else if self.get_price() > other.get_price() {
+        } else if self.get_price() < other.get_price() {
             Some(Ordering::Greater)
         } else {
             None

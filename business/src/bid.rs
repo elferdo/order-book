@@ -27,11 +27,6 @@ pub async fn new_bid(
         .await
         .change_context(BusinessError::DatabaseError)?;
 
-    query!("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;")
-        .execute(&mut *t)
-        .await
-        .unwrap();
-
     let mut repo = Repository::new(&mut t).await;
 
     let mut user = repo
@@ -47,6 +42,22 @@ pub async fn new_bid(
     repo.persist_user(&user)
         .await
         .change_context(BusinessError::UserPersistenceError)?;
+
+    t.commit()
+        .await
+        .change_context(BusinessError::DatabaseError)?;
+
+    let mut t = pool
+        .begin()
+        .await
+        .change_context(BusinessError::DatabaseError)?;
+
+    query!("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;")
+        .execute(&mut *t)
+        .await
+        .unwrap();
+
+    let mut repo = Repository::new(&mut t).await;
 
     generate_candidates_for_bid(timestamp, &mut repo, &bid)
         .await
