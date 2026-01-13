@@ -3,14 +3,18 @@ use rstest::rstest;
 use thiserror::Error;
 use tracing::{info, instrument};
 
+use crate::market::Market;
+
 #[rstest]
 #[instrument(err)]
 fn hola() -> Result<(), Report<TestError>> {
-    info!("hola");
+    let market = Market::new();
 
-    // assert!(false);
+    let sell_price = market.sell_price();
 
-    Err(TestError {}.into_report())
+    assert!(sell_price.is_none());
+
+    Ok(())
 }
 
 #[derive(Debug, Error)]

@@ -5,10 +5,17 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.100"
+cucumber = { version = "0.22.1", features = ["output-json", "tracing"] }
 error-stack = "0.6.0"
 rstest = "0.26.1"
+rust_decimal = "1.39.0"
+rusty-money = "0.4.2"
 sqlx = "0.8.6"
 thiserror = "2.0.17"
 tokio = { version = "1.48.0", features = ["macros", "rt-multi-thread"] }
 tracing = "0.1.43"
 uuid = { version = "1.19.0", features = ["v7"] }
+
+[[test]]
+name = "market"
+harness = false
