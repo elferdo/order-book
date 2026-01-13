@@ -1,8 +1,10 @@
 use cucumber::World as _;
 
-use crate::spec::MarketWorld;
+use crate::market_world::MarketWorld;
 
-mod spec;
+mod ask_spec;
+mod bid_spec;
+mod market_world;
 
 #[tokio::main]
 async fn main() {
