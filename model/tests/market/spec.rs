@@ -13,6 +13,7 @@ use uuid::{ContextV7, Timestamp, Uuid};
 pub struct MarketWorld {
     market: Market,
     sellers: HashMap<String, Uuid>,
+    buyers: HashMap<String, Uuid>,
 }
 
 #[derive(Debug, Error)]
@@ -29,6 +30,16 @@ fn add_seller(world: &mut MarketWorld, user: String) {
     world.sellers.insert(user, id);
 }
 
+#[given(expr = "a buyer named {word}")]
+fn add_buyer(world: &mut MarketWorld, user: String) {
+    let context = ContextV7::new();
+    let timestamp = Timestamp::now(context);
+
+    let id = Uuid::new_v7(timestamp);
+
+    world.buyers.insert(user, id);
+}
+
 #[given("an empty market")]
 fn empty_market(_: &mut MarketWorld) {}
 
@@ -39,10 +50,25 @@ fn send_ask_order(world: &mut MarketWorld, user: String, price: f32) {
     world.market.ask(user_id, price);
 }
 
+#[when(expr = "{word} sends a bid order not above {float}")]
+fn send_bid_order(world: &mut MarketWorld, user: String, price: f32) {
+    let user_id = world.buyers.get(&user).unwrap();
+
+    world.market.bid(user_id, price);
+}
+
 #[then(regex = r"^the market has (\d) ask orders?$")]
 #[instrument(err)]
 fn one_ask_order(world: &mut MarketWorld, num_orders: usize) -> Result<(), Report<TestError>> {
     assert_eq!(world.market.number_of_asks(), num_orders);
+
+    Ok(())
+}
+
+#[then(regex = r"^the market has (\d) bid orders?$")]
+#[instrument(err)]
+fn one_bid_order(world: &mut MarketWorld, num_orders: usize) -> Result<(), Report<TestError>> {
+    assert_eq!(world.market.number_of_bids(), num_orders);
 
     Ok(())
 }
@@ -52,4 +78,11 @@ fn sell_price_equals(world: &mut MarketWorld, price: f32) {
     let target = Money::from_decimal(Decimal::from_f32(price).unwrap(), iso::EUR);
 
     assert_eq!(world.market.sell_price().unwrap(), target);
+}
+
+#[then(expr = "buy price equals {float}")]
+fn buy_price_equals(world: &mut MarketWorld, price: f32) {
+    let target = Money::from_decimal(Decimal::from_f32(price).unwrap(), iso::EUR);
+
+    assert_eq!(world.market.buy_price().unwrap(), target);
 }

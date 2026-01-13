@@ -10,4 +10,8 @@ async fn main() {
         .init_tracing()
         .run("tests/features/ask.feature")
         .await;
+
+    MarketWorld::cucumber()
+        .run("tests/features/bid.feature")
+        .await;
 }
