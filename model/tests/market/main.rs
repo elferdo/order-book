@@ -1,9 +1,9 @@
 use cucumber::{
-    Event, World as _,
+    World as _,
     event::ScenarioFinished,
     gherkin::{Feature, Rule, Scenario},
 };
-use sqlx::{PgPool, Postgres, QueryBuilder};
+use sqlx::{PgPool, QueryBuilder};
 use testcontainers_modules::testcontainers::runners::AsyncRunner;
 
 use crate::market_world::MarketWorld;
@@ -15,15 +15,12 @@ mod match_making;
 
 async fn setup(
     connection_string_base: String,
+    pool: PgPool,
     _feature: &Feature,
     _rule: Option<&Rule>,
     _scenario: &Scenario,
     world: &mut MarketWorld,
 ) {
-    let connection_string = format!("{connection_string_base}/postgres");
-
-    let pool = PgPool::connect(&connection_string).await.unwrap();
-
     let _ = QueryBuilder::new("CREATE DATABASE TEST;")
         .build()
         .execute(&pool)
@@ -37,18 +34,12 @@ async fn setup(
 }
 
 async fn teardown(
-    connection_string_base: String,
     _feature: &Feature,
     _rule: Option<&Rule>,
     _scenario: &Scenario,
     _ev: &ScenarioFinished,
     _world: Option<&mut MarketWorld>,
 ) {
-    /*
-        let connection_string = format!("{connection_string_base}/postgres");
-
-        let pool = PgPool::connect(&connection_string).await.unwrap();
-    */
     let pool = _world.unwrap().pool.as_ref().unwrap();
 
     let _ = QueryBuilder::new("DROP DATABASE TEST;")
@@ -69,37 +60,37 @@ async fn main() {
         container.get_host_port_ipv4(5432).await.unwrap()
     );
 
-    let connection_string_base2 = format!(
-        "postgres://postgres:postgres@127.0.0.1:{}",
-        container.get_host_port_ipv4(5432).await.unwrap()
-    );
+    let connection_string = format!("{connection_string_base}/postgres");
 
-    MarketWorld::cucumber()
-        .before(move |f, r, s, w| Box::pin(setup(connection_string_base.clone(), f, r, s, w)))
-        .after(move |f, r, s, ev, w| {
-            Box::pin(teardown(connection_string_base2.clone(), f, r, s, ev, w))
-        })
-        .init_tracing()
-        .run("tests/features/ask.feature")
-        .await;
+    let pool = PgPool::connect(&connection_string).await.unwrap();
 
-    let connection_string_base = format!(
-        "postgres://postgres:postgres@127.0.0.1:{}",
-        container.get_host_port_ipv4(5432).await.unwrap()
-    );
+    let features = vec![
+        "tests/features/ask.feature",
+        "tests/features/ask.feature",
+        "tests/features/ask.feature",
+    ];
 
-    MarketWorld::cucumber()
-        .before(move |f, r, s, w| Box::pin(setup(connection_string_base.clone(), f, r, s, w)))
-        .run("tests/features/bid.feature")
-        .await;
+    for feature in features {
+        let connection_string_base_before = format!(
+            "postgres://postgres:postgres@127.0.0.1:{}",
+            container.get_host_port_ipv4(5432).await.unwrap()
+        );
 
-    let connection_string_base = format!(
-        "postgres://postgres:postgres@127.0.0.1:{}",
-        container.get_host_port_ipv4(5432).await.unwrap()
-    );
+        let pool = pool.clone();
 
-    MarketWorld::cucumber()
-        .before(move |f, r, s, w| Box::pin(setup(connection_string_base.clone(), f, r, s, w)))
-        .run("tests/features/match_making.feature")
-        .await;
+        MarketWorld::cucumber()
+            .before(move |f, r, s, w| {
+                Box::pin(setup(
+                    connection_string_base_before.clone(),
+                    pool.clone(),
+                    f,
+                    r,
+                    s,
+                    w,
+                ))
+            })
+            .after(move |f, r, s, ev, w| Box::pin(teardown(f, r, s, ev, w)))
+            .run(feature)
+            .await;
+    }
 }
