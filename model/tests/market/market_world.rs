@@ -20,6 +20,7 @@ fn add_seller(world: &mut MarketWorld, user: String) {
 
     world.sellers.insert(user, id);
 }
+
 #[given(expr = "a buyer named {word}")]
 fn add_buyer(world: &mut MarketWorld, user: String) {
     let context = ContextV7::new();

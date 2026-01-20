@@ -19,4 +19,4 @@ fn hola() -> Result<(), Report<TestError>> {
 
 #[derive(Debug, Error)]
 #[error("error in test")]
-struct TestError;
+pub struct TestError;

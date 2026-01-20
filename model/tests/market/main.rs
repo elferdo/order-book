@@ -5,6 +5,7 @@ use crate::market_world::MarketWorld;
 mod ask_spec;
 mod bid_spec;
 mod market_world;
+mod match_making;
 
 #[tokio::main]
 async fn main() {
@@ -15,5 +16,9 @@ async fn main() {
 
     MarketWorld::cucumber()
         .run("tests/features/bid.feature")
+        .await;
+
+    MarketWorld::cucumber()
+        .run("tests/features/match_making.feature")
         .await;
 }
