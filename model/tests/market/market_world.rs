@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use cucumber::{World, given};
 use model::market::Market;
+use sqlx::PgPool;
 use uuid::{ContextV7, Timestamp, Uuid};
 
 #[derive(World, Debug, Default)]
@@ -9,6 +10,7 @@ pub struct MarketWorld {
     pub market: Market,
     pub sellers: HashMap<String, Uuid>,
     pub buyers: HashMap<String, Uuid>,
+    pub pool: Option<PgPool>,
 }
 
 #[given(expr = "a seller named {word}")]
