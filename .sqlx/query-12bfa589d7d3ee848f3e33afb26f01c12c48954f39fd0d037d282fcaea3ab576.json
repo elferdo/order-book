@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO ask VALUES ($1, $2, $3);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Float4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "12bfa589d7d3ee848f3e33afb26f01c12c48954f39fd0d037d282fcaea3ab576"
+}

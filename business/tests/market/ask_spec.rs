@@ -1,9 +1,11 @@
 use cucumber::{then, when};
-use error_stack::Report;
+use error_stack::{Report, ResultExt};
 use rust_decimal::{Decimal, prelude::FromPrimitive};
 use rusty_money::{Money, iso};
+use sqlx::query;
 use thiserror::Error;
 use tracing::instrument;
+use uuid::{ContextV7, Timestamp, Uuid};
 
 use crate::market_world::MarketWorld;
 
@@ -12,14 +14,37 @@ use crate::market_world::MarketWorld;
 struct TestError;
 
 #[when(expr = "{word} sends an ask order not below {float}")]
-fn send_ask_order(world: &mut MarketWorld, user: String, price: f32) {
+#[instrument(err(Debug))]
+async fn send_ask_order(
+    world: &mut MarketWorld,
+    user: String,
+    price: f32,
+) -> Result<(), Report<TestError>> {
     let user_id = world.sellers.get(&user).unwrap();
 
-    world.market.ask(user_id, price);
+    let context = ContextV7::new();
+    let timestamp = Timestamp::now(context);
+
+    let id = Uuid::new_v7(timestamp);
+
+    let mut t = world
+        .pool
+        .as_ref()
+        .unwrap()
+        .acquire()
+        .await
+        .change_context(TestError {})?;
+
+    query!("INSERT INTO ask VALUES ($1, $2, $3);", id, user_id, price)
+        .execute(&mut *t)
+        .await
+        .change_context(TestError {})?;
+
+    Ok(())
 }
 
 #[then(regex = r"^the market has (\d) ask orders?$")]
-#[instrument(err)]
+#[instrument(err(Debug))]
 fn one_ask_order(world: &mut MarketWorld, num_orders: usize) -> Result<(), Report<TestError>> {
     assert_eq!(world.market.number_of_asks(), num_orders);
 

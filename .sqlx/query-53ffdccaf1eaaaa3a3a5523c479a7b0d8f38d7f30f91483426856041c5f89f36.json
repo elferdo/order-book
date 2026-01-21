@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM approval WHERE candidate = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "53ffdccaf1eaaaa3a3a5523c479a7b0d8f38d7f30f91483426856041c5f89f36"
+}
