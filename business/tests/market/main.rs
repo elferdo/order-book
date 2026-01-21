@@ -3,8 +3,13 @@ use cucumber::{
     event::ScenarioFinished,
     gherkin::{Feature, Rule, Scenario},
 };
-use sqlx::{PgPool, QueryBuilder};
-use testcontainers_modules::testcontainers::runners::AsyncRunner;
+use error_stack::{IntoReport, Report, ResultExt};
+use sqlx::{PgPool, QueryBuilder, query};
+use testcontainers_modules::testcontainers::{ImageExt, runners::AsyncRunner};
+use thiserror::Error;
+use tracing::{error, instrument};
+use tracing_error::ErrorLayer;
+use tracing_subscriber::{EnvFilter, Registry, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::market_world::MarketWorld;
 
@@ -13,6 +18,11 @@ mod bid_spec;
 mod market_world;
 mod match_making;
 
+#[derive(Error, Debug)]
+#[error("error running test")]
+struct TestError;
+
+#[instrument(err(Debug))]
 async fn setup(
     connection_string_base: String,
     pool: PgPool,
@@ -20,7 +30,7 @@ async fn setup(
     _rule: Option<&Rule>,
     _scenario: &Scenario,
     world: &mut MarketWorld,
-) {
+) -> Result<(), Report<TestError>> {
     let _ = QueryBuilder::new("CREATE DATABASE TEST;")
         .build()
         .execute(&pool)
@@ -30,7 +40,39 @@ async fn setup(
 
     let pool = PgPool::connect(&connection_string).await.unwrap();
 
+    let mut t = pool.acquire().await.change_context(TestError)?;
+
+    sqlx::migrate!()
+        .run(&pool)
+        .await
+        .change_context(TestError {})?;
+
     world.pool = Some(pool);
+
+    Ok(())
+}
+
+async fn setup_callback(
+    connection_string_base: String,
+    pool: PgPool,
+    _feature: &Feature,
+    _rule: Option<&Rule>,
+    _scenario: &Scenario,
+    world: &mut MarketWorld,
+) {
+    if let Err(e) = setup(
+        connection_string_base,
+        pool,
+        _feature,
+        _rule,
+        _scenario,
+        world,
+    )
+    .await
+    {
+        // error!("{e:#?}")
+        error!("{e}")
+    }
 }
 
 async fn teardown(
@@ -49,8 +91,15 @@ async fn teardown(
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Report<TestError>> {
+    Registry::default()
+        .with(ErrorLayer::default())
+        .with(EnvFilter::from_default_env())
+        .with(fmt::layer().pretty())
+        .init();
+
     let container = testcontainers_modules::postgres::Postgres::default()
+        .with_tag("17-alpine")
         .start()
         .await
         .unwrap();
@@ -63,6 +112,13 @@ async fn main() {
     let connection_string = format!("{connection_string_base}/postgres");
 
     let pool = PgPool::connect(&connection_string).await.unwrap();
+
+    let mut t = pool.acquire().await.change_context(TestError)?;
+
+    query!("CREATE USER fernando SUPERUSER;")
+        .execute(&mut *t)
+        .await
+        .change_context(TestError)?;
 
     let features = vec![
         "tests/features/ask.feature",
@@ -80,7 +136,7 @@ async fn main() {
 
         MarketWorld::cucumber()
             .before(move |f, r, s, w| {
-                Box::pin(setup(
+                Box::pin(setup_callback(
                     connection_string_base_before.clone(),
                     pool.clone(),
                     f,
@@ -93,4 +149,6 @@ async fn main() {
             .run(feature)
             .await;
     }
+
+    Ok(())
 }
