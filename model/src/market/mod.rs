@@ -1,9 +1,16 @@
+pub mod repository;
+
+use error_stack::{Report, ResultExt};
 use rust_decimal::{Decimal, prelude::FromPrimitive};
 use rusty_money::{
     Money,
     iso::{self, Currency},
 };
+use thiserror::Error;
+use tracing::instrument;
 use uuid::Uuid;
+
+use crate::market::repository::MarketRepository;
 
 #[cfg(test)]
 mod tests;
@@ -26,12 +33,36 @@ pub struct Market {
     bids: Vec<Bid>,
 }
 
+#[derive(Debug, Error)]
+pub enum MarketError {
+    #[error("market error")]
+    Error,
+}
+
 impl Market {
     pub fn new() -> Self {
         let asks = Vec::new();
         let bids = Vec::new();
 
         Self { asks, bids }
+    }
+
+    #[instrument(err(Debug), skip(self, repo))]
+    pub async fn run(
+        &mut self,
+        repo: &mut impl MarketRepository,
+    ) -> Result<(), Report<MarketError>> {
+        let asks = repo
+            .get_unbound_asks()
+            .await
+            .change_context(MarketError::Error)?;
+
+        let bids = repo
+            .get_unbound_bids()
+            .await
+            .change_context(MarketError::Error)?;
+
+        Ok(())
     }
 
     pub fn sell_price(&self) -> Option<Money<Currency>> {

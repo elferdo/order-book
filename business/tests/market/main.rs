@@ -120,11 +120,7 @@ async fn main() -> Result<(), Report<TestError>> {
         .await
         .change_context(TestError)?;
 
-    let features = vec![
-        "tests/features/ask.feature",
-        "tests/features/ask.feature",
-        "tests/features/ask.feature",
-    ];
+    let features = vec!["tests/features/match_making.feature"];
 
     for feature in features {
         let connection_string_base_before = format!(

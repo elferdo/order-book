@@ -1,4 +1,4 @@
-use cucumber::{then, when};
+use cucumber::{given, then, when};
 use error_stack::{Report, ResultExt};
 use rust_decimal::{Decimal, prelude::FromPrimitive};
 use rusty_money::{Money, iso};
@@ -13,12 +13,12 @@ use crate::market_world::MarketWorld;
 #[error("error in test")]
 struct TestError;
 
-#[when(expr = "{word} sends an ask order not below {float}")]
+#[given(expr = "an ask order not below {float} by {word}")]
 #[instrument(err(Debug))]
 async fn send_ask_order(
     world: &mut MarketWorld,
-    user: String,
     price: f32,
+    user: String,
 ) -> Result<(), Report<TestError>> {
     let user_id = world.sellers.get(&user).unwrap();
 

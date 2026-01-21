@@ -1,5 +1,6 @@
 mod candidate;
 mod deal;
+mod market;
 mod order;
 pub mod repository;
 mod stats;

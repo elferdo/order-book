@@ -6,16 +6,6 @@ use uuid::{ContextV7, Timestamp, Uuid};
 
 use crate::market_world::MarketWorld;
 
-#[then(regex = r"(\w) has (\d) candidates?")]
-fn add_seller(world: &mut MarketWorld, user: String, number: u8) {
-    let context = ContextV7::new();
-    let timestamp = Timestamp::now(context);
-
-    let id = Uuid::new_v7(timestamp);
-
-    world.sellers.insert(user, id);
-}
-
 #[derive(Debug, Error)]
 #[error("error in test")]
 struct TestError;
