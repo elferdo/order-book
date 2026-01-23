@@ -70,8 +70,8 @@ impl<'c> CandidateRepository for Repository<'c> {
         &mut self,
         user: &User,
     ) -> Result<Vec<Candidate>, Report<RepositoryError>> {
-        let result = query!("SELECT candidate.id, candidate.ask, candidate.bid, ask.price as ask_price, bid.price as bid_price,
-COALESCE(approval.ask, FALSE) as approval_ask, COALESCE(approval.bid, FALSE) as approval_bid FROM candidate JOIN ask ON candidate.ask = ask.id JOIN bid ON candidate.bid = bid.id LEFT JOIN approval ON approval.candidate = candidate.id WHERE ask.user = $1 OR bid.user = $1", *user.get_id())
+        let result = query!("SELECT candidate.id, candidate.ask, candidate.bid, ask.not_below as ask_price, bid.not_above as bid_price,
+COALESCE(approval.ask, FALSE) as approval_ask, COALESCE(approval.bid, FALSE) as approval_bid FROM candidate JOIN ask ON candidate.ask = ask.id JOIN bid ON candidate.bid = bid.id LEFT JOIN approval ON approval.candidate = candidate.id WHERE ask.seller= $1 OR bid.buyer= $1", *user.get_id())
             .fetch_all(&mut *self.conn)
             .await;
 
@@ -128,9 +128,10 @@ COALESCE(approval.ask, FALSE) as approval_ask, COALESCE(approval.bid, FALSE) as 
         id: &uuid::Uuid,
     ) -> Result<Candidate, Report<RepositoryError>> {
         let result = query!(
-            "SELECT candidate.id, candidate.ask, candidate.bid, ask.price as ask_price, ask.user as ask_user, bid.price as bid_price, bid.user as bid_user,
-COALESCE(approval.ask, FALSE) as approval_ask, COALESCE(approval.bid, FALSE) as approval_bid FROM candidate JOIN ask ON candidate.ask = ask.id JOIN bid ON candidate.bid = bid.id LEFT JOIN approval ON approval.candidate = candidate.id WHERE candidate.id =
-$1", *id).fetch_one(&mut *self.conn).await;
+            "SELECT candidate.id, candidate.ask, candidate.bid, ask.not_below as ask_price,
+ask.seller as ask_user,
+bid.not_above as bid_price, bid.buyer as bid_user,
+COALESCE(approval.ask, FALSE) as approval_ask, COALESCE(approval.bid, FALSE) as approval_bid FROM candidate JOIN ask ON candidate.ask = ask.id JOIN bid ON candidate.bid = bid.id LEFT JOIN approval ON approval.candidate = candidate.id WHERE candidate.id = $1", *id).fetch_one(&mut *self.conn).await;
 
         let row = result.change_context(RepositoryError::UnexpectedResult)?;
 

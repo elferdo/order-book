@@ -5,9 +5,9 @@ use crate::order::score::Score;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Bid {
-    id: Uuid,
-    buyer: Uuid,
-    not_above: f32,
+    pub id: Uuid,
+    pub buyer: Uuid,
+    pub not_above: f32,
 }
 
 impl Bid {

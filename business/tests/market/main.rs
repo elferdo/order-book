@@ -7,9 +7,10 @@ use error_stack::{IntoReport, Report, ResultExt};
 use sqlx::{PgPool, QueryBuilder, query};
 use testcontainers_modules::testcontainers::{ImageExt, runners::AsyncRunner};
 use thiserror::Error;
-use tracing::{error, instrument};
+use tracing::{error, info, instrument};
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{EnvFilter, Registry, fmt, layer::SubscriberExt, util::SubscriberInitExt};
+use uuid::{ContextV7, Timestamp, Uuid};
 
 use crate::market_world::MarketWorld;
 
@@ -20,7 +21,25 @@ mod match_making;
 
 #[derive(Error, Debug)]
 #[error("error running test")]
-struct TestError;
+enum TestError {
+    #[error("test database setup")]
+    DatabaseSetup,
+
+    #[error("test database teardown")]
+    DatabaseTeardown,
+
+    #[error("test database connection")]
+    DatabaseConnection,
+
+    #[error("test database migration")]
+    DatabaseMigration,
+
+    #[error("test database creating new user")]
+    DatabaseUserCreation,
+
+    #[error("building query")]
+    BuildingQuery,
+}
 
 #[instrument(err(Debug))]
 async fn setup(
@@ -31,23 +50,42 @@ async fn setup(
     _scenario: &Scenario,
     world: &mut MarketWorld,
 ) -> Result<(), Report<TestError>> {
-    let _ = QueryBuilder::new("CREATE DATABASE TEST;")
+    let context = ContextV7::new();
+    let timestamp = Timestamp::now(context);
+
+    let db_id = Uuid::new_v7(timestamp);
+    let b = &mut Uuid::encode_buffer();
+    let s = db_id.simple().encode_lower(b);
+
+    let mut qb = QueryBuilder::new("CREATE DATABASE ");
+
+    qb.push(format!("\"{s}\""))
         .build()
         .execute(&pool)
-        .await;
+        .await
+        .change_context(TestError::DatabaseSetup)?;
 
-    let connection_string = format!("{connection_string_base}/test");
+    info!("setting up database");
 
-    let pool = PgPool::connect(&connection_string).await.unwrap();
+    let connection_string = format!("{connection_string_base}/{s}");
 
-    let mut t = pool.acquire().await.change_context(TestError)?;
+    let pool = PgPool::connect(&connection_string)
+        .await
+        .change_context(TestError::DatabaseConnection)?;
+
+    let mut t = pool
+        .acquire()
+        .await
+        .change_context(TestError::DatabaseConnection)?;
 
     sqlx::migrate!()
         .run(&pool)
         .await
-        .change_context(TestError {})?;
+        .change_context(TestError::DatabaseMigration)?;
 
     world.pool = Some(pool);
+    world.db_id = db_id;
+    world.connection_string_base = connection_string_base;
 
     Ok(())
 }
@@ -75,19 +113,54 @@ async fn setup_callback(
     }
 }
 
+#[instrument(err(Debug))]
 async fn teardown(
+    _feature: &Feature,
+    _rule: Option<&Rule>,
+    _scenario: &Scenario,
+    _ev: &ScenarioFinished,
+    world: Option<&mut MarketWorld>,
+) -> Result<(), Report<TestError>> {
+    let pool = world.as_ref().unwrap().pool.as_ref().unwrap().clone();
+    pool.close().await;
+
+    let connection_string_base = &world.as_ref().unwrap().connection_string_base;
+
+    let mut qb = QueryBuilder::new("DROP DATABASE ");
+
+    let connection_string = format!("{connection_string_base}/postgres");
+
+    let pool = PgPool::connect(&connection_string)
+        .await
+        .change_context(TestError::DatabaseConnection)?;
+
+    let mut t = pool
+        .acquire()
+        .await
+        .change_context(TestError::DatabaseConnection)?;
+
+    let b = &mut Uuid::encode_buffer();
+    let s = world.as_ref().unwrap().db_id.simple().encode_lower(b);
+
+    qb.push(format!("\"{}\"", s))
+        .build()
+        .execute(&mut *t)
+        .await
+        .change_context(TestError::DatabaseTeardown)?;
+
+    Ok(())
+}
+
+async fn teardown_callback(
     _feature: &Feature,
     _rule: Option<&Rule>,
     _scenario: &Scenario,
     _ev: &ScenarioFinished,
     _world: Option<&mut MarketWorld>,
 ) {
-    let pool = _world.unwrap().pool.as_ref().unwrap();
-
-    let _ = QueryBuilder::new("DROP DATABASE TEST;")
-        .build()
-        .execute(pool)
-        .await;
+    if let Err(e) = teardown(_feature, _rule, _scenario, _ev, _world).await {
+        error!("{e}")
+    }
 }
 
 #[tokio::main]
@@ -111,14 +184,19 @@ async fn main() -> Result<(), Report<TestError>> {
 
     let connection_string = format!("{connection_string_base}/postgres");
 
-    let pool = PgPool::connect(&connection_string).await.unwrap();
+    let pool = PgPool::connect(&connection_string)
+        .await
+        .change_context(TestError::DatabaseConnection)?;
 
-    let mut t = pool.acquire().await.change_context(TestError)?;
+    let mut t = pool
+        .acquire()
+        .await
+        .change_context(TestError::DatabaseConnection)?;
 
     query!("CREATE USER fernando SUPERUSER;")
         .execute(&mut *t)
         .await
-        .change_context(TestError)?;
+        .change_context(TestError::DatabaseUserCreation)?;
 
     let features = vec!["tests/features/match_making.feature"];
 
@@ -141,7 +219,7 @@ async fn main() -> Result<(), Report<TestError>> {
                     w,
                 ))
             })
-            .after(move |f, r, s, ev, w| Box::pin(teardown(f, r, s, ev, w)))
+            .after(move |f, r, s, ev, w| Box::pin(teardown_callback(f, r, s, ev, w)))
             .run(feature)
             .await;
     }

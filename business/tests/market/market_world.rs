@@ -17,6 +17,8 @@ pub struct MarketWorld {
     pub sellers: HashMap<String, Uuid>,
     pub buyers: HashMap<String, Uuid>,
     pub pool: Option<PgPool>,
+    pub db_id: Uuid,
+    pub connection_string_base: String,
 }
 
 #[derive(Error, Debug)]

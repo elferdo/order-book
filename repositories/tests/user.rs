@@ -62,7 +62,7 @@ async fn persist_user_with_ask(pool: PgPool) -> Result<(), Report<TestError>> {
         .await
         .change_context(TestError)?;
 
-    assert_eq!(4.32, recover.price);
+    assert_eq!(4.32, recover.not_below);
 
     Ok(())
 }
@@ -96,7 +96,7 @@ async fn persist_user_with_more_than_one_ask(pool: PgPool) -> Result<(), Report<
         .await
         .change_context(TestError)?;
 
-    let recovered_prices: Vec<_> = recover.iter().map(|r| r.price).collect();
+    let recovered_prices: Vec<_> = recover.iter().map(|r| r.not_below).collect();
 
     for price in &prices {
         assert!(recovered_prices.contains(price));
@@ -138,7 +138,7 @@ async fn persist_user_with_more_than_one_bid(pool: PgPool) -> Result<(), Report<
         .await
         .change_context(TestError)?;
 
-    let recovered_prices: Vec<_> = recover.iter().map(|r| r.price).collect();
+    let recovered_prices: Vec<_> = recover.iter().map(|r| r.not_above).collect();
 
     for price in &prices {
         assert!(recovered_prices.contains(price));
@@ -176,7 +176,7 @@ async fn persist_user_with_bid(pool: PgPool) -> Result<(), Report<TestError>> {
         .await
         .change_context(TestError)?;
 
-    assert_eq!(4.32, recover.price);
+    assert_eq!(4.32, recover.not_above);
 
     Ok(())
 }

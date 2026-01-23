@@ -5,9 +5,9 @@ use crate::order::score::Score;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Ask {
-    id: Uuid,
-    seller: Uuid,
-    not_below: f32,
+    pub id: Uuid,
+    pub seller: Uuid,
+    pub not_below: f32,
 }
 
 impl Ask {
