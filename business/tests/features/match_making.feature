@@ -28,3 +28,27 @@ Feature: Matching compatible asks and bids
         When  market runs
         Then  seller Susan has 1 candidates
         And   buyer Billy has 1 candidates
+
+    Scenario: One ask and two bids that are compatible, only best bid and ask do match
+        Given a buyer named Billy
+        And   a buyer named Berto
+        And   a seller named Susan
+        And   an ask order not below 2.00 by Susan
+        And   a bid order not above 3.00 by Billy
+        And   a bid order not above 2.50 by Berto
+        When  market runs
+        Then  seller Susan has 1 candidates
+        And   buyer Billy has 1 candidates
+        And   buyer Berto has 0 candidates
+
+    Scenario: Two asks and one bid that are compatible, only best ask and bid do match
+        Given a buyer named Billy
+        And   a seller named Sandra
+        And   a seller named Susan
+        And   an ask order not below 2.00 by Susan
+        And   an ask order not below 2.50 by Sandra
+        And   a bid order not above 3.00 by Billy
+        When  market runs
+        Then  seller Susan has 1 candidates
+        And   seller Sandra has 0 candidates
+        And   buyer Billy has 1 candidates

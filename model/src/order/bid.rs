@@ -43,9 +43,9 @@ impl Bid {
 
     pub fn sort_fn(one: &Self, other: &Self) -> std::cmp::Ordering {
         if one.not_above > other.not_above {
-            Ordering::Greater
-        } else if one.not_above < other.not_above {
             Ordering::Less
+        } else if one.not_above < other.not_above {
+            Ordering::Greater
         } else {
             Ordering::Equal
         }

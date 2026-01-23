@@ -20,7 +20,7 @@ async fn send_bid_order(
     price: f32,
     user: String,
 ) -> Result<(), Report<TestError>> {
-    let user_id = world.buyers.get(&user).unwrap();
+    let user_id = world.buyers.get(&user).ok_or(TestError)?;
 
     let context = ContextV7::new();
     let timestamp = Timestamp::now(context);

@@ -43,9 +43,9 @@ impl Ask {
 
     pub fn sort_fn(one: &Self, other: &Self) -> std::cmp::Ordering {
         if one.not_below < other.not_below {
-            Ordering::Greater
-        } else if one.not_below > other.not_below {
             Ordering::Less
+        } else if one.not_below > other.not_below {
+            Ordering::Greater
         } else {
             Ordering::Equal
         }
