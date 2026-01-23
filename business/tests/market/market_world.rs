@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use cucumber::{World, given, then, when};
-use error_stack::{Report, ResultExt};
+use cucumber::{World, gherkin::Step, given, then, when};
+use error_stack::{IntoReport, Report, ResultExt};
 use model::order::candidate_repository::CandidateRepository;
 use model::user::repository::UserRepository;
 use model::{market::Market, user::user::User};
@@ -9,9 +9,12 @@ use repositories::Repository;
 use sqlx::{PgPool, query};
 use testcontainers_modules::postgres::Postgres;
 use testcontainers_modules::testcontainers::{self, ContainerAsync};
-use thiserror::Error;
 use tracing::{debug, info, instrument};
 use uuid::{ContextV7, Timestamp, Uuid};
+
+use crate::ask_spec::send_ask_order;
+use crate::bid_spec::send_bid_order;
+use crate::cucumber_error::CucumberError;
 
 #[derive(World, Debug, Default)]
 pub struct MarketWorld {
@@ -24,24 +27,65 @@ pub struct MarketWorld {
     pub container: Option<ContainerAsync<Postgres>>,
 }
 
-#[derive(Error, Debug)]
-enum TestError {
-    #[error("acquire error")]
-    AcquireError,
+#[given(expr = "users")]
+#[instrument(err(Debug))]
+async fn add_users(world: &mut MarketWorld, step: &Step) -> Result<(), Report<CucumberError>> {
+    if let Some(table) = step.table.as_ref() {
+        for row in table.rows.iter().skip(1) {
+            // NOTE: skip header
+            let role = row[0].as_str();
+            let name = row[1].clone();
 
-    #[error("insert user error")]
-    InsertUserError,
+            match role {
+                "buyer" => add_buyer(world, name).await?,
+                "seller" => add_seller(world, name).await?,
+                _ => Err(CucumberError::Error.into_report())?,
+            };
+        }
+    }
 
-    #[error("transaction error")]
-    TransactionError,
+    Ok(())
+}
 
-    #[error("error in test")]
-    Error,
+#[given(expr = "ask orders")]
+#[instrument(err(Debug))]
+async fn add_ask_orders(world: &mut MarketWorld, step: &Step) -> Result<(), Report<CucumberError>> {
+    if let Some(table) = step.table.as_ref() {
+        for row in table.rows.iter().skip(1) {
+            // NOTE: skip header
+            let not_below = row[0]
+                .parse::<f32>()
+                .change_context(CucumberError::ParameterParseError)?;
+            let name = row[1].clone();
+
+            send_ask_order(world, not_below, name).await?;
+        }
+    }
+
+    Ok(())
+}
+
+#[given(expr = "bid orders")]
+#[instrument(err(Debug))]
+async fn add_bid_orders(world: &mut MarketWorld, step: &Step) -> Result<(), Report<CucumberError>> {
+    if let Some(table) = step.table.as_ref() {
+        for row in table.rows.iter().skip(1) {
+            // NOTE: skip header
+            let not_above = row[0]
+                .parse::<f32>()
+                .change_context(CucumberError::ParameterParseError)?;
+            let name = row[1].clone();
+
+            send_bid_order(world, not_above, name).await?;
+        }
+    }
+
+    Ok(())
 }
 
 #[given(expr = "a seller named {word}")]
 #[instrument(err(Debug))]
-async fn add_seller(world: &mut MarketWorld, user: String) -> Result<(), Report<TestError>> {
+async fn add_seller(world: &mut MarketWorld, user: String) -> Result<(), Report<CucumberError>> {
     let context = ContextV7::new();
     let timestamp = Timestamp::now(context);
 
@@ -55,19 +99,19 @@ async fn add_seller(world: &mut MarketWorld, user: String) -> Result<(), Report<
         .unwrap()
         .acquire()
         .await
-        .change_context(TestError::AcquireError)?;
+        .change_context(CucumberError::AcquireError)?;
 
     query!("INSERT INTO \"user\" VALUES ($1);", id)
         .execute(&mut *t)
         .await
-        .change_context(TestError::InsertUserError)?;
+        .change_context(CucumberError::InsertUserError)?;
 
     Ok(())
 }
 
 #[given(expr = "a buyer named {word}")]
 #[instrument(err(Debug))]
-async fn add_buyer(world: &mut MarketWorld, user: String) -> Result<(), Report<TestError>> {
+async fn add_buyer(world: &mut MarketWorld, user: String) -> Result<(), Report<CucumberError>> {
     let context = ContextV7::new();
     let timestamp = Timestamp::now(context);
 
@@ -81,19 +125,19 @@ async fn add_buyer(world: &mut MarketWorld, user: String) -> Result<(), Report<T
         .unwrap()
         .acquire()
         .await
-        .change_context(TestError::AcquireError)?;
+        .change_context(CucumberError::AcquireError)?;
 
     query!("INSERT INTO \"user\" VALUES ($1);", id)
         .execute(&mut *t)
         .await
-        .change_context(TestError::InsertUserError)?;
+        .change_context(CucumberError::InsertUserError)?;
 
     Ok(())
 }
 
 #[when(expr = "market runs")]
 #[instrument(err(Debug))]
-async fn run_market(world: &mut MarketWorld) -> Result<(), Report<TestError>> {
+async fn run_market(world: &mut MarketWorld) -> Result<(), Report<CucumberError>> {
     let context = ContextV7::new();
     let timestamp = Timestamp::now(context);
 
@@ -103,7 +147,7 @@ async fn run_market(world: &mut MarketWorld) -> Result<(), Report<TestError>> {
         .unwrap()
         .acquire()
         .await
-        .change_context(TestError::TransactionError)?;
+        .change_context(CucumberError::TransactionError)?;
 
     let mut repo = Repository::new(&mut t).await;
 
@@ -111,7 +155,25 @@ async fn run_market(world: &mut MarketWorld) -> Result<(), Report<TestError>> {
         .market
         .run(timestamp, &mut repo)
         .await
-        .change_context(TestError::Error)?;
+        .change_context(CucumberError::Error)?;
+
+    Ok(())
+}
+
+#[then(expr = "users match")]
+#[instrument(err(Debug))]
+async fn users_match(world: &mut MarketWorld, step: &Step) -> Result<(), Report<CucumberError>> {
+    if let Some(table) = step.table.as_ref() {
+        for row in table.rows.iter().skip(1) {
+            // NOTE: skip header
+            let role_a = row[0].clone();
+            let name_a = row[1].clone();
+            let role_b = row[0].clone();
+            let name_b = row[1].clone();
+
+            user_matches_user(world, role_a, name_a, role_b, name_b).await?;
+        }
+    }
 
     Ok(())
 }
@@ -124,7 +186,7 @@ async fn user_matches_user(
     user_a_name: String,
     user_b_role: String,
     user_b_name: String,
-) -> Result<(), Report<TestError>> {
+) -> Result<(), Report<CucumberError>> {
     info!("entering user_has_candidates");
 
     let mut t = world
@@ -133,58 +195,53 @@ async fn user_matches_user(
         .unwrap()
         .acquire()
         .await
-        .change_context(TestError::TransactionError)?;
+        .change_context(CucumberError::TransactionError)?;
 
     let mut repo = Repository::new(&mut t).await;
 
     let user_a_id = match user_a_role.as_str() {
-        "buyer" => world.buyers.get(&user_a_name).ok_or(TestError::Error)?,
-        "seller" => world.sellers.get(&user_a_name).ok_or(TestError::Error)?,
-        _ => Err(TestError::Error)?,
+        "buyer" => world.buyers.get(&user_a_name).ok_or(CucumberError::Error)?,
+        "seller" => world
+            .sellers
+            .get(&user_a_name)
+            .ok_or(CucumberError::Error)?,
+        _ => Err(CucumberError::Error)?,
     };
 
     let user_b_id = match user_b_role.as_str() {
-        "buyer" => world.buyers.get(&user_b_name).ok_or(TestError::Error)?,
-        "seller" => world.sellers.get(&user_b_name).ok_or(TestError::Error)?,
-        _ => Err(TestError::Error)?,
+        "buyer" => world.buyers.get(&user_b_name).ok_or(CucumberError::Error)?,
+        "seller" => world
+            .sellers
+            .get(&user_b_name)
+            .ok_or(CucumberError::Error)?,
+        _ => Err(CucumberError::Error)?,
     };
 
     let user_a = repo
         .find_user(user_a_id)
         .await
-        .change_context(TestError::Error)?;
+        .change_context(CucumberError::Error)?;
 
     let user_b = repo
         .find_user(user_b_id)
         .await
-        .change_context(TestError::Error)?;
+        .change_context(CucumberError::Error)?;
 
     let candidates_a = repo
         .find_candidates_by_user(&user_a)
         .await
-        .change_context(TestError::Error)?;
+        .change_context(CucumberError::Error)?;
 
     let candidates_b = repo
         .find_candidates_by_user(&user_b)
         .await
-        .change_context(TestError::Error)?;
+        .change_context(CucumberError::Error)?;
 
     assert_eq!(candidates_a[0].get_id(), candidates_b[0].get_id());
 
-    /*
-        assert_eq!(
-            candidates_a[0].get_buyer_id(),
-            candidates_b[0].get_buyer_id()
-        );
-
-        assert_eq!(
-            candidates_a[0].get_seller_id(),
-            candidates_b[0].get_seller_id()
-        );
-    */
-
     Ok(())
 }
+
 #[then(expr = "{word} {word} has {int} candidates")]
 #[instrument(err(Debug))]
 async fn user_has_candidates(
@@ -192,7 +249,7 @@ async fn user_has_candidates(
     user_role: String,
     user_name: String,
     num_candidates: usize,
-) -> Result<(), Report<TestError>> {
+) -> Result<(), Report<CucumberError>> {
     info!("entering user_has_candidates");
 
     let context = ContextV7::new();
@@ -204,27 +261,27 @@ async fn user_has_candidates(
         .unwrap()
         .acquire()
         .await
-        .change_context(TestError::TransactionError)?;
+        .change_context(CucumberError::TransactionError)?;
 
     let mut repo = Repository::new(&mut t).await;
 
     let user_id = match user_role.as_str() {
-        "buyer" => world.buyers.get(&user_name).ok_or(TestError::Error)?,
-        "seller" => world.sellers.get(&user_name).ok_or(TestError::Error)?,
-        _ => Err(TestError::Error)?,
+        "buyer" => world.buyers.get(&user_name).ok_or(CucumberError::Error)?,
+        "seller" => world.sellers.get(&user_name).ok_or(CucumberError::Error)?,
+        _ => Err(CucumberError::Error)?,
     };
 
     let user = repo
         .find_user(user_id)
         .await
-        .change_context(TestError::Error)?;
+        .change_context(CucumberError::Error)?;
 
     debug!("{user:?}");
 
     let candidates = repo
         .find_candidates_by_user(&user)
         .await
-        .change_context(TestError::Error)?;
+        .change_context(CucumberError::Error)?;
 
     assert_eq!(candidates.len(), num_candidates);
 

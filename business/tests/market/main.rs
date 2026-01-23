@@ -1,3 +1,5 @@
+mod cucumber_error;
+
 use cucumber::{
     World as _,
     event::ScenarioFinished,

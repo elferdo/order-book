@@ -3,29 +3,22 @@ use error_stack::{Report, ResultExt};
 use rust_decimal::{Decimal, prelude::FromPrimitive};
 use rusty_money::{Money, iso};
 use sqlx::query;
-use thiserror::Error;
 use tracing::instrument;
 use uuid::{ContextV7, Timestamp, Uuid};
 
-use crate::market_world::MarketWorld;
-
-#[derive(Debug, Error)]
-enum TestError {
-    #[error("error in test")]
-    Error,
-
-    #[error("buyer not found")]
-    BuyerNotFound,
-}
+use crate::{cucumber_error::CucumberError, market_world::MarketWorld};
 
 #[given(expr = "a bid order not above {float} by {word}")]
 #[instrument(err(Debug))]
-async fn send_bid_order(
+pub async fn send_bid_order(
     world: &mut MarketWorld,
     price: f32,
     user: String,
-) -> Result<(), Report<TestError>> {
-    let user_id = world.buyers.get(&user).ok_or(TestError::BuyerNotFound)?;
+) -> Result<(), Report<CucumberError>> {
+    let user_id = world
+        .buyers
+        .get(&user)
+        .ok_or(CucumberError::BuyerNotFound)?;
 
     let context = ContextV7::new();
     let timestamp = Timestamp::now(context);
@@ -38,19 +31,19 @@ async fn send_bid_order(
         .unwrap()
         .acquire()
         .await
-        .change_context(TestError::Error)?;
+        .change_context(CucumberError::Error)?;
 
     query!("INSERT INTO bid VALUES ($1, $2, $3);", id, user_id, price)
         .execute(&mut *t)
         .await
-        .change_context(TestError::Error)?;
+        .change_context(CucumberError::Error)?;
 
     Ok(())
 }
 
 #[then(regex = r"^the market has (\d) bid orders?$")]
 #[instrument(err(Debug))]
-fn one_bid_order(world: &mut MarketWorld, num_orders: usize) -> Result<(), Report<TestError>> {
+fn one_bid_order(world: &mut MarketWorld, num_orders: usize) -> Result<(), Report<CucumberError>> {
     assert_eq!(world.market.number_of_bids(), num_orders);
 
     Ok(())

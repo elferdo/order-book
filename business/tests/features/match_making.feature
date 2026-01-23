@@ -54,19 +54,27 @@ Feature: Matching compatible asks and bids
         And   buyer Billy has 1 candidates
 
     Scenario: Three asks and three bids, all compatible
-        Given a buyer named Billy
-        And   a buyer named Bobby
-        And   a buyer named Bruna
-        And   a seller named Sandra
-        And   a seller named Sergio
-        And   a seller named Susan
-        And   an ask order not below 1.50 by Sandra
-        And   an ask order not below 2.00 by Sergio
-        And   an ask order not below 3.50 by Susan
-        And   a bid order not above 5.00 by Billy
-        And   a bid order not above 5.50 by Bobby
-        And   a bid order not above 6.00 by Bruna
+        Given users
+              | Role   | Name  |
+              | buyer  | Billy |
+              | buyer  | Bobby |
+              | buyer  | Bruna |
+              | seller | Sandra|
+              | seller | Sergio|
+              | seller | Susan |
+        And   ask orders
+              | Not below | By    |
+              | 1.50      | Sandra|
+              | 2.00      | Sergio|
+              | 3.50      | Susan |
+        And   bid orders
+              | Not above | By    |
+              | 5.00      | Billy |
+              | 5.50      | Bobby |
+              | 6.00      | Bruna |
         When  market runs
-        Then  seller Sandra matches buyer Bruna
-        And   seller Sergio matches buyer Bobby
-        And   seller Susan matches buyer Billy
+        Then users match
+             | role   | name  | role | name |
+             | seller | Sandra| buyer| Bruna|
+             | seller | Sergio| buyer| Bobby|
+             | seller | Susan | buyer| Billy|
