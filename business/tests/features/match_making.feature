@@ -52,3 +52,21 @@ Feature: Matching compatible asks and bids
         Then  seller Susan has 1 candidates
         And   seller Sandra has 0 candidates
         And   buyer Billy has 1 candidates
+
+    Scenario: Three asks and three bids, all compatible
+        Given a buyer named Billy
+        And   a buyer named Bobby
+        And   a buyer named Bruna
+        And   a seller named Sandra
+        And   a seller named Sergio
+        And   a seller named Susan
+        And   an ask order not below 1.50 by Sandra
+        And   an ask order not below 2.00 by Sergio
+        And   an ask order not below 3.50 by Susan
+        And   a bid order not above 5.00 by Billy
+        And   a bid order not above 5.50 by Bobby
+        And   a bid order not above 6.00 by Bruna
+        When  market runs
+        Then  seller Sandra matches buyer Bruna
+        And   seller Sergio matches buyer Bobby
+        And   seller Susan matches buyer Billy

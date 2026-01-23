@@ -116,6 +116,75 @@ async fn run_market(world: &mut MarketWorld) -> Result<(), Report<TestError>> {
     Ok(())
 }
 
+#[then(expr = "{word} {word} matches {word} {word}")]
+#[instrument(err(Debug))]
+async fn user_matches_user(
+    world: &mut MarketWorld,
+    user_a_role: String,
+    user_a_name: String,
+    user_b_role: String,
+    user_b_name: String,
+) -> Result<(), Report<TestError>> {
+    info!("entering user_has_candidates");
+
+    let mut t = world
+        .pool
+        .as_ref()
+        .unwrap()
+        .acquire()
+        .await
+        .change_context(TestError::TransactionError)?;
+
+    let mut repo = Repository::new(&mut t).await;
+
+    let user_a_id = match user_a_role.as_str() {
+        "buyer" => world.buyers.get(&user_a_name).ok_or(TestError::Error)?,
+        "seller" => world.sellers.get(&user_a_name).ok_or(TestError::Error)?,
+        _ => Err(TestError::Error)?,
+    };
+
+    let user_b_id = match user_b_role.as_str() {
+        "buyer" => world.buyers.get(&user_b_name).ok_or(TestError::Error)?,
+        "seller" => world.sellers.get(&user_b_name).ok_or(TestError::Error)?,
+        _ => Err(TestError::Error)?,
+    };
+
+    let user_a = repo
+        .find_user(user_a_id)
+        .await
+        .change_context(TestError::Error)?;
+
+    let user_b = repo
+        .find_user(user_b_id)
+        .await
+        .change_context(TestError::Error)?;
+
+    let candidates_a = repo
+        .find_candidates_by_user(&user_a)
+        .await
+        .change_context(TestError::Error)?;
+
+    let candidates_b = repo
+        .find_candidates_by_user(&user_b)
+        .await
+        .change_context(TestError::Error)?;
+
+    assert_eq!(candidates_a[0].get_id(), candidates_b[0].get_id());
+
+    /*
+        assert_eq!(
+            candidates_a[0].get_buyer_id(),
+            candidates_b[0].get_buyer_id()
+        );
+
+        assert_eq!(
+            candidates_a[0].get_seller_id(),
+            candidates_b[0].get_seller_id()
+        );
+    */
+
+    Ok(())
+}
 #[then(expr = "{word} {word} has {int} candidates")]
 #[instrument(err(Debug))]
 async fn user_has_candidates(
