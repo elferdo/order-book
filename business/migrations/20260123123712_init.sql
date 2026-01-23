@@ -2,7 +2,6 @@
 -- PostgreSQL database dump
 --
 
-\restrict WppEjd9NEh7WYUwQSmCLt3axAB43BHlhSFS9Zzf8ZGmhqeEAYOaIpzZ4AIAFZCC
 
 -- Dumped from database version 17.7 (Ubuntu 17.7-0ubuntu0.25.10.1)
 -- Dumped by pg_dump version 17.7 (Ubuntu 17.7-0ubuntu0.25.10.1)
@@ -950,5 +949,4 @@ ALTER EVENT TRIGGER pg_roll_handle_drop OWNER TO fernando;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict WppEjd9NEh7WYUwQSmCLt3axAB43BHlhSFS9Zzf8ZGmhqeEAYOaIpzZ4AIAFZCC
 

@@ -44,7 +44,7 @@ async fn add_seller(world: &mut MarketWorld, user: String) -> Result<(), Report<
 
     let id = Uuid::new_v7(timestamp);
 
-    world.sellers.insert(user.clone(), id);
+    world.sellers.insert(user, id);
 
     let mut t = world
         .pool
@@ -53,8 +53,6 @@ async fn add_seller(world: &mut MarketWorld, user: String) -> Result<(), Report<
         .acquire()
         .await
         .change_context(TestError::AcquireError)?;
-
-    debug!("inserting {user}");
 
     query!("INSERT INTO \"user\" VALUES ($1);", id)
         .execute(&mut *t)
@@ -123,6 +121,8 @@ async fn user_has_candidates(
     user_name: String,
     num_candidates: usize,
 ) -> Result<(), Report<TestError>> {
+    info!("entering user_has_candidates");
+
     let context = ContextV7::new();
     let timestamp = Timestamp::now(context);
 
@@ -146,6 +146,8 @@ async fn user_has_candidates(
         .find_user(user_id)
         .await
         .change_context(TestError::Error)?;
+
+    debug!("{user:?}");
 
     let candidates = repo
         .find_candidates_by_user(&user)

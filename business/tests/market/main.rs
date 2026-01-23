@@ -125,9 +125,6 @@ async fn teardown(
     pool.close().await;
 
     let connection_string_base = &world.as_ref().unwrap().connection_string_base;
-
-    let mut qb = QueryBuilder::new("DROP DATABASE ");
-
     let connection_string = format!("{connection_string_base}/postgres");
 
     let pool = PgPool::connect(&connection_string)
@@ -142,6 +139,7 @@ async fn teardown(
     let b = &mut Uuid::encode_buffer();
     let s = world.as_ref().unwrap().db_id.simple().encode_lower(b);
 
+    let mut qb = QueryBuilder::new("DROP DATABASE ");
     qb.push(format!("\"{}\"", s))
         .build()
         .execute(&mut *t)

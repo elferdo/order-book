@@ -12,4 +12,7 @@ pub enum RepositoryError {
 
     #[error("root entity not found")]
     RootEntityNotFound,
+
+    #[error("persistance error")]
+    PersistanceError,
 }

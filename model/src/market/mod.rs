@@ -13,6 +13,7 @@ use uuid::{Timestamp, Uuid};
 use crate::{
     market::repository::MarketRepository,
     order::{ask::Ask, bid::Bid, candidate::Candidate},
+    repository_error::RepositoryError,
 };
 
 #[cfg(test)]
@@ -28,6 +29,9 @@ pub struct Market {
 pub enum MarketError {
     #[error("market error")]
     Error,
+
+    #[error("error persisting candidates")]
+    CandidatePersistanceError,
 }
 
 impl Market {
@@ -57,7 +61,9 @@ impl Market {
 
         let candidates = self.do_matching(timestamp)?;
 
-        repo.persist_candidates(candidates);
+        repo.persist_candidates(candidates)
+            .await
+            .change_context(MarketError::CandidatePersistanceError)?;
 
         Ok(())
     }
@@ -68,15 +74,14 @@ impl Market {
 
         let mut candidates = Vec::new();
 
-        let mut ask_iter = self.asks.iter();
-        let mut bid_iter = self.bids.iter();
-
-        let next_ask = ask_iter.next();
-        let next_bid = bid_iter.next();
+        let ask_iter = self.asks.iter();
+        let bid_iter = self.bids.iter();
 
         for (ask, bid) in ask_iter.zip(bid_iter) {
             if bid.get_price() >= ask.get_price() {
                 let candidate = Candidate::new(timestamp, *ask, *bid);
+
+                candidates.push(candidate);
             }
         }
 
