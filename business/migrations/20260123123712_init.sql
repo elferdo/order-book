@@ -2,6 +2,7 @@
 -- PostgreSQL database dump
 --
 
+\restrict WppEjd9NEh7WYUwQSmCLt3axAB43BHlhSFS9Zzf8ZGmhqeEAYOaIpzZ4AIAFZCC
 
 -- Dumped from database version 17.7 (Ubuntu 17.7-0ubuntu0.25.10.1)
 -- Dumped by pg_dump version 17.7 (Ubuntu 17.7-0ubuntu0.25.10.1)
@@ -36,13 +37,13 @@ CREATE SCHEMA pgroll;
 ALTER SCHEMA pgroll OWNER TO fernando;
 
 --
--- Name: public_14.new_candidate_archive_table; Type: SCHEMA; Schema: -; Owner: fernando
+-- Name: public_15.rename_ask_members; Type: SCHEMA; Schema: -; Owner: fernando
 --
 
-CREATE SCHEMA "public_14.new_candidate_archive_table";
+CREATE SCHEMA "public_15.rename_ask_members";
 
 
-ALTER SCHEMA "public_14.new_candidate_archive_table" OWNER TO fernando;
+ALTER SCHEMA "public_15.rename_ask_members" OWNER TO fernando;
 
 --
 -- Name: find_version_schema(name, integer); Type: FUNCTION; Schema: pgroll; Owner: fernando
@@ -572,8 +573,8 @@ ALTER TABLE public.approval OWNER TO fernando;
 
 CREATE TABLE public.ask (
     id uuid NOT NULL,
-    "user" uuid NOT NULL,
-    price real NOT NULL
+    seller uuid NOT NULL,
+    not_below real NOT NULL
 );
 
 
@@ -585,8 +586,8 @@ ALTER TABLE public.ask OWNER TO fernando;
 
 CREATE TABLE public.bid (
     id uuid NOT NULL,
-    "user" uuid NOT NULL,
-    price real NOT NULL
+    buyer uuid NOT NULL,
+    not_above real NOT NULL
 );
 
 
@@ -643,93 +644,93 @@ CREATE TABLE public."user" (
 ALTER TABLE public."user" OWNER TO fernando;
 
 --
--- Name: approval; Type: VIEW; Schema: public_14.new_candidate_archive_table; Owner: fernando
+-- Name: approval; Type: VIEW; Schema: public_15.rename_ask_members; Owner: fernando
 --
 
-CREATE VIEW "public_14.new_candidate_archive_table".approval WITH (security_invoker='true') AS
+CREATE VIEW "public_15.rename_ask_members".approval WITH (security_invoker='true') AS
  SELECT ask,
     bid,
     candidate
    FROM public.approval;
 
 
-ALTER VIEW "public_14.new_candidate_archive_table".approval OWNER TO fernando;
+ALTER VIEW "public_15.rename_ask_members".approval OWNER TO fernando;
 
 --
--- Name: ask; Type: VIEW; Schema: public_14.new_candidate_archive_table; Owner: fernando
+-- Name: ask; Type: VIEW; Schema: public_15.rename_ask_members; Owner: fernando
 --
 
-CREATE VIEW "public_14.new_candidate_archive_table".ask WITH (security_invoker='true') AS
+CREATE VIEW "public_15.rename_ask_members".ask WITH (security_invoker='true') AS
  SELECT id,
-    "user",
-    price
+    not_below,
+    seller
    FROM public.ask;
 
 
-ALTER VIEW "public_14.new_candidate_archive_table".ask OWNER TO fernando;
+ALTER VIEW "public_15.rename_ask_members".ask OWNER TO fernando;
 
 --
--- Name: bid; Type: VIEW; Schema: public_14.new_candidate_archive_table; Owner: fernando
+-- Name: bid; Type: VIEW; Schema: public_15.rename_ask_members; Owner: fernando
 --
 
-CREATE VIEW "public_14.new_candidate_archive_table".bid WITH (security_invoker='true') AS
- SELECT id,
-    "user",
-    price
+CREATE VIEW "public_15.rename_ask_members".bid WITH (security_invoker='true') AS
+ SELECT buyer,
+    id,
+    not_above
    FROM public.bid;
 
 
-ALTER VIEW "public_14.new_candidate_archive_table".bid OWNER TO fernando;
+ALTER VIEW "public_15.rename_ask_members".bid OWNER TO fernando;
 
 --
--- Name: candidate; Type: VIEW; Schema: public_14.new_candidate_archive_table; Owner: fernando
+-- Name: candidate; Type: VIEW; Schema: public_15.rename_ask_members; Owner: fernando
 --
 
-CREATE VIEW "public_14.new_candidate_archive_table".candidate WITH (security_invoker='true') AS
+CREATE VIEW "public_15.rename_ask_members".candidate WITH (security_invoker='true') AS
  SELECT id,
     ask,
     bid
    FROM public.candidate;
 
 
-ALTER VIEW "public_14.new_candidate_archive_table".candidate OWNER TO fernando;
+ALTER VIEW "public_15.rename_ask_members".candidate OWNER TO fernando;
 
 --
--- Name: candidate_archive; Type: VIEW; Schema: public_14.new_candidate_archive_table; Owner: fernando
+-- Name: candidate_archive; Type: VIEW; Schema: public_15.rename_ask_members; Owner: fernando
 --
 
-CREATE VIEW "public_14.new_candidate_archive_table".candidate_archive WITH (security_invoker='true') AS
+CREATE VIEW "public_15.rename_ask_members".candidate_archive WITH (security_invoker='true') AS
  SELECT ask,
     bid
    FROM public.candidate_archive;
 
 
-ALTER VIEW "public_14.new_candidate_archive_table".candidate_archive OWNER TO fernando;
+ALTER VIEW "public_15.rename_ask_members".candidate_archive OWNER TO fernando;
 
 --
--- Name: deal; Type: VIEW; Schema: public_14.new_candidate_archive_table; Owner: fernando
+-- Name: deal; Type: VIEW; Schema: public_15.rename_ask_members; Owner: fernando
 --
 
-CREATE VIEW "public_14.new_candidate_archive_table".deal WITH (security_invoker='true') AS
- SELECT id,
+CREATE VIEW "public_15.rename_ask_members".deal WITH (security_invoker='true') AS
+ SELECT seller,
+    id,
     buyer,
-    price,
-    seller
+    price
    FROM public.deal;
 
 
-ALTER VIEW "public_14.new_candidate_archive_table".deal OWNER TO fernando;
+ALTER VIEW "public_15.rename_ask_members".deal OWNER TO fernando;
 
 --
--- Name: user; Type: VIEW; Schema: public_14.new_candidate_archive_table; Owner: fernando
+-- Name: user; Type: VIEW; Schema: public_15.rename_ask_members; Owner: fernando
 --
 
-CREATE VIEW "public_14.new_candidate_archive_table"."user" WITH (security_invoker='true') AS
+CREATE VIEW "public_15.rename_ask_members"."user" WITH (security_invoker='true') AS
  SELECT id
    FROM public."user";
 
 
-ALTER VIEW "public_14.new_candidate_archive_table"."user" OWNER TO fernando;
+ALTER VIEW "public_15.rename_ask_members"."user" OWNER TO fernando;
 
 --
 -- Name: databases databases_pkey; Type: CONSTRAINT; Schema: _sqlx_test; Owner: fernando
@@ -835,14 +836,14 @@ CREATE UNIQUE INDEX only_one_active ON pgroll.migrations USING btree (schema, na
 -- Name: idx_ask_price; Type: INDEX; Schema: public; Owner: fernando
 --
 
-CREATE INDEX idx_ask_price ON public.ask USING btree (price);
+CREATE INDEX idx_ask_price ON public.ask USING btree (not_below);
 
 
 --
 -- Name: idx_bid_price; Type: INDEX; Schema: public; Owner: fernando
 --
 
-CREATE INDEX idx_bid_price ON public.bid USING btree (price);
+CREATE INDEX idx_bid_price ON public.bid USING btree (not_above);
 
 
 --
@@ -914,7 +915,7 @@ ALTER TABLE ONLY public.deal
 --
 
 ALTER TABLE ONLY public.ask
-    ADD CONSTRAINT fk_user_id FOREIGN KEY ("user") REFERENCES public."user"(id);
+    ADD CONSTRAINT fk_user_id FOREIGN KEY (seller) REFERENCES public."user"(id);
 
 
 --
@@ -922,7 +923,7 @@ ALTER TABLE ONLY public.ask
 --
 
 ALTER TABLE ONLY public.bid
-    ADD CONSTRAINT fk_user_id FOREIGN KEY ("user") REFERENCES public."user"(id);
+    ADD CONSTRAINT fk_user_id FOREIGN KEY (buyer) REFERENCES public."user"(id);
 
 
 --
@@ -949,4 +950,5 @@ ALTER EVENT TRIGGER pg_roll_handle_drop OWNER TO fernando;
 -- PostgreSQL database dump complete
 --
 
+\unrestrict WppEjd9NEh7WYUwQSmCLt3axAB43BHlhSFS9Zzf8ZGmhqeEAYOaIpzZ4AIAFZCC
 

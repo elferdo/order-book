@@ -5,7 +5,7 @@ Feature: Matching compatible asks and bids
         When  market runs
         Then  seller Susan has 0 candidates
 
-    Scenario: Ask with no bid does not match
+    Scenario: Bid with no ask does not match
         Given a buyer named Bob
         And   a bid order not above 2.34 by Bob
         When  market runs

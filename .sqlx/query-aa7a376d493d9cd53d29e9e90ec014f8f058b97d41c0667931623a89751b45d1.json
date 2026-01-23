@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT * FROM bid",
+  "query": "SELECT * FROM bid;",
   "describe": {
     "columns": [
       {
@@ -10,12 +10,12 @@
       },
       {
         "ordinal": 1,
-        "name": "user",
+        "name": "buyer",
         "type_info": "Uuid"
       },
       {
         "ordinal": 2,
-        "name": "price",
+        "name": "not_above",
         "type_info": "Float4"
       }
     ],
@@ -28,5 +28,5 @@
       false
     ]
   },
-  "hash": "938f6459b2d4d627d1a27c9a566d86abb80afe78651bb8358b40b4ff0ba17015"
+  "hash": "aa7a376d493d9cd53d29e9e90ec014f8f058b97d41c0667931623a89751b45d1"
 }

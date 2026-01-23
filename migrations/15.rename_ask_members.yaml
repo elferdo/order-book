@@ -1,0 +1,17 @@
+operations:
+  - rename_column:
+      table: ask
+      from: user
+      to: seller
+  - rename_column:
+      table: ask
+      from: price
+      to: not_below
+  - rename_column:
+      table: bid
+      from: user
+      to: buyer
+  - rename_column:
+      table: bid
+      from: price
+      to: not_above

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT * FROM deal",
+  "query": "SELECT * FROM ask;",
   "describe": {
     "columns": [
       {
@@ -10,17 +10,12 @@
       },
       {
         "ordinal": 1,
-        "name": "buyer",
-        "type_info": "Uuid"
-      },
-      {
-        "ordinal": 2,
         "name": "seller",
         "type_info": "Uuid"
       },
       {
-        "ordinal": 3,
-        "name": "price",
+        "ordinal": 2,
+        "name": "not_below",
         "type_info": "Float4"
       }
     ],
@@ -30,9 +25,8 @@
     "nullable": [
       false,
       false,
-      false,
       false
     ]
   },
-  "hash": "a0b42d0624957558236d0848b72a48c686273f2019ab3a51f5c020bb7327e699"
+  "hash": "05916f1fcee30bef442982430ba0c4af5ff2f3caf5f6ef0c7461bd658cd8c7f5"
 }

@@ -4,7 +4,7 @@ use model::order::ask::Ask;
 use model::order::bid::Bid;
 use model::order::candidate::Candidate;
 use model::repository_error::RepositoryError;
-use sqlx::{QueryBuilder, query};
+use sqlx::{QueryBuilder, query, query_as};
 use std::collections::HashMap;
 use tracing::instrument;
 use uuid::Uuid;
@@ -15,12 +15,22 @@ use crate::repository::{persist_asks, persist_bids};
 impl<'c> MarketRepository for Repository<'c> {
     #[instrument(err(Debug), skip(self))]
     async fn get_unbound_asks(&mut self) -> Result<Vec<Ask>, Report<RepositoryError>> {
-        Ok(Vec::new())
+        let asks = query_as!(Ask, "SELECT * FROM ask;")
+            .fetch_all(&mut *self.conn)
+            .await
+            .change_context(RepositoryError::DatabaseError)?;
+
+        Ok(asks)
     }
 
     #[instrument(err(Debug), skip(self))]
     async fn get_unbound_bids(&mut self) -> Result<Vec<Bid>, Report<RepositoryError>> {
-        Ok(Vec::new())
+        let bids = query_as!(Bid, "SELECT * FROM bid;")
+            .fetch_all(&mut *self.conn)
+            .await
+            .change_context(RepositoryError::DatabaseError)?;
+
+        Ok(bids)
     }
 
     #[instrument(err(Debug), skip(self, iterator))]

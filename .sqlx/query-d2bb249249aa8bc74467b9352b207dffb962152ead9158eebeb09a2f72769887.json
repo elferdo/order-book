@@ -10,12 +10,12 @@
       },
       {
         "ordinal": 1,
-        "name": "user",
+        "name": "buyer",
         "type_info": "Uuid"
       },
       {
         "ordinal": 2,
-        "name": "price",
+        "name": "not_above",
         "type_info": "Float4"
       }
     ],
