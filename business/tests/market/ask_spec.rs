@@ -10,8 +10,13 @@ use uuid::{ContextV7, Timestamp, Uuid};
 use crate::market_world::MarketWorld;
 
 #[derive(Debug, Error)]
-#[error("error in test")]
-struct TestError;
+enum TestError {
+    #[error("error in test")]
+    Error,
+
+    #[error("seller not found")]
+    SellerNotFound,
+}
 
 #[given(expr = "an ask order not below {float} by {word}")]
 #[instrument(err(Debug))]
@@ -20,7 +25,7 @@ async fn send_ask_order(
     price: f32,
     user: String,
 ) -> Result<(), Report<TestError>> {
-    let user_id = world.sellers.get(&user).unwrap();
+    let user_id = world.sellers.get(&user).ok_or(TestError::SellerNotFound)?;
 
     let context = ContextV7::new();
     let timestamp = Timestamp::now(context);
@@ -33,12 +38,12 @@ async fn send_ask_order(
         .unwrap()
         .acquire()
         .await
-        .change_context(TestError {})?;
+        .change_context(TestError::Error)?;
 
     query!("INSERT INTO ask VALUES ($1, $2, $3);", id, user_id, price)
         .execute(&mut *t)
         .await
-        .change_context(TestError {})?;
+        .change_context(TestError::Error)?;
 
     Ok(())
 }
