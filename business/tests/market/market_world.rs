@@ -7,6 +7,8 @@ use model::user::repository::UserRepository;
 use model::{market::Market, user::user::User};
 use repositories::Repository;
 use sqlx::{PgPool, query};
+use testcontainers_modules::postgres::Postgres;
+use testcontainers_modules::testcontainers::{self, ContainerAsync};
 use thiserror::Error;
 use tracing::{debug, info, instrument};
 use uuid::{ContextV7, Timestamp, Uuid};
@@ -19,6 +21,7 @@ pub struct MarketWorld {
     pub pool: Option<PgPool>,
     pub db_id: Uuid,
     pub connection_string_base: String,
+    pub container: Option<ContainerAsync<Postgres>>,
 }
 
 #[derive(Error, Debug)]

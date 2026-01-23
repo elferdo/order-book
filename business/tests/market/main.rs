@@ -43,40 +43,32 @@ enum TestError {
 
 #[instrument(err(Debug))]
 async fn setup(
-    connection_string_base: String,
-    pool: PgPool,
     _feature: &Feature,
     _rule: Option<&Rule>,
     _scenario: &Scenario,
     world: &mut MarketWorld,
 ) -> Result<(), Report<TestError>> {
-    let context = ContextV7::new();
-    let timestamp = Timestamp::now(context);
-
-    let db_id = Uuid::new_v7(timestamp);
-    let b = &mut Uuid::encode_buffer();
-    let s = db_id.simple().encode_lower(b);
-
-    let mut qb = QueryBuilder::new("CREATE DATABASE ");
-
-    qb.push(format!("\"{s}\""))
-        .build()
-        .execute(&pool)
+    let container = testcontainers_modules::postgres::Postgres::default()
+        .with_tag("17-alpine")
+        .start()
         .await
-        .change_context(TestError::DatabaseSetup)?;
+        .unwrap();
 
-    info!("setting up database");
+    let connection_string_base = format!(
+        "postgres://postgres:postgres@127.0.0.1:{}",
+        container.get_host_port_ipv4(5432).await.unwrap()
+    );
 
-    let connection_string = format!("{connection_string_base}/{s}");
+    let connection_string = format!("{connection_string_base}/postgres");
 
     let pool = PgPool::connect(&connection_string)
         .await
         .change_context(TestError::DatabaseConnection)?;
 
-    let mut t = pool
-        .acquire()
+    query!("CREATE USER fernando SUPERUSER;")
+        .execute(&pool)
         .await
-        .change_context(TestError::DatabaseConnection)?;
+        .change_context(TestError::DatabaseUserCreation)?;
 
     sqlx::migrate!()
         .run(&pool)
@@ -84,30 +76,19 @@ async fn setup(
         .change_context(TestError::DatabaseMigration)?;
 
     world.pool = Some(pool);
-    world.db_id = db_id;
+    world.container = Some(container);
     world.connection_string_base = connection_string_base;
 
     Ok(())
 }
 
 async fn setup_callback(
-    connection_string_base: String,
-    pool: PgPool,
     _feature: &Feature,
     _rule: Option<&Rule>,
     _scenario: &Scenario,
     world: &mut MarketWorld,
 ) {
-    if let Err(e) = setup(
-        connection_string_base,
-        pool,
-        _feature,
-        _rule,
-        _scenario,
-        world,
-    )
-    .await
-    {
+    if let Err(e) = setup(_feature, _rule, _scenario, world).await {
         // error!("{e:#?}")
         error!("{e}")
     }
@@ -169,55 +150,12 @@ async fn main() -> Result<(), Report<TestError>> {
         .with(fmt::layer().pretty())
         .init();
 
-    let container = testcontainers_modules::postgres::Postgres::default()
-        .with_tag("17-alpine")
-        .start()
-        .await
-        .unwrap();
-
-    let connection_string_base = format!(
-        "postgres://postgres:postgres@127.0.0.1:{}",
-        container.get_host_port_ipv4(5432).await.unwrap()
-    );
-
-    let connection_string = format!("{connection_string_base}/postgres");
-
-    let pool = PgPool::connect(&connection_string)
-        .await
-        .change_context(TestError::DatabaseConnection)?;
-
-    let mut t = pool
-        .acquire()
-        .await
-        .change_context(TestError::DatabaseConnection)?;
-
-    query!("CREATE USER fernando SUPERUSER;")
-        .execute(&mut *t)
-        .await
-        .change_context(TestError::DatabaseUserCreation)?;
-
     let features = vec!["tests/features/match_making.feature"];
 
     for feature in features {
-        let connection_string_base_before = format!(
-            "postgres://postgres:postgres@127.0.0.1:{}",
-            container.get_host_port_ipv4(5432).await.unwrap()
-        );
-
-        let pool = pool.clone();
-
         MarketWorld::cucumber()
-            .before(move |f, r, s, w| {
-                Box::pin(setup_callback(
-                    connection_string_base_before.clone(),
-                    pool.clone(),
-                    f,
-                    r,
-                    s,
-                    w,
-                ))
-            })
-            .after(move |f, r, s, ev, w| Box::pin(teardown_callback(f, r, s, ev, w)))
+            .before(move |f, r, s, w| Box::pin(setup_callback(f, r, s, w)))
+            //            .after(move |f, r, s, ev, w| Box::pin(teardown_callback(f, r, s, ev, w)))
             .run(feature)
             .await;
     }
