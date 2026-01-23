@@ -26,7 +26,7 @@ where
 {
     info!("entering");
 
-    let mut matching_orders: BTreeSet<_> = repository
+    let mut matching_orders: Vec<_> = repository
         .find_bids_not_below(ask)
         .await?
         .into_iter()
@@ -38,7 +38,7 @@ where
         return Ok(());
     };
 
-    let first = matching_orders.pop_first().expect("this should never fail");
+    let first = matching_orders.pop().expect("this should never fail");
 
     let candidate = Candidate::new(timestamp, *ask, first);
 
@@ -61,7 +61,7 @@ pub async fn generate_candidates_for_bid<R>(
 where
     R: OrderRepository + CandidateRepository,
 {
-    let mut matching_orders: BTreeSet<_> = repository
+    let mut matching_orders: Vec<_> = repository
         .find_asks_not_above(bid)
         .await?
         .into_iter()
@@ -71,7 +71,7 @@ where
         return Ok(());
     }
 
-    let first = matching_orders.pop_first().expect("this should never fail");
+    let first = matching_orders.pop().expect("this should never fail");
 
     let candidate = Candidate::new(timestamp, first, *bid);
 

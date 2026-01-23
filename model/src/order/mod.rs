@@ -4,3 +4,4 @@ pub mod candidate;
 pub mod candidate_repository;
 pub mod order;
 pub mod repository;
+pub mod score;

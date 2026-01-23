@@ -1,6 +1,30 @@
-Feature: Compatible asks and bids are matched
+Feature: Matching compatible asks and bids
     Scenario: Ask with no bid does not match
         Given a seller named Susan
         And   an ask order not below 2.34 by Susan
         When  market runs
-        Then  Susan has 0 candidates
+        Then  seller Susan has 0 candidates
+
+    Scenario: Ask with no bid does not match
+        Given a buyer named Bob
+        And   a bid order not above 2.34 by Bob
+        When  market runs
+        Then  buyer Bob has 0 candidates
+
+    Scenario: One ask and one bid that are not compatible do not match
+        Given a buyer named Bob
+        And   a seller named Susan
+        And   an ask order not below 3.00 by Susan
+        And   a bid order not above 2.00 by Bob
+        When  market runs
+        Then  seller Susan has 0 candidates
+        And   buyer Bob has 0 candidates
+
+    Scenario: One ask and one bid that are compatible do match
+        Given a buyer named Bob
+        And   a seller named Susan
+        And   an ask order not below 2.00 by Susan
+        And   a bid order not above 3.00 by Bob
+        When  market runs
+        Then  seller Susan has 1 candidates
+        And   buyer Bob has 1 candidates

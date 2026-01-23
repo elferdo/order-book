@@ -8,24 +8,15 @@ use rusty_money::{
 };
 use thiserror::Error;
 use tracing::instrument;
-use uuid::Uuid;
+use uuid::{Timestamp, Uuid};
 
-use crate::market::repository::MarketRepository;
+use crate::{
+    market::repository::MarketRepository,
+    order::{ask::Ask, bid::Bid, candidate::Candidate},
+};
 
 #[cfg(test)]
 mod tests;
-
-#[derive(Debug)]
-struct Ask {
-    user: Uuid,
-    not_below: f32,
-}
-
-#[derive(Debug)]
-struct Bid {
-    user: Uuid,
-    not_above: f32,
-}
 
 #[derive(Debug, Default)]
 pub struct Market {
@@ -40,6 +31,7 @@ pub enum MarketError {
 }
 
 impl Market {
+    // Let's leave this method non-async and fill the structures in run()
     pub fn new() -> Self {
         let asks = Vec::new();
         let bids = Vec::new();
@@ -50,32 +42,58 @@ impl Market {
     #[instrument(err(Debug), skip(self, repo))]
     pub async fn run(
         &mut self,
+        timestamp: Timestamp,
         repo: &mut impl MarketRepository,
     ) -> Result<(), Report<MarketError>> {
-        let asks = repo
+        self.asks = repo
             .get_unbound_asks()
             .await
             .change_context(MarketError::Error)?;
 
-        let bids = repo
+        self.bids = repo
             .get_unbound_bids()
             .await
             .change_context(MarketError::Error)?;
 
+        let candidates = self.do_matching(timestamp)?;
+
+        repo.persist_candidates(candidates);
+
         Ok(())
+    }
+
+    fn do_matching(&mut self, timestamp: Timestamp) -> Result<Vec<Candidate>, Report<MarketError>> {
+        self.asks.sort_by(Ask::sort_fn);
+        self.bids.sort_by(Bid::sort_fn);
+
+        let mut candidates = Vec::new();
+
+        let mut ask_iter = self.asks.iter();
+        let mut bid_iter = self.bids.iter();
+
+        let next_ask = ask_iter.next();
+        let next_bid = bid_iter.next();
+
+        for (ask, bid) in ask_iter.zip(bid_iter) {
+            if bid.get_price() >= ask.get_price() {
+                let candidate = Candidate::new(timestamp, *ask, *bid);
+            }
+        }
+
+        Ok(candidates)
     }
 
     pub fn sell_price(&self) -> Option<Money<Currency>> {
         self.asks
             .iter()
-            .map(|a| Money::from_decimal(Decimal::from_f32(a.not_below).unwrap(), iso::EUR))
+            .map(|a| Money::from_decimal(Decimal::from_f32(a.get_price()).unwrap(), iso::EUR))
             .min()
     }
 
     pub fn buy_price(&self) -> Option<Money<Currency>> {
         self.bids
             .iter()
-            .map(|a| Money::from_decimal(Decimal::from_f32(a.not_above).unwrap(), iso::EUR))
+            .map(|a| Money::from_decimal(Decimal::from_f32(a.get_price()).unwrap(), iso::EUR))
             .max()
     }
 
@@ -85,23 +103,5 @@ impl Market {
 
     pub fn number_of_bids(&self) -> usize {
         self.bids.len()
-    }
-
-    pub fn ask(&mut self, user: &Uuid, price: f32) {
-        let ask = Ask {
-            user: *user,
-            not_below: price,
-        };
-
-        self.asks.push(ask);
-    }
-
-    pub fn bid(&mut self, user: &Uuid, price: f32) {
-        let bid = Bid {
-            user: *user,
-            not_above: price,
-        };
-
-        self.bids.push(bid);
     }
 }

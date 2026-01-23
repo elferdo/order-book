@@ -106,19 +106,20 @@ async fn run_market(world: &mut MarketWorld) -> Result<(), Report<TestError>> {
 
     world
         .market
-        .run(&mut repo)
+        .run(timestamp, &mut repo)
         .await
         .change_context(TestError::Error)?;
 
     Ok(())
 }
 
-#[then(expr = "{word} has {int} candidates")]
+#[then(expr = "{word} {word} has {int} candidates")]
 #[instrument(err(Debug))]
 async fn user_has_candidates(
     world: &mut MarketWorld,
-    user: String,
-    num_candidates: u8,
+    user_role: String,
+    user_name: String,
+    num_candidates: usize,
 ) -> Result<(), Report<TestError>> {
     let context = ContextV7::new();
     let timestamp = Timestamp::now(context);
@@ -133,10 +134,14 @@ async fn user_has_candidates(
 
     let mut repo = Repository::new(&mut t).await;
 
-    let susan_id = world.sellers.get(&user).ok_or(TestError::Error)?;
+    let user_id = match user_role.as_str() {
+        "buyer" => world.buyers.get(&user_name).ok_or(TestError::Error)?,
+        "seller" => world.sellers.get(&user_name).ok_or(TestError::Error)?,
+        _ => Err(TestError::Error)?,
+    };
 
     let user = repo
-        .find_user(susan_id)
+        .find_user(user_id)
         .await
         .change_context(TestError::Error)?;
 
@@ -145,10 +150,7 @@ async fn user_has_candidates(
         .await
         .change_context(TestError::Error)?;
 
-    assert!(candidates.is_empty());
+    assert_eq!(candidates.len(), num_candidates);
 
     Ok(())
 }
-
-#[given("an empty market")]
-fn empty_market(_: &mut MarketWorld) {}
