@@ -1,24 +1,17 @@
 mod apierror;
-mod ask;
-mod bid;
-mod candidate;
-mod deal;
 mod stats;
-mod user;
 
 use appconfig::appstate::AppState;
-use axum::{
-    Router,
-    routing::{delete, get, post},
-};
+use axum::{Router, routing::get};
 use error_stack::Report;
 use error_stack::ResultExt;
 use opentelemetry::trace::TracerProvider;
 use opentelemetry_otlp::{Protocol, WithExportConfig};
 use thiserror::Error;
 use tracing_error::ErrorLayer;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{EnvFilter, Registry};
-use tracing_subscriber::{fmt, prelude::*};
 
 #[derive(Debug, Error)]
 enum AppError {
@@ -62,20 +55,6 @@ async fn main() -> Result<(), Report<AppError>> {
         .change_context(AppError::Error)?;
 
     let app = Router::new()
-        .route("/user", post(user::create_user))
-        .route("/user/{id}", delete(user::delete_user))
-        .route("/user/{id}/bid", post(bid::create_bid))
-        .route("/user/{id}/ask", post(ask::create_ask))
-        .route("/user/{id}/candidate", get(candidate::get_candidate))
-        .route("/user/{id}/deal", get(deal::get_deal))
-        .route(
-            "/user/{user_id}/candidate/{candidate_id}/approve",
-            post(candidate::approve_post_handler),
-        )
-        .route(
-            "/user/{user_id}/candidate/{candidate_id}/reject",
-            post(candidate::reject_post_handler),
-        )
         .route("/stats/buy_price", get(stats::buy_price_get_handler))
         .route("/stats/sell_price", get(stats::sell_price_get_handler))
         .with_state(state);
