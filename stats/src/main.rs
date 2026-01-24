@@ -1,4 +1,6 @@
+mod api_handlers;
 mod apierror;
+mod businesserror;
 mod stats;
 
 use appconfig::appstate::AppState;
@@ -55,8 +57,11 @@ async fn main() -> Result<(), Report<AppError>> {
         .change_context(AppError::Error)?;
 
     let app = Router::new()
-        .route("/stats/buy_price", get(stats::buy_price_get_handler))
-        .route("/stats/sell_price", get(stats::sell_price_get_handler))
+        .route("/stats/buy_price", get(api_handlers::buy_price_get_handler))
+        .route(
+            "/stats/sell_price",
+            get(api_handlers::sell_price_get_handler),
+        )
         .with_state(state);
 
     // run our app with hyper, listening globally on port 3000

@@ -3,8 +3,9 @@
 /// Here we can control what gets returned to the caller so that
 /// no unnecessary details are leaked.
 use axum::response::{IntoResponse, Response};
-use business::businesserror::BusinessError;
 use serde_json::json;
+
+use crate::businesserror::BusinessError;
 
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]

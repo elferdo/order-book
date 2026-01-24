@@ -1,4 +1,3 @@
-use business::businesserror::BusinessError;
 use error_stack::{IntoReport, Report, ResultExt};
 use model::match_service::{self, generate_candidates_for_bid};
 use model::order::candidate::{ApprovalResult, Candidate};
@@ -10,6 +9,8 @@ use serde::Serialize;
 use sqlx::{PgPool, query};
 use tracing::instrument;
 use uuid::{ContextV7, Timestamp, Uuid};
+
+use crate::businesserror::BusinessError;
 
 #[derive(Serialize)]
 pub struct Response {
