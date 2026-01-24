@@ -19,6 +19,3 @@ tracing-error = "0.2.1"
 tracing-subscriber = { version = "0.3.22", features = ["env-filter", "registry"] }
 uuid = { version = "1.19.0", features = ["v7"] }
 
-# [[test]]
-# name = "market"
-# harness = false
