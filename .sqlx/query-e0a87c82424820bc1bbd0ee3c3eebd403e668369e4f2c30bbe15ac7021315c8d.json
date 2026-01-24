@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "CREATE USER fernando SUPERUSER;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "e0a87c82424820bc1bbd0ee3c3eebd403e668369e4f2c30bbe15ac7021315c8d"
+}
