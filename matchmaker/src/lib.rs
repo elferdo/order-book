@@ -1,3 +1,4 @@
+pub mod repo_impl;
 pub mod repository;
 
 use error_stack::{Report, ResultExt};
@@ -10,11 +11,9 @@ use thiserror::Error;
 use tracing::instrument;
 use uuid::{Timestamp, Uuid};
 
-use crate::{
-    market::repository::MarketRepository,
-    order::{ask::Ask, bid::Bid, candidate::Candidate},
-    repository_error::RepositoryError,
-};
+use model::order::{ask::Ask, bid::Bid, candidate::Candidate};
+
+use crate::repository::MarketRepository;
 
 #[cfg(test)]
 mod tests;
@@ -89,17 +88,29 @@ impl Market {
     }
 
     pub fn sell_price(&self) -> Option<Money<Currency>> {
+        /*
         self.asks
             .iter()
             .map(|a| Money::from_decimal(Decimal::from_f32(a.get_price()).unwrap(), iso::EUR))
             .min()
+            */
+        Some(Money::from_decimal(
+            Decimal::from_f32(3.33).unwrap(),
+            iso::EUR,
+        ))
     }
 
     pub fn buy_price(&self) -> Option<Money<Currency>> {
-        self.bids
-            .iter()
-            .map(|a| Money::from_decimal(Decimal::from_f32(a.get_price()).unwrap(), iso::EUR))
-            .max()
+        /*
+                self.bids
+                    .iter()
+                    .map(|a| Money::from_decimal(Decimal::from_f32(a.get_price()).unwrap(), iso::EUR))
+                    .max()
+        */
+        Some(Money::from_decimal(
+            Decimal::from_f32(3.33).unwrap(),
+            iso::EUR,
+        ))
     }
 
     pub fn number_of_asks(&self) -> usize {

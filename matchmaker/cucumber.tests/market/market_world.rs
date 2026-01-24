@@ -2,13 +2,12 @@ use std::collections::HashMap;
 
 use cucumber::{World, gherkin::Step, given, then, when};
 use error_stack::{IntoReport, Report, ResultExt};
+use matchmaker::Market;
 use model::order::candidate_repository::CandidateRepository;
 use model::user::repository::UserRepository;
-use model::{market::Market, user::user::User};
-use repositories::Repository;
 use sqlx::{PgPool, query};
 use testcontainers_modules::postgres::Postgres;
-use testcontainers_modules::testcontainers::{self, ContainerAsync};
+use testcontainers_modules::testcontainers::ContainerAsync;
 use tracing::{debug, info, instrument};
 use uuid::{ContextV7, Timestamp, Uuid};
 
@@ -149,11 +148,11 @@ async fn run_market(world: &mut MarketWorld) -> Result<(), Report<CucumberError>
         .await
         .change_context(CucumberError::TransactionError)?;
 
-    let mut repo = Repository::new(&mut t).await;
+    // let mut repo = Repository::new(&mut t).await;
 
     world
         .market
-        .run(timestamp, &mut repo)
+        .run(timestamp, &mut t)
         .await
         .change_context(CucumberError::Error)?;
 
@@ -197,7 +196,7 @@ async fn user_matches_user(
         .await
         .change_context(CucumberError::TransactionError)?;
 
-    let mut repo = Repository::new(&mut t).await;
+    // let mut repo = Repository::new(&mut t).await;
 
     let user_a_id = match user_a_role.as_str() {
         "buyer" => world.buyers.get(&user_a_name).ok_or(CucumberError::Error)?,
@@ -217,22 +216,22 @@ async fn user_matches_user(
         _ => Err(CucumberError::Error)?,
     };
 
-    let user_a = repo
+    let user_a = t
         .find_user(user_a_id)
         .await
         .change_context(CucumberError::Error)?;
 
-    let user_b = repo
+    let user_b = t
         .find_user(user_b_id)
         .await
         .change_context(CucumberError::Error)?;
 
-    let candidates_a = repo
+    let candidates_a = t
         .find_candidates_by_user(&user_a)
         .await
         .change_context(CucumberError::Error)?;
 
-    let candidates_b = repo
+    let candidates_b = t
         .find_candidates_by_user(&user_b)
         .await
         .change_context(CucumberError::Error)?;
@@ -263,7 +262,7 @@ async fn user_has_candidates(
         .await
         .change_context(CucumberError::TransactionError)?;
 
-    let mut repo = Repository::new(&mut t).await;
+    // let mut repo = Repository::new(&mut t).await;
 
     let user_id = match user_role.as_str() {
         "buyer" => world.buyers.get(&user_name).ok_or(CucumberError::Error)?,
@@ -278,7 +277,7 @@ async fn user_has_candidates(
 
     debug!("{user:?}");
 
-    let candidates = repo
+    let candidates = (*t)
         .find_candidates_by_user(&user)
         .await
         .change_context(CucumberError::Error)?;

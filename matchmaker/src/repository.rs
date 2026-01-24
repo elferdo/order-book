@@ -1,6 +1,5 @@
 use error_stack::Report;
-
-use crate::{
+use model::{
     order::{ask::Ask, bid::Bid, candidate::Candidate},
     repository_error::RepositoryError,
 };
