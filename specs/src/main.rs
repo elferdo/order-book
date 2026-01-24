@@ -147,7 +147,7 @@ async fn main() -> Result<(), Report<TestError>> {
         .with(fmt::layer().pretty())
         .init();
 
-    let features = vec!["tests/features/match_making.feature"];
+    let features = vec!["features/match_making.feature"];
 
     for feature in features {
         MarketWorld::cucumber()
