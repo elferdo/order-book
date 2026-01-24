@@ -1,6 +1,8 @@
 mod api_handlers;
 mod apierror;
 mod business;
+mod businesserror;
+mod deal;
 mod user;
 
 use appconfig::appstate::AppState;

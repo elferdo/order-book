@@ -17,6 +17,9 @@ pub enum ApiError {
 
     #[error("business logic error")]
     BusinessError(#[from] BusinessError),
+
+    #[error("api error")]
+    Error,
 }
 
 impl IntoResponse for ApiError {
