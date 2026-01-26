@@ -1,10 +1,8 @@
-use model::stats::repository::StatsRepository;
-use repositories::Repository;
 use serde::Serialize;
 use sqlx::PgPool;
 use tracing::instrument;
 
-use crate::businesserror::BusinessError;
+use crate::{businesserror::BusinessError, repository::StatsRepository};
 
 #[derive(Serialize)]
 pub struct SellResponse {
@@ -23,9 +21,9 @@ pub async fn get_buy_price(pool: PgPool) -> Result<BuyResponse, BusinessError> {
         .await
         .map_err(|_| BusinessError::DatabaseError)?;
 
-    let mut repo = Repository::new(&mut conn).await;
+    // let mut repo = Repository::new(&mut conn).await;
 
-    let buy_price = repo
+    let buy_price = (*conn)
         .buy_price()
         .await
         .map_err(|_| BusinessError::UserNotFound)?;
@@ -40,9 +38,9 @@ pub async fn get_sell_price(pool: PgPool) -> Result<SellResponse, BusinessError>
         .await
         .map_err(|_| BusinessError::DatabaseError)?;
 
-    let mut repo = Repository::new(&mut conn).await;
+    // let mut repo = Repository::new(&mut conn).await;
 
-    let sell_price = repo
+    let sell_price = (*conn)
         .sell_price()
         .await
         .map_err(|_| BusinessError::UserNotFound)?;

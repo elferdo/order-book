@@ -1,6 +1,9 @@
 mod api_handlers;
 mod apierror;
 mod businesserror;
+mod repo_impl;
+mod repository;
+mod repository_error;
 mod stats;
 
 use appconfig::appstate::AppState;
