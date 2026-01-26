@@ -1,7 +1,7 @@
 use error_stack::Report;
 use uuid::Uuid;
 
-use crate::{order::candidate::Candidate, repository_error::RepositoryError, user::user::User};
+use crate::{candidate::Candidate, repository_error::RepositoryError};
 
 pub trait CandidateRepository {
     fn find_candidate(
@@ -11,7 +11,7 @@ pub trait CandidateRepository {
 
     fn find_candidates_by_user(
         &mut self,
-        user: &User,
+        user: &Uuid,
     ) -> impl Future<Output = Result<Vec<Candidate>, Report<RepositoryError>>>;
 
     fn persist_candidate(

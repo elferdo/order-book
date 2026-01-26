@@ -1,7 +1,6 @@
+use model::order::{ask::Ask, bid::Bid};
 use thiserror::Error;
 use uuid::{Timestamp, Uuid};
-
-use crate::order::{ask::Ask, bid::Bid};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Candidate {

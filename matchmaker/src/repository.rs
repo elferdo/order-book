@@ -1,8 +1,10 @@
 use error_stack::Report;
 use model::{
-    order::{ask::Ask, bid::Bid, candidate::Candidate},
+    order::{ask::Ask, bid::Bid},
     repository_error::RepositoryError,
 };
+
+use crate::candidate::Candidate;
 
 pub trait MarketRepository {
     fn get_unbound_asks(

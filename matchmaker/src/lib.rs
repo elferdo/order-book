@@ -1,5 +1,10 @@
+pub mod candidate;
+pub mod candidate_repository;
+pub mod candidate_repository_impl;
+pub mod deal;
 pub mod repo_impl;
 pub mod repository;
+pub mod repository_error;
 
 use error_stack::{Report, ResultExt};
 use rust_decimal::{Decimal, prelude::FromPrimitive};
@@ -9,11 +14,11 @@ use rusty_money::{
 };
 use thiserror::Error;
 use tracing::instrument;
-use uuid::{Timestamp, Uuid};
+use uuid::Timestamp;
 
-use model::order::{ask::Ask, bid::Bid, candidate::Candidate};
+use model::order::{ask::Ask, bid::Bid};
 
-use crate::repository::MarketRepository;
+use crate::{candidate::Candidate, repository::MarketRepository};
 
 #[cfg(test)]
 mod tests;
@@ -87,7 +92,7 @@ impl Market {
         Ok(candidates)
     }
 
-    pub fn sell_price(&self) -> Option<Money<Currency>> {
+    pub fn sell_price<'c>(&self) -> Option<Money<'c, Currency>> {
         /*
         self.asks
             .iter()
@@ -100,7 +105,7 @@ impl Market {
         ))
     }
 
-    pub fn buy_price(&self) -> Option<Money<Currency>> {
+    pub fn buy_price<'c>(&self) -> Option<Money<'c, Currency>> {
         /*
                 self.bids
                     .iter()

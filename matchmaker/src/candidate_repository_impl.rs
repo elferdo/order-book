@@ -1,20 +1,16 @@
 use error_stack::{IntoReport, Report, ResultExt};
-use model::repository_error::RepositoryError;
-use model::{
-    order::{
-        ask::Ask,
-        bid::Bid,
-        candidate::{Approval, Candidate},
-        candidate_repository::CandidateRepository,
-    },
-    user::user::User,
-};
-use sqlx::{QueryBuilder, query};
+use model::order::{ask::Ask, bid::Bid};
+use sqlx::{PgConnection, QueryBuilder, query};
 use tracing::instrument;
+use uuid::Uuid;
 
-use crate::Repository;
+use crate::{
+    candidate::{Approval, Candidate},
+    candidate_repository::CandidateRepository,
+    repository_error::RepositoryError,
+};
 
-impl<'c> CandidateRepository for Repository<'c> {
+impl CandidateRepository for PgConnection {
     #[instrument(err(Debug), skip(self, iterator))]
     async fn persist_candidates<I>(&mut self, iterator: I) -> Result<(), Report<RepositoryError>>
     where
@@ -35,7 +31,7 @@ impl<'c> CandidateRepository for Repository<'c> {
         });
 
         qb.build()
-            .execute(&mut *self.conn)
+            .execute(self)
             .await
             .change_context(RepositoryError::DatabaseError)?;
 
@@ -54,7 +50,7 @@ impl<'c> CandidateRepository for Repository<'c> {
         );
 
         let result = q
-            .execute(&mut *self.conn)
+            .execute(self)
             .await
             .change_context(RepositoryError::DatabaseError)?;
 
@@ -68,11 +64,12 @@ impl<'c> CandidateRepository for Repository<'c> {
     #[instrument(err(Debug), skip(self))]
     async fn find_candidates_by_user(
         &mut self,
-        user: &User,
+        user_id: &Uuid,
     ) -> Result<Vec<Candidate>, Report<RepositoryError>> {
         let result = query!("SELECT candidate.id, candidate.ask, candidate.bid, ask.not_below as ask_price, bid.not_above as bid_price,
-COALESCE(approval.ask, FALSE) as approval_ask, COALESCE(approval.bid, FALSE) as approval_bid FROM candidate JOIN ask ON candidate.ask = ask.id JOIN bid ON candidate.bid = bid.id LEFT JOIN approval ON approval.candidate = candidate.id WHERE ask.seller= $1 OR bid.buyer= $1", *user.get_id())
-            .fetch_all(&mut *self.conn)
+COALESCE(approval.ask, FALSE) as approval_ask, COALESCE(approval.bid, FALSE) as approval_bid FROM candidate JOIN ask ON candidate.ask = ask.id JOIN bid ON candidate.bid = bid.id LEFT JOIN approval ON approval.candidate = candidate.id WHERE ask.seller= $1 OR bid.buyer= $1",
+*user_id)
+            .fetch_all(self)
             .await;
 
         let candidate_rows = result.change_context(RepositoryError::UnexpectedResult)?;
@@ -80,8 +77,8 @@ COALESCE(approval.ask, FALSE) as approval_ask, COALESCE(approval.bid, FALSE) as 
         let candidates = candidate_rows
             .iter()
             .map(|row| {
-                let ask = Ask::with(row.ask, *user.get_id(), row.ask_price);
-                let bid = Bid::with(row.bid, *user.get_id(), row.bid_price);
+                let ask = Ask::with(row.ask, *user_id, row.ask_price);
+                let bid = Bid::with(row.bid, *user_id, row.bid_price);
                 let approval = Approval {
                     ask: row.approval_ask.unwrap_or(false),
                     bid: row.approval_bid.unwrap_or(false),
@@ -105,7 +102,7 @@ COALESCE(approval.ask, FALSE) as approval_ask, COALESCE(approval.bid, FALSE) as 
             candidate.get_ask().get_id(),
             candidate.get_bid().get_id(),
         )
-        .execute(&mut *self.conn)
+        .execute(&mut *self)
         .await
         .change_context(RepositoryError::UnexpectedResult)?;
 
@@ -115,7 +112,7 @@ COALESCE(approval.ask, FALSE) as approval_ask, COALESCE(approval.bid, FALSE) as 
             candidate.get_ask_approval(),
             candidate.get_bid_approval(),
         )
-        .execute(&mut *self.conn)
+        .execute(&mut *self)
         .await.change_context(
         RepositoryError::UnexpectedResult) ?;
 
@@ -131,7 +128,8 @@ COALESCE(approval.ask, FALSE) as approval_ask, COALESCE(approval.bid, FALSE) as 
             "SELECT candidate.id, candidate.ask, candidate.bid, ask.not_below as ask_price,
 ask.seller as ask_user,
 bid.not_above as bid_price, bid.buyer as bid_user,
-COALESCE(approval.ask, FALSE) as approval_ask, COALESCE(approval.bid, FALSE) as approval_bid FROM candidate JOIN ask ON candidate.ask = ask.id JOIN bid ON candidate.bid = bid.id LEFT JOIN approval ON approval.candidate = candidate.id WHERE candidate.id = $1", *id).fetch_one(&mut *self.conn).await;
+COALESCE(approval.ask, FALSE) as approval_ask, COALESCE(approval.bid, FALSE) as approval_bid FROM candidate JOIN ask ON candidate.ask = ask.id JOIN bid ON candidate.bid = bid.id LEFT JOIN approval ON approval.candidate = candidate.id WHERE candidate.id = $1",
+*id).fetch_one(self).await;
 
         let row = result.change_context(RepositoryError::UnexpectedResult)?;
 
@@ -156,12 +154,12 @@ COALESCE(approval.ask, FALSE) as approval_ask, COALESCE(approval.bid, FALSE) as 
             "DELETE FROM approval WHERE candidate = $1",
             *candidate.get_id()
         )
-        .execute(&mut *self.conn)
+        .execute(&mut *self)
         .await
         .change_context(RepositoryError::UnexpectedResult)?;
 
         let _result = query!("DELETE FROM candidate WHERE id = $1", *candidate.get_id())
-            .execute(&mut *self.conn)
+            .execute(&mut *self)
             .await
             .change_context(RepositoryError::UnexpectedResult)?;
 

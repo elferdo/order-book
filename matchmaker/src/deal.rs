@@ -1,5 +1,3 @@
-pub mod repository;
-
 use uuid::{Timestamp, Uuid};
 
 pub struct Deal {

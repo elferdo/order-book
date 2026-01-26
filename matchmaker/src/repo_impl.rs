@@ -1,10 +1,9 @@
-use crate::repository::MarketRepository;
+use crate::{candidate::Candidate, repository::MarketRepository};
 use error_stack::{Report, ResultExt};
 use model::order::ask::Ask;
 use model::order::bid::Bid;
-use model::order::candidate::Candidate;
 use model::repository_error::RepositoryError;
-use sqlx::{PgConnection, Postgres, QueryBuilder, pool::PoolConnection, query_as};
+use sqlx::{PgConnection, QueryBuilder, query_as};
 use tracing::instrument;
 
 impl MarketRepository for PgConnection {

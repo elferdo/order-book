@@ -3,6 +3,10 @@ mod apierror;
 mod business;
 mod businesserror;
 mod deal;
+mod deal_repository;
+mod deal_repository_impl;
+mod repo_impl;
+mod repository;
 mod user;
 
 use appconfig::appstate::AppState;

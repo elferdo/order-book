@@ -1,8 +1,6 @@
 use std::cmp::Ordering;
 use uuid::{Timestamp, Uuid};
 
-use crate::order::score::Score;
-
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Bid {
     pub id: Uuid,

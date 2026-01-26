@@ -1,13 +1,12 @@
-use model::deal::Deal;
-use model::deal::repository::DealRepository;
-use model::user::repository::UserRepository;
-use repositories::Repository;
+use matchmaker::deal::Deal;
 use serde::Serialize;
 use sqlx::PgPool;
 use tracing::instrument;
 use uuid::Uuid;
 
 use crate::businesserror::BusinessError;
+use crate::deal_repository::DealRepository;
+use crate::repository::UserRepository;
 #[derive(Serialize)]
 pub struct Response {}
 
@@ -42,14 +41,14 @@ pub async fn get_deals(pool: PgPool, user_id: Uuid) -> Result<Vec<DealSummary>, 
         .await
         .map_err(|_| BusinessError::DatabaseError)?;
 
-    let mut repo = Repository::new(&mut conn).await;
+    // let mut repo = Repository::new(&mut conn).await;
 
-    let user = repo
+    let user = (*conn)
         .find_user(&user_id)
         .await
         .map_err(|_| BusinessError::UserNotFound)?;
 
-    let deals = repo
+    let deals = (*conn)
         .find_deals_by_user(&user)
         .await
         .map_err(|_| BusinessError::DatabaseError)?

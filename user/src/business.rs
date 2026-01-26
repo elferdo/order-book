@@ -1,9 +1,6 @@
 use error_stack::{IntoReport, Report, ResultExt};
-use model::match_service::{self, generate_candidates_for_bid};
 use model::order::candidate::{ApprovalResult, Candidate};
 use model::order::candidate_repository::CandidateRepository;
-use model::user::user::User;
-use model::{match_service::generate_candidates_for_ask, user::repository::UserRepository};
 use repositories::Repository;
 use serde::Serialize;
 use sqlx::{PgPool, query};
@@ -11,6 +8,8 @@ use tracing::instrument;
 use uuid::{ContextV7, Timestamp, Uuid};
 
 use crate::businesserror::BusinessError;
+use crate::repository::UserRepository;
+use crate::user::User;
 
 #[derive(Serialize)]
 pub struct Response {
@@ -24,14 +23,14 @@ pub async fn new_user(pool: PgPool) -> Result<Response, Report<BusinessError>> {
         .await
         .map_err(|_| BusinessError::DatabaseError)?;
 
-    let mut repo = Repository::new(&mut a).await;
+    // let mut repo = Repository::new(&mut a).await;
 
     let context = ContextV7::new();
     let timestamp = Timestamp::now(&context);
 
     let user = User::new(timestamp);
 
-    repo.persist_user(&user)
+    (*a).persist_user(&user)
         .await
         .change_context(BusinessError::DatabaseError)?;
 
@@ -45,14 +44,14 @@ pub async fn delete_user(pool: PgPool, id: Uuid) -> Result<Response, Report<Busi
         .await
         .map_err(|_| BusinessError::DatabaseError)?;
 
-    let mut repo = Repository::new(&mut a).await;
+    // let mut repo = Repository::new(&mut a).await;
 
-    let user = repo
+    let user = (*a)
         .find_user(&id)
         .await
         .change_context(BusinessError::DatabaseError)?;
 
-    repo.delete_user(&user)
+    (*a).delete_user(&user)
         .await
         .change_context(BusinessError::DatabaseError)?;
 
@@ -70,9 +69,7 @@ pub async fn new_ask(
         .await
         .change_context(BusinessError::DatabaseError)?;
 
-    let mut repo = Repository::new(&mut t).await;
-
-    let mut user = repo
+    let mut user = (*t)
         .find_user(&user_id)
         .await
         .change_context(BusinessError::UserNotFound)?;
@@ -82,43 +79,11 @@ pub async fn new_ask(
 
     let ask = user.ask(timestamp, price);
 
-    repo.persist_user(&user)
+    (*t).persist_user(&user)
         .await
         .change_context(BusinessError::UserPersistenceError)?;
 
     t.commit()
-        .await
-        .change_context(BusinessError::DatabaseError)?;
-
-    let mut t2 = pool
-        .begin()
-        .await
-        .change_context(BusinessError::DatabaseError)?;
-
-    query!("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;")
-        .execute(&mut *t2)
-        .await
-        .unwrap();
-
-    let mut repo2 = Repository::new(&mut t2).await;
-
-    let mut success = false;
-
-    for _ in 0..2 {
-        match generate_candidates_for_ask(timestamp, &mut repo2, &ask).await {
-            Ok(_) => {
-                success = true;
-                break;
-            }
-            Err(_) => continue,
-        }
-    }
-
-    if !success {
-        return Err(BusinessError::DatabaseError.into_report());
-    }
-
-    t2.commit()
         .await
         .change_context(BusinessError::DatabaseError)?;
 
@@ -136,9 +101,7 @@ pub async fn new_bid(
         .await
         .change_context(BusinessError::DatabaseError)?;
 
-    let mut repo = Repository::new(&mut t).await;
-
-    let mut user = repo
+    let mut user = (*t)
         .find_user(&user_id)
         .await
         .change_context(BusinessError::UserNotFound)?;
@@ -148,29 +111,9 @@ pub async fn new_bid(
 
     let bid = user.bid(timestamp, price);
 
-    repo.persist_user(&user)
+    (*t).persist_user(&user)
         .await
         .change_context(BusinessError::UserPersistenceError)?;
-
-    t.commit()
-        .await
-        .change_context(BusinessError::DatabaseError)?;
-
-    let mut t = pool
-        .begin()
-        .await
-        .change_context(BusinessError::DatabaseError)?;
-
-    query!("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;")
-        .execute(&mut *t)
-        .await
-        .unwrap();
-
-    let mut repo = Repository::new(&mut t).await;
-
-    generate_candidates_for_bid(timestamp, &mut repo, &bid)
-        .await
-        .change_context(BusinessError::MatchingError)?;
 
     t.commit()
         .await
@@ -216,14 +159,12 @@ pub async fn get_candidates(
         .await
         .change_context(BusinessError::DatabaseError)?;
 
-    let mut repo = Repository::new(&mut conn).await;
-
-    let user = repo
+    let user = (*conn)
         .find_user(&user_id)
         .await
         .change_context(BusinessError::UserNotFound)?;
 
-    let candidates = repo
+    let candidates = (*conn)
         .find_candidates_by_user(&user)
         .await
         .change_context(BusinessError::DatabaseError)?
