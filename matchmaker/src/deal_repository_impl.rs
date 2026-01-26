@@ -1,9 +1,8 @@
 use error_stack::{Report, ResultExt};
-use matchmaker::deal::Deal;
-use model::repository_error::RepositoryError;
 use sqlx::{PgConnection, query};
+use uuid::Uuid;
 
-use crate::{deal_repository::DealRepository, user::User};
+use crate::{deal::Deal, deal_repository::DealRepository, repository_error::RepositoryError};
 
 impl DealRepository for PgConnection {
     async fn persist_deal(&mut self, _deal: &Deal) -> Result<(), Report<RepositoryError>> {
@@ -23,11 +22,11 @@ impl DealRepository for PgConnection {
 
     async fn find_deals_by_user(
         &mut self,
-        user: &User,
+        user_id: &Uuid,
     ) -> Result<Vec<Deal>, Report<RepositoryError>> {
         let deal_rows = query!(
             "SELECT * FROM deal WHERE buyer = $1 OR seller = $1;",
-            user.get_id()
+            user_id
         )
         .fetch_all(self)
         .await

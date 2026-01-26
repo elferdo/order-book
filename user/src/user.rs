@@ -1,11 +1,8 @@
 use std::collections::HashMap;
 use std::fmt::Debug;
 
-use model::order::{
-    ask::Ask,
-    bid::Bid,
-    candidate::{ApprovalResult, Candidate},
-};
+use matchmaker::candidate::{ApprovalResult, Candidate};
+use model::order::{ask::Ask, bid::Bid};
 use uuid::{Timestamp, Uuid};
 
 #[derive(Debug)]

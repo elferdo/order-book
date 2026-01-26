@@ -2,6 +2,8 @@ pub mod candidate;
 pub mod candidate_repository;
 pub mod candidate_repository_impl;
 pub mod deal;
+pub mod deal_repository;
+pub mod deal_repository_impl;
 pub mod repo_impl;
 pub mod repository;
 pub mod repository_error;

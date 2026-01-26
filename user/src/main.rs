@@ -1,14 +1,3 @@
-mod api_handlers;
-mod apierror;
-mod business;
-mod businesserror;
-mod deal;
-mod deal_repository;
-mod deal_repository_impl;
-mod repo_impl;
-mod repository;
-mod user;
-
 use appconfig::appstate::AppState;
 use axum::{
     Router,
@@ -20,8 +9,9 @@ use opentelemetry::trace::TracerProvider;
 use opentelemetry_otlp::{Protocol, WithExportConfig};
 use thiserror::Error;
 use tracing_error::ErrorLayer;
+use tracing_subscriber::prelude::*;
 use tracing_subscriber::{EnvFilter, Registry};
-use tracing_subscriber::{fmt, prelude::*};
+use user::api_handlers;
 
 #[derive(Debug, Error)]
 enum AppError {

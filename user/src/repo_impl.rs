@@ -1,14 +1,12 @@
 use error_stack::{Report, ResultExt};
-use model::{
-    order::{ask::Ask, bid::Bid},
-    repository_error::RepositoryError,
-};
+use model::order::{ask::Ask, bid::Bid};
 use sqlx::{PgConnection, QueryBuilder, query, query_as};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use tracing::instrument;
 use uuid::Uuid;
 
+use crate::repository_error::RepositoryError;
 use crate::{repository::UserRepository, user::User};
 
 impl UserRepository for PgConnection {

@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT * FROM deal WHERE buyer = $1 OR seller = $1;",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "buyer",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "seller",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "price",
+        "type_info": "Float4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "014cc1d02757b12cd72f7011db759a9112af337179ba92e47336a59490ec1b6f"
+}

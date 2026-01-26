@@ -1,7 +1,6 @@
 use error_stack::{IntoReport, Report, ResultExt};
-use model::order::candidate::{ApprovalResult, Candidate};
-use model::order::candidate_repository::CandidateRepository;
-use repositories::Repository;
+use matchmaker::candidate::{ApprovalResult, Candidate};
+use matchmaker::candidate_repository::CandidateRepository;
 use serde::Serialize;
 use sqlx::{PgPool, query};
 use tracing::instrument;
@@ -22,8 +21,6 @@ pub async fn new_user(pool: PgPool) -> Result<Response, Report<BusinessError>> {
         .acquire()
         .await
         .map_err(|_| BusinessError::DatabaseError)?;
-
-    // let mut repo = Repository::new(&mut a).await;
 
     let context = ContextV7::new();
     let timestamp = Timestamp::now(&context);
@@ -165,7 +162,7 @@ pub async fn get_candidates(
         .change_context(BusinessError::UserNotFound)?;
 
     let candidates = (*conn)
-        .find_candidates_by_user(&user)
+        .find_candidates_by_user(&user.get_id())
         .await
         .change_context(BusinessError::DatabaseError)?
         .into_iter()
@@ -186,17 +183,17 @@ pub async fn approve_candidate(
         .await
         .map_err(|_| BusinessError::DatabaseError)?;
 
-    let mut repo = Repository::new(&mut conn).await;
+    // let mut repo = Repository::new(&mut conn).await;
 
     let context = ContextV7::new();
     let timestamp = Timestamp::now(context);
 
-    let user = repo
+    let user = (*conn)
         .find_user(&user_id)
         .await
         .change_context(BusinessError::UserNotFound)?;
 
-    let mut candidate = repo
+    let mut candidate = (*conn)
         .find_candidate(&candidate_id)
         .await
         .change_context(BusinessError::CandidateNotFound)?;
@@ -206,15 +203,19 @@ pub async fn approve_candidate(
         .change_context(BusinessError::DatabaseError)?
     {
         ApprovalResult::Partial => {
-            repo.persist_candidate(&candidate)
+            (*conn)
+                .persist_candidate(&candidate)
                 .await
                 .map_err(|_| BusinessError::DatabaseError)?;
         }
 
         ApprovalResult::Complete => {
+            /*
             match_service::seal(&mut repo, timestamp, candidate)
                 .await
                 .change_context(BusinessError::DatabaseError)?;
+            */
+            todo!();
         }
     };
 
@@ -236,12 +237,11 @@ pub async fn reject_candidate(
         .await
         .map_err(|_| BusinessError::DatabaseError)?;
 
-    let mut repo = Repository::new(&mut conn).await;
-
+    /*
     let context = ContextV7::new();
     let timestamp = Timestamp::now(context);
 
-    let candidate = repo
+    let candidate = (*conn)
         .find_candidate(&candidate_id)
         .await
         .map_err(|_| BusinessError::UserNotFound)?;
@@ -258,6 +258,7 @@ pub async fn reject_candidate(
         .await
         .map_err(|_| BusinessError::DatabaseError)?;
 
+    */
     conn.commit()
         .await
         .map_err(|_| BusinessError::DatabaseError)?;
