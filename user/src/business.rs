@@ -1,8 +1,8 @@
-use error_stack::{IntoReport, Report, ResultExt};
+use error_stack::{Report, ResultExt};
 use matchmaker::candidate::{ApprovalResult, Candidate};
 use matchmaker::candidate_repository::CandidateRepository;
 use serde::Serialize;
-use sqlx::{PgPool, query};
+use sqlx::PgPool;
 use tracing::instrument;
 use uuid::{ContextV7, Timestamp, Uuid};
 
@@ -162,7 +162,7 @@ pub async fn get_candidates(
         .change_context(BusinessError::UserNotFound)?;
 
     let candidates = (*conn)
-        .find_candidates_by_user(&user.get_id())
+        .find_candidates_by_user(user.get_id())
         .await
         .change_context(BusinessError::DatabaseError)?
         .into_iter()
@@ -182,11 +182,6 @@ pub async fn approve_candidate(
         .begin()
         .await
         .map_err(|_| BusinessError::DatabaseError)?;
-
-    // let mut repo = Repository::new(&mut conn).await;
-
-    let context = ContextV7::new();
-    let timestamp = Timestamp::now(context);
 
     let user = (*conn)
         .find_user(&user_id)
