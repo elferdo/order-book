@@ -20,10 +20,7 @@ use uuid::Timestamp;
 
 use order::{ask::Ask, bid::Bid};
 
-use crate::{candidate::Candidate, repository::MarketRepository};
-
-#[cfg(test)]
-mod tests;
+use crate::candidate::Candidate;
 
 #[derive(Debug, Default)]
 pub struct Market {
@@ -42,39 +39,15 @@ pub enum MarketError {
 
 impl Market {
     // Let's leave this method non-async and fill the structures in run()
-    pub fn new() -> Self {
-        let asks = Vec::new();
-        let bids = Vec::new();
-
+    pub fn new(asks: Vec<Ask>, bids: Vec<Bid>) -> Self {
         Self { asks, bids }
     }
 
-    #[instrument(err(Debug), skip(self, repo))]
+    #[instrument(err(Debug), skip(self))]
     pub async fn run(
         &mut self,
         timestamp: Timestamp,
-        repo: &mut impl MarketRepository,
-    ) -> Result<(), Report<MarketError>> {
-        self.asks = repo
-            .get_unbound_asks()
-            .await
-            .change_context(MarketError::Error)?;
-
-        self.bids = repo
-            .get_unbound_bids()
-            .await
-            .change_context(MarketError::Error)?;
-
-        let candidates = self.do_matching(timestamp)?;
-
-        repo.persist_candidates(candidates)
-            .await
-            .change_context(MarketError::CandidatePersistanceError)?;
-
-        Ok(())
-    }
-
-    fn do_matching(&mut self, timestamp: Timestamp) -> Result<Vec<Candidate>, Report<MarketError>> {
+    ) -> Result<Vec<Candidate>, Report<MarketError>> {
         self.asks.sort_by(Ask::sort_fn);
         self.bids.sort_by(Bid::sort_fn);
 

@@ -13,7 +13,7 @@ use uuid::Uuid;
 
 use crate::{
     apierror::ApiError,
-    business::{self, get_candidates, new_user},
+    {get_candidates, new_user},
 };
 
 #[instrument(skip(state))]
@@ -32,7 +32,7 @@ pub async fn delete_user(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Value>, ApiError> {
-    let result = match business::delete_user(state.pool, id).await {
+    let result = match crate::delete_user(state.pool, id).await {
         Ok(_) => "bien".to_string(),
         Err(r) => r.to_string(),
     };
@@ -51,7 +51,7 @@ pub async fn create_ask(
     Path(user_id): Path<Uuid>,
     Json(body): Json<AskRequest>,
 ) -> Result<Json<Value>, ApiError> {
-    let result = match business::new_ask(state.pool, user_id, body.price)
+    let result = match crate::new_ask(state.pool, user_id, body.price)
         .await
         .change_context(ApiError::DatabaseError)
     {
@@ -73,7 +73,7 @@ pub async fn create_bid(
     Path(user_id): Path<Uuid>,
     Json(body): Json<BidRequest>,
 ) -> Result<Json<Value>, ApiError> {
-    let result = match business::new_bid(state.pool, user_id, body.price)
+    let result = match crate::new_bid(state.pool, user_id, body.price)
         .await
         .change_context(ApiError::DatabaseError)
     {
@@ -111,7 +111,7 @@ pub async fn approve_candidate(
     State(state): State<AppState>,
     Path((user_id, candidate_id)): Path<(Uuid, Uuid)>,
 ) -> Result<Json<Value>, ApiError> {
-    let result = match business::approve_candidate(state.pool, user_id, candidate_id).await {
+    let result = match crate::approve_candidate(state.pool, user_id, candidate_id).await {
         Ok(_) => "bien".to_string(),
         Err(r) => r.to_string(),
     };
@@ -124,7 +124,7 @@ pub async fn reject_candidate(
     State(state): State<AppState>,
     Path((user_id, candidate_id)): Path<(Uuid, Uuid)>,
 ) -> Result<Json<Value>, ApiError> {
-    let result = match business::reject_candidate(state.pool, user_id, candidate_id).await {
+    let result = match crate::reject_candidate(state.pool, user_id, candidate_id).await {
         Ok(_) => "bien".to_string(),
         Err(r) => r.to_string(),
     };

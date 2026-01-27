@@ -148,7 +148,7 @@ async fn run_market(world: &mut MarketWorld) -> Result<(), Report<CucumberError>
 
     world
         .market
-        .run(timestamp, &mut *t)
+        .run(timestamp)
         .await
         .change_context(CucumberError::Error)?;
 
