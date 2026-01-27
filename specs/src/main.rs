@@ -67,7 +67,7 @@ async fn setup(
         .await
         .change_context(TestError::DatabaseUserCreation)?;
 
-    sqlx::migrate!()
+    sqlx::migrate!("../sqlx_migrations")
         .run(&pool)
         .await
         .change_context(TestError::DatabaseMigration)?;

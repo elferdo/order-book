@@ -10,7 +10,7 @@ use uuid::{ContextV7, Timestamp, Uuid};
 #[error("error running test")]
 struct TestError;
 
-#[sqlx::test]
+#[sqlx::test(migrations = "../sqlx_migrations")]
 async fn persist_user(pool: PgPool) -> Result<(), Report<TestError>> {
     let mut conn = pool.acquire().await.change_context(TestError)?;
 
@@ -34,7 +34,7 @@ async fn persist_user(pool: PgPool) -> Result<(), Report<TestError>> {
     Ok(())
 }
 
-#[sqlx::test(fixtures("first_user"))]
+#[sqlx::test(fixtures("first_user"), migrations = "../sqlx_migrations")]
 async fn persist_user_with_ask(pool: PgPool) -> Result<(), Report<TestError>> {
     let mut conn = pool.acquire().await.change_context(TestError)?;
 
@@ -65,7 +65,7 @@ async fn persist_user_with_ask(pool: PgPool) -> Result<(), Report<TestError>> {
     Ok(())
 }
 
-#[sqlx::test(fixtures("first_user"))]
+#[sqlx::test(fixtures("first_user"), migrations = "../sqlx_migrations")]
 async fn persist_user_with_more_than_one_ask(pool: PgPool) -> Result<(), Report<TestError>> {
     let mut conn = pool.acquire().await.change_context(TestError)?;
 
@@ -108,7 +108,7 @@ async fn persist_user_with_more_than_one_ask(pool: PgPool) -> Result<(), Report<
     Ok(())
 }
 
-#[sqlx::test(fixtures("first_user"))]
+#[sqlx::test(fixtures("first_user"), migrations = "../sqlx_migrations")]
 async fn persist_user_with_more_than_one_bid(pool: PgPool) -> Result<(), Report<TestError>> {
     let mut conn = pool.acquire().await.change_context(TestError)?;
 
@@ -151,7 +151,7 @@ async fn persist_user_with_more_than_one_bid(pool: PgPool) -> Result<(), Report<
     Ok(())
 }
 
-#[sqlx::test(fixtures("first_user"))]
+#[sqlx::test(fixtures("first_user"), migrations = "../sqlx_migrations")]
 async fn persist_user_with_bid(pool: PgPool) -> Result<(), Report<TestError>> {
     let mut conn = pool.acquire().await.change_context(TestError)?;
 
@@ -182,7 +182,7 @@ async fn persist_user_with_bid(pool: PgPool) -> Result<(), Report<TestError>> {
     Ok(())
 }
 
-#[sqlx::test(fixtures("first_user"))]
+#[sqlx::test(fixtures("first_user"), migrations = "../sqlx_migrations")]
 async fn find_user_when_id_exists(pool: PgPool) -> Result<(), Report<TestError>> {
     let mut a = pool.acquire().await.change_context(TestError)?;
 
@@ -195,7 +195,7 @@ async fn find_user_when_id_exists(pool: PgPool) -> Result<(), Report<TestError>>
     Ok(())
 }
 
-#[sqlx::test(fixtures("first_user", "asks"))]
+#[sqlx::test(fixtures("first_user", "asks"), migrations = "../sqlx_migrations")]
 async fn find_user_when_id_does_not_exist(pool: PgPool) -> Result<(), Report<TestError>> {
     let mut a = pool.acquire().await.change_context(TestError)?;
 
