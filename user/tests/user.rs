@@ -2,8 +2,8 @@ use error_stack::Report;
 use error_stack::ResultExt;
 use sqlx::{PgPool, query};
 use thiserror::Error;
+use user::User;
 use user::repository::UserRepository;
-use user::user::User;
 use uuid::{ContextV7, Timestamp, Uuid};
 
 #[derive(Error, Debug)]

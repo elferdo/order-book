@@ -1,11 +1,13 @@
 pub mod api_handlers;
-pub mod apierror;
-pub mod businesserror;
-pub mod deal;
-pub mod repo_impl;
+mod apierror;
+mod businesserror;
+mod deal;
+mod repo_impl;
 pub mod repository;
-pub mod repository_error;
-pub mod user;
+mod repository_error;
+mod user;
+
+pub use user::User;
 
 use error_stack::{Report, ResultExt};
 use matchmaker::candidate::{ApprovalResult, Candidate};
@@ -17,7 +19,6 @@ use uuid::{ContextV7, Timestamp, Uuid};
 
 use crate::businesserror::BusinessError;
 use crate::repository::UserRepository;
-use crate::user::User;
 
 #[derive(Serialize)]
 pub struct Response {
