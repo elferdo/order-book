@@ -5,14 +5,14 @@ use cucumber::{
     event::ScenarioFinished,
     gherkin::{Feature, Rule, Scenario},
 };
-use error_stack::{IntoReport, Report, ResultExt};
+use error_stack::{Report, ResultExt};
 use sqlx::{PgPool, QueryBuilder, query};
 use testcontainers_modules::testcontainers::{ImageExt, runners::AsyncRunner};
 use thiserror::Error;
-use tracing::{error, info, instrument};
+use tracing::{error, instrument};
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{EnvFilter, Registry, fmt, layer::SubscriberExt, util::SubscriberInitExt};
-use uuid::{ContextV7, Timestamp, Uuid};
+use uuid::Uuid;
 
 use crate::market::market_world::MarketWorld;
 

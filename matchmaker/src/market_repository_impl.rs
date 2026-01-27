@@ -1,19 +1,17 @@
+use crate::candidate::Candidate;
+use crate::repository::MarketRepository;
 use error_stack::{Report, ResultExt};
-use matchmaker::repository::MarketRepository;
-use order::order::ask::Ask;
-use order::order::bid::Bid;
-use order::order::candidate::Candidate;
+use order::ask::Ask;
+use order::bid::Bid;
 use order::repository_error::RepositoryError;
-use sqlx::{QueryBuilder, query_as};
+use sqlx::{PgConnection, QueryBuilder, query_as};
 use tracing::instrument;
 
-use crate::Repository;
-
-impl<'c> MarketRepository for Repository<'c> {
+impl MarketRepository for PgConnection {
     #[instrument(err(Debug), skip(self))]
     async fn get_unbound_asks(&mut self) -> Result<Vec<Ask>, Report<RepositoryError>> {
         let asks = query_as!(Ask, "SELECT * FROM ask;")
-            .fetch_all(&mut *self.conn)
+            .fetch_all(self)
             .await
             .change_context(RepositoryError::DatabaseError)?;
 
@@ -23,7 +21,7 @@ impl<'c> MarketRepository for Repository<'c> {
     #[instrument(err(Debug), skip(self))]
     async fn get_unbound_bids(&mut self) -> Result<Vec<Bid>, Report<RepositoryError>> {
         let bids = query_as!(Bid, "SELECT * FROM bid;")
-            .fetch_all(&mut *self.conn)
+            .fetch_all(self)
             .await
             .change_context(RepositoryError::DatabaseError)?;
 
@@ -50,7 +48,7 @@ impl<'c> MarketRepository for Repository<'c> {
         });
 
         qb.build()
-            .execute(&mut *self.conn)
+            .execute(self)
             .await
             .change_context(RepositoryError::DatabaseError)?;
 

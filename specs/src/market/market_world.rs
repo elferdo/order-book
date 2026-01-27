@@ -107,20 +107,15 @@ async fn add_buyer(world: &mut MarketWorld, user: String) -> Result<(), Report<C
 #[when(expr = "market runs")]
 #[instrument(err(Debug))]
 async fn run_market(world: &mut MarketWorld) -> Result<(), Report<CucumberError>> {
-    let context = ContextV7::new();
-    let timestamp = Timestamp::now(context);
-
     let mut t = world
         .pool
         .as_ref()
         .unwrap()
         .acquire()
         .await
-        .change_context(CucumberError::TransactionError)?;
+        .change_context(CucumberError::Error)?;
 
-    world
-        .market
-        .run(timestamp)
+    matchmaker::market_step(&mut t)
         .await
         .change_context(CucumberError::Error)?;
 
@@ -154,59 +149,34 @@ async fn user_matches_user(
     user_b_role: String,
     user_b_name: String,
 ) -> Result<(), Report<CucumberError>> {
-    /*
-        info!("entering user_has_candidates");
+    let user_a_id = match user_a_role.as_str() {
+        "buyer" => world.buyers.get(&user_a_name).ok_or(CucumberError::Error)?,
+        "seller" => world
+            .sellers
+            .get(&user_a_name)
+            .ok_or(CucumberError::Error)?,
+        _ => Err(CucumberError::Error)?,
+    };
 
-        let mut t = world
-            .pool
-            .as_ref()
-            .unwrap()
-            .acquire()
-            .await
-            .change_context(CucumberError::TransactionError)?;
+    let user_b_id = match user_b_role.as_str() {
+        "buyer" => world.buyers.get(&user_b_name).ok_or(CucumberError::Error)?,
+        "seller" => world
+            .sellers
+            .get(&user_b_name)
+            .ok_or(CucumberError::Error)?,
+        _ => Err(CucumberError::Error)?,
+    };
 
-        // let mut repo = Repository::new(&mut t).await;
+    let candidates_a = user::get_candidates(world.pool.as_ref().unwrap().clone(), *user_a_id)
+        .await
+        .change_context(CucumberError::Error)?;
 
-        let user_a_id = match user_a_role.as_str() {
-            "buyer" => world.buyers.get(&user_a_name).ok_or(CucumberError::Error)?,
-            "seller" => world
-                .sellers
-                .get(&user_a_name)
-                .ok_or(CucumberError::Error)?,
-            _ => Err(CucumberError::Error)?,
-        };
+    let candidates_b = user::get_candidates(world.pool.as_ref().unwrap().clone(), *user_b_id)
+        .await
+        .change_context(CucumberError::Error)?;
 
-        let user_b_id = match user_b_role.as_str() {
-            "buyer" => world.buyers.get(&user_b_name).ok_or(CucumberError::Error)?,
-            "seller" => world
-                .sellers
-                .get(&user_b_name)
-                .ok_or(CucumberError::Error)?,
-            _ => Err(CucumberError::Error)?,
-        };
+    assert_eq!(candidates_a[0].id, candidates_b[0].id);
 
-        let user_a = t
-            .find_user(user_a_id)
-            .await
-            .change_context(CucumberError::Error)?;
-
-        let user_b = t
-            .find_user(user_b_id)
-            .await
-            .change_context(CucumberError::Error)?;
-
-        let candidates_a = t
-            .find_candidates_by_user(&user_a)
-            .await
-            .change_context(CucumberError::Error)?;
-
-        let candidates_b = t
-            .find_candidates_by_user(&user_b)
-            .await
-            .change_context(CucumberError::Error)?;
-
-        assert_eq!(candidates_a[0].get_id(), candidates_b[0].get_id());
-    */
     Ok(())
 }
 

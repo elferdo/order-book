@@ -4,7 +4,7 @@ pub mod candidate_repository_impl;
 pub mod deal;
 pub mod deal_repository;
 pub mod deal_repository_impl;
-pub mod repo_impl;
+pub mod market_repository_impl;
 pub mod repository;
 pub mod repository_error;
 
@@ -14,13 +14,17 @@ use rusty_money::{
     Money,
     iso::{self, Currency},
 };
+use sqlx::{PgConnection, PgPool};
 use thiserror::Error;
 use tracing::instrument;
-use uuid::Timestamp;
+use uuid::{ContextV7, Timestamp};
 
 use order::{ask::Ask, bid::Bid};
 
-use crate::candidate::Candidate;
+use crate::{
+    candidate::Candidate, candidate_repository::CandidateRepository,
+    repository_error::RepositoryError,
+};
 
 #[derive(Debug, Default)]
 pub struct Market {
@@ -100,4 +104,26 @@ impl Market {
     pub fn number_of_bids(&self) -> usize {
         self.bids.len()
     }
+}
+
+#[instrument(err(Debug))]
+pub async fn market_step(conn: &mut PgConnection) -> Result<(), Report<MarketError>> {
+    let context = ContextV7::new();
+    let timestamp = Timestamp::now(context);
+
+    let asks = Vec::new();
+    let bids = Vec::new();
+
+    let mut market = Market::new(asks, bids);
+
+    let candidates = market
+        .run(timestamp)
+        .await
+        .change_context(MarketError::Error)?;
+
+    conn.persist_candidates(candidates.into_iter())
+        .await
+        .change_context(MarketError::CandidatePersistanceError)?;
+
+    Ok(())
 }
