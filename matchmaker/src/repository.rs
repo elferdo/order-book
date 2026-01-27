@@ -4,7 +4,7 @@ use order::{
     {ask::Ask, bid::Bid},
 };
 
-use crate::candidate::Candidate;
+// use crate::candidate::Candidate;
 
 pub trait MarketRepository {
     fn get_unbound_asks(
@@ -15,10 +15,12 @@ pub trait MarketRepository {
         &mut self,
     ) -> impl Future<Output = Result<Vec<Bid>, Report<RepositoryError>>>;
 
+    /*
     fn persist_candidates<I>(
         &mut self,
         iterator: I,
     ) -> impl Future<Output = Result<(), Report<RepositoryError>>>
     where
         I: IntoIterator<Item = Candidate>;
+        */
 }

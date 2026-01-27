@@ -22,7 +22,7 @@ use uuid::{ContextV7, Timestamp};
 use order::{ask::Ask, bid::Bid};
 
 use crate::{
-    candidate::Candidate, candidate_repository::CandidateRepository,
+    candidate::Candidate, candidate_repository::CandidateRepository, repository::MarketRepository,
     repository_error::RepositoryError,
 };
 
@@ -106,13 +106,20 @@ impl Market {
     }
 }
 
-#[instrument(err(Debug))]
+#[instrument(err(Debug), skip(conn))]
 pub async fn market_step(conn: &mut PgConnection) -> Result<(), Report<MarketError>> {
     let context = ContextV7::new();
     let timestamp = Timestamp::now(context);
 
-    let asks = Vec::new();
-    let bids = Vec::new();
+    let asks = conn
+        .get_unbound_asks()
+        .await
+        .change_context(MarketError::Error)?;
+
+    let bids = conn
+        .get_unbound_bids()
+        .await
+        .change_context(MarketError::Error)?;
 
     let mut market = Market::new(asks, bids);
 

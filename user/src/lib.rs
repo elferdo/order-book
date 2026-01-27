@@ -127,7 +127,7 @@ pub async fn new_bid(
     Ok(Response { id: *bid.get_id() })
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct CandidateSummary {
     pub id: Uuid,
     pub ask: Uuid,

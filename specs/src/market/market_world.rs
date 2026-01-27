@@ -105,7 +105,7 @@ async fn add_buyer(world: &mut MarketWorld, user: String) -> Result<(), Report<C
 }
 
 #[when(expr = "market runs")]
-#[instrument(err(Debug))]
+#[instrument(err(Debug), skip(world))]
 async fn run_market(world: &mut MarketWorld) -> Result<(), Report<CucumberError>> {
     let mut t = world
         .pool
@@ -123,15 +123,15 @@ async fn run_market(world: &mut MarketWorld) -> Result<(), Report<CucumberError>
 }
 
 #[then(expr = "users match")]
-#[instrument(err(Debug))]
+#[instrument(err(Debug), skip(world))]
 async fn users_match(world: &mut MarketWorld, step: &Step) -> Result<(), Report<CucumberError>> {
     if let Some(table) = step.table.as_ref() {
         for row in table.rows.iter().skip(1) {
             // NOTE: skip header
             let role_a = row[0].clone();
             let name_a = row[1].clone();
-            let role_b = row[0].clone();
-            let name_b = row[1].clone();
+            let role_b = row[2].clone();
+            let name_b = row[3].clone();
 
             user_matches_user(world, role_a, name_a, role_b, name_b).await?;
         }
@@ -141,7 +141,7 @@ async fn users_match(world: &mut MarketWorld, step: &Step) -> Result<(), Report<
 }
 
 #[then(expr = "{word} {word} matches {word} {word}")]
-#[instrument(err(Debug))]
+#[instrument(err(Debug), skip(world))]
 async fn user_matches_user(
     world: &mut MarketWorld,
     user_a_role: String,
@@ -171,9 +171,13 @@ async fn user_matches_user(
         .await
         .change_context(CucumberError::Error)?;
 
+    debug!("user a candidates: {candidates_a:?}");
+
     let candidates_b = user::get_candidates(world.pool.as_ref().unwrap().clone(), *user_b_id)
         .await
         .change_context(CucumberError::Error)?;
+
+    debug!("user b candidates: {candidates_b:?}");
 
     assert_eq!(candidates_a[0].id, candidates_b[0].id);
 

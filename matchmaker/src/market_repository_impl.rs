@@ -28,6 +28,7 @@ impl MarketRepository for PgConnection {
         Ok(bids)
     }
 
+    /*
     #[instrument(err(Debug), skip(self, iterator))]
     async fn persist_candidates<I>(&mut self, iterator: I) -> Result<(), Report<RepositoryError>>
     where
@@ -54,4 +55,5 @@ impl MarketRepository for PgConnection {
 
         Ok(())
     }
+    */
 }
