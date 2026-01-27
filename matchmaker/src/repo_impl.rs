@@ -1,8 +1,8 @@
 use crate::{candidate::Candidate, repository::MarketRepository};
 use error_stack::{Report, ResultExt};
-use model::order::ask::Ask;
-use model::order::bid::Bid;
-use model::repository_error::RepositoryError;
+use order::ask::Ask;
+use order::bid::Bid;
+use order::repository_error::RepositoryError;
 use sqlx::{PgConnection, QueryBuilder, query_as};
 use tracing::instrument;
 

@@ -1,4 +1,4 @@
-INSERT INTO public.user VALUES 
+INSERT INTO "user" VALUES 
  ('019b3788-2ded-7f19-8191-9018a3939f60'),
  ('019b36f8-bb74-7ad3-8a02-465301b72d92'),
  ('019b3788-2df1-7ccd-b08c-fefc19b864d6'),

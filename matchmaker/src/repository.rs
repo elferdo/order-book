@@ -1,7 +1,7 @@
 use error_stack::Report;
-use model::{
-    order::{ask::Ask, bid::Bid},
+use order::{
     repository_error::RepositoryError,
+    {ask::Ask, bid::Bid},
 };
 
 use crate::candidate::Candidate;

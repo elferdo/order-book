@@ -1,4 +1,4 @@
-use model::order::{ask::Ask, bid::Bid};
+use order::{ask::Ask, bid::Bid};
 use thiserror::Error;
 use uuid::{Timestamp, Uuid};
 

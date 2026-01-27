@@ -1,6 +1,5 @@
 use error_stack::Report;
 use error_stack::ResultExt;
-use repositories::Repository;
 use sqlx::{PgPool, query};
 use thiserror::Error;
 use user::repository::UserRepository;

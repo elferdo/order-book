@@ -1,5 +1,5 @@
 use error_stack::{IntoReport, Report, ResultExt};
-use model::order::{ask::Ask, bid::Bid};
+use order::{ask::Ask, bid::Bid};
 use sqlx::{PgConnection, QueryBuilder, query};
 use tracing::instrument;
 use uuid::Uuid;

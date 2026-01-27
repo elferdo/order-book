@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 cucumber = { version = "0.22.1", features = ["tracing"] }
 error-stack = "0.6.0"
-model = { version = "0.1.0", path = "../model" }
+order = { version = "0.1.0", path = "../order" }
 rstest = "0.26.1"
 rust_decimal = "1.40.0"
 rusty-money = "0.5.0"

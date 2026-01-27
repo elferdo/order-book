@@ -18,7 +18,7 @@ use thiserror::Error;
 use tracing::instrument;
 use uuid::Timestamp;
 
-use model::order::{ask::Ask, bid::Bid};
+use order::{ask::Ask, bid::Bid};
 
 use crate::{candidate::Candidate, repository::MarketRepository};
 

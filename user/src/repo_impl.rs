@@ -1,5 +1,5 @@
 use error_stack::{Report, ResultExt};
-use model::order::{ask::Ask, bid::Bid};
+use order::{ask::Ask, bid::Bid};
 use sqlx::{PgConnection, QueryBuilder, query, query_as};
 use std::collections::HashMap;
 use std::fmt::Debug;

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 
 use matchmaker::candidate::{ApprovalResult, Candidate};
-use model::order::{ask::Ask, bid::Bid};
+use order::{ask::Ask, bid::Bid};
 use uuid::{Timestamp, Uuid};
 
 #[derive(Debug)]

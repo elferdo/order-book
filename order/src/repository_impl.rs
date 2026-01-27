@@ -1,14 +1,12 @@
+use crate::ask::Ask;
+use crate::bid::Bid;
+use crate::repository::OrderRepository;
+use crate::repository_error::RepositoryError;
 use error_stack::{Report, ResultExt};
-use model::order::ask::Ask;
-use model::order::bid::Bid;
-use model::order::repository::OrderRepository;
-use model::repository_error::RepositoryError;
-use sqlx::QueryBuilder;
+use sqlx::{PgConnection, QueryBuilder};
 use sqlx::{Row, query};
 
-use crate::Repository;
-
-impl<'c> OrderRepository for Repository<'c> {
+impl OrderRepository for PgConnection {
     async fn find_asks_not_above(
         &mut self,
         bid: &Bid,
@@ -52,7 +50,7 @@ impl<'c> OrderRepository for Repository<'c> {
 
         let ask_rows = qb
             .build()
-            .fetch_all(&mut *self.conn)
+            .fetch_all(self)
             .await
             .change_context(RepositoryError::UnexpectedResult)?;
 
@@ -107,7 +105,7 @@ impl<'c> OrderRepository for Repository<'c> {
 
         let bid_rows = qb
             .build()
-            .fetch_all(&mut *self.conn)
+            .fetch_all(self)
             .await
             .change_context(RepositoryError::UnexpectedResult)?;
 
@@ -121,7 +119,7 @@ impl<'c> OrderRepository for Repository<'c> {
 
     async fn remove_ask(&mut self, ask: &Ask) -> Result<(), Report<RepositoryError>> {
         query!("DELETE FROM ask WHERE id = $1;", *ask.get_id())
-            .execute(&mut *self.conn)
+            .execute(self)
             .await
             .change_context(RepositoryError::UnexpectedResult)?;
 
@@ -130,7 +128,7 @@ impl<'c> OrderRepository for Repository<'c> {
 
     async fn remove_bid(&mut self, bid: &Bid) -> Result<(), Report<RepositoryError>> {
         query!("DELETE FROM bid WHERE id = $1;", *bid.get_id())
-            .execute(&mut *self.conn)
+            .execute(self)
             .await
             .change_context(RepositoryError::UnexpectedResult)?;
 
