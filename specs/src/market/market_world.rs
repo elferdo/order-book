@@ -83,25 +83,11 @@ async fn add_bid_orders(world: &mut MarketWorld, step: &Step) -> Result<(), Repo
 #[given(expr = "a seller named {word}")]
 #[instrument(err(Debug))]
 async fn add_seller(world: &mut MarketWorld, user: String) -> Result<(), Report<CucumberError>> {
-    let context = ContextV7::new();
-    let timestamp = Timestamp::now(context);
-
-    let id = Uuid::new_v7(timestamp);
-
-    world.sellers.insert(user, id);
-
-    let mut t = world
-        .pool
-        .as_ref()
-        .unwrap()
-        .acquire()
+    let response = user::new_user(world.pool.as_ref().unwrap().clone())
         .await
-        .change_context(CucumberError::AcquireError)?;
+        .change_context(CucumberError::Error)?;
 
-    query!("INSERT INTO \"user\" VALUES ($1);", id)
-        .execute(&mut *t)
-        .await
-        .change_context(CucumberError::InsertUserError)?;
+    world.sellers.insert(user, response.id);
 
     Ok(())
 }
@@ -109,25 +95,11 @@ async fn add_seller(world: &mut MarketWorld, user: String) -> Result<(), Report<
 #[given(expr = "a buyer named {word}")]
 #[instrument(err(Debug))]
 async fn add_buyer(world: &mut MarketWorld, user: String) -> Result<(), Report<CucumberError>> {
-    let context = ContextV7::new();
-    let timestamp = Timestamp::now(context);
-
-    let id = Uuid::new_v7(timestamp);
-
-    world.buyers.insert(user, id);
-
-    let mut t = world
-        .pool
-        .as_ref()
-        .unwrap()
-        .acquire()
+    let response = user::new_user(world.pool.as_ref().unwrap().clone())
         .await
-        .change_context(CucumberError::AcquireError)?;
+        .change_context(CucumberError::Error)?;
 
-    query!("INSERT INTO \"user\" VALUES ($1);", id)
-        .execute(&mut *t)
-        .await
-        .change_context(CucumberError::InsertUserError)?;
+    world.buyers.insert(user, response.id);
 
     Ok(())
 }

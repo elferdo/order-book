@@ -15,6 +15,12 @@ pub async fn send_bid_order(
     price: f32,
     user: String,
 ) -> Result<(), Report<CucumberError>> {
+    let buyer_id = world.buyers[&user];
+
+    user::new_bid(world.pool.as_ref().unwrap().clone(), buyer_id, price)
+        .await
+        .change_context(CucumberError::Error)?;
+
     /*
     let user_id = world
         .buyers

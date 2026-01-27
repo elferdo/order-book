@@ -15,6 +15,11 @@ pub async fn send_ask_order(
     price: f32,
     user: String,
 ) -> Result<(), Report<CucumberError>> {
+    let seller_id = world.sellers[&user];
+
+    user::new_ask(world.pool.as_ref().unwrap().clone(), seller_id, price)
+        .await
+        .change_context(CucumberError::Error)?;
     /*
     let user_id = world
         .sellers

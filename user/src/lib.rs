@@ -22,7 +22,7 @@ use crate::repository::UserRepository;
 
 #[derive(Serialize)]
 pub struct Response {
-    id: Uuid,
+    pub id: Uuid,
 }
 
 #[instrument(skip(pool))]
@@ -50,8 +50,6 @@ pub async fn delete_user(pool: PgPool, id: Uuid) -> Result<Response, Report<Busi
         .acquire()
         .await
         .map_err(|_| BusinessError::DatabaseError)?;
-
-    // let mut repo = Repository::new(&mut a).await;
 
     let user = (*a)
         .find_user(&id)
