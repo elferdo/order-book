@@ -2,7 +2,7 @@
 members = [
     "appconfig",
     "fakeclient",
-    "matchmaker",
+    "matchmaker", 
     "order",
     "specs",
     "stats",

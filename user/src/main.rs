@@ -27,6 +27,8 @@ enum AppError {
 
 #[tokio::main]
 async fn main() -> Result<(), Report<AppError>> {
+    println!("Arranca la palanca...");
+
     let otlp_exporter = opentelemetry_otlp::SpanExporter::builder()
         .with_http()
         .with_protocol(Protocol::HttpBinary)

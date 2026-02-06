@@ -8,7 +8,7 @@ use error_stack::{IntoReport, Report, ResultExt};
 use serde::Deserialize;
 use tracing::info;
 
-#[derive(Deserialize)]
+#[derive(Default, Deserialize)]
 pub struct Config {
     pub database_url: String,
 }
@@ -52,11 +52,27 @@ pub fn config_from_yaml(name: &Path) -> Result<Config, Report<Error>> {
     Ok(contents)
 }
 
-pub fn read() -> Result<Config, Report<Error>> {
-    let config_dir = init_data_dir()?;
+pub fn config_from_env() -> Result<Config, Report<Error>> {
+    let database_url = std::env::var("DATABASE_URL")
+        .change_context(Error::EnvironmentVariableError("DATABASE_URL".to_string()))?;
 
-    let config_file_path = config_dir.join("config.yaml");
-    let config = config_from_yaml(&config_file_path)?;
+    let config = Config { database_url };
+
+    Ok(config)
+}
+
+pub fn read() -> Result<Config, Report<Error>> {
+    let config = match init_data_dir() {
+        Ok(config_dir) => {
+            let config_file_path = config_dir.join("config.yaml");
+
+            config_from_yaml(&config_file_path)?
+        }
+        Err(mut e) => config_from_env().map_err(|err| {
+            e.change_context(err.into_error())
+                .change_context(Error::NoValidConfigError)
+        })?,
+    };
 
     Ok(config)
 }
@@ -65,6 +81,9 @@ pub fn read() -> Result<Config, Report<Error>> {
 pub enum Error {
     #[error("could not retrieve a valid home")]
     HomeDirError,
+
+    #[error("environment variable {0} not found")]
+    EnvironmentVariableError(String),
 
     #[error("could not open config file")]
     FileOpenError,
@@ -77,4 +96,7 @@ pub enum Error {
 
     #[error("parsing configuration")]
     ParseError,
+
+    #[error("could not get a valid config")]
+    NoValidConfigError,
 }
