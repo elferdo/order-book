@@ -28,17 +28,20 @@ provider "helm" {
 # -------------------------------------------------
 
 # Namespace (creates it if missing)
-resource "kubernetes_namespace_v1" "db_ns" {
-  metadata {
-    name = var.namespace
-  }
-}
+# resource "kubernetes_namespace_v1" "db_ns" {
+#   metadata {
+#     name = var.namespace
+#   }
+# }
 
 # PersistentVolumeClaim for Postgres data
 resource "kubernetes_persistent_volume_claim_v1" "pg_data" {
   metadata {
     name      = "postgres-pvc"
-    namespace = var.namespace
+    labels = {
+      app = "markets"
+    }
+#    namespace = var.namespace
   }
   spec {
     access_modes = ["ReadWriteOnce"]
@@ -56,7 +59,7 @@ resource "helm_release" "postgres" {
   name       = "postgres-${var.namespace}"
   repository = "https://charts.bitnami.com/bitnami"
   chart      = "postgresql"
-  namespace  = var.namespace
+#  namespace  = var.namespace
   version    = "18.2.4"   # pin a version you trust
 
   set = [ {

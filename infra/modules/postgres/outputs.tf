@@ -3,6 +3,3 @@ output "postgres_service_name" {
   value       = helm_release.postgres.name
 }
 
-output "postgres_namespace" {
-  value = var.namespace
-}

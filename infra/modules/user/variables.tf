@@ -21,3 +21,7 @@
 #   default     = 5
 # }
 # 
+variable "dbname" {
+    description = "Name of the postgres service"
+    type        = string
+}

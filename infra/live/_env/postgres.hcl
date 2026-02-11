@@ -8,7 +8,8 @@ locals {
 }
 
 inputs = {
-  namespace         = "${local.env_name}-db"
+#  namespace         = "${local.env_name}-db"
+  namespace         = "default"
   postgres_user     = "admin"
   postgres_password = get_env("PG_${upper(local.env_name)}_PASSWORD")
   storage_size_gb   = 5
