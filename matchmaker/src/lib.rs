@@ -48,10 +48,7 @@ impl Market {
     }
 
     #[instrument(err(Debug), skip(self))]
-    pub async fn run(
-        &mut self,
-        timestamp: Timestamp,
-    ) -> Result<Vec<Candidate>, Report<MarketError>> {
+    pub fn run(&mut self, timestamp: Timestamp) -> Result<Vec<Candidate>, Report<MarketError>> {
         self.asks.sort_by(Ask::sort_fn);
         self.bids.sort_by(Bid::sort_fn);
 
@@ -123,10 +120,7 @@ pub async fn market_step(conn: &mut PgConnection) -> Result<(), Report<MarketErr
 
     let mut market = Market::new(asks, bids);
 
-    let candidates = market
-        .run(timestamp)
-        .await
-        .change_context(MarketError::Error)?;
+    let candidates = market.run(timestamp).change_context(MarketError::Error)?;
 
     conn.persist_candidates(candidates.into_iter())
         .await
